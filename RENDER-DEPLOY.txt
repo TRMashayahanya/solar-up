@@ -1,0 +1,70 @@
+# Render deploy — READ THIS
+
+Your error happens because Render **Root Directory = `src`** but `package.json` was only at the repo root.
+
+We added **`src/package.json`** so `npm install` succeeds.
+
+---
+
+## Step 1 — Push this code to GitHub
+
+On your Mac, open **Terminal**:
+
+```bash
+cd ~/Projects/solar-up
+chmod +x deploy-push.sh
+sh deploy-push.sh
+```
+
+If `git push` asks for login, use a **GitHub Personal Access Token** as the password (not your GitHub password). Create one at: GitHub → Settings → Developer settings → Personal access tokens.
+
+---
+
+## Step 2 — Render settings (exact values)
+
+Open your service on [dashboard.render.com](https://dashboard.render.com) → **Settings**:
+
+| Setting | Value |
+|---------|--------|
+| **Root Directory** | `src` |
+| **Build Command** | `npm install` |
+| **Start Command** | `node ../server.mjs` |
+| **Node version** | `22` (Environment variable `NODE_VERSION` = `22`) |
+| **ADMIN_API_KEY** | your admin password |
+
+Click **Save**.
+
+---
+
+## Step 3 — Redeploy
+
+**Manual Deploy** → **Deploy latest commit**
+
+The log should show a **new commit hash** (not `f4c1fbf`).
+
+Success looks like:
+
+```
+npm install
+added 0 packages
+Running 'node ../server.mjs'
+Solar Up → https://...
+```
+
+---
+
+## Alternative (cleaner, if you can change Root Directory)
+
+| Setting | Value |
+|---------|--------|
+| **Root Directory** | *(empty)* |
+| **Build Command** | `true` |
+| **Start Command** | `node server.mjs` |
+
+---
+
+## Still failing?
+
+Check https://github.com/TRMashayahanya/solar-up — you must see **`src/package.json`** in the latest commit.
+
+If the repo has everything inside a **`solar-up/`** subfolder, set Root Directory to **`solar-up`** (not `src`).

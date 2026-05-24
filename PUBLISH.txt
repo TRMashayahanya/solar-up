@@ -1,0 +1,33 @@
+SOLAR UP — WEB APP (PHONE + DESKTOP)
+====================================
+
+ONE LINK for everyone. No app stores.
+
+PUBLISH (3 steps)
+-----------------
+1. github.com → upload project "solar-up"
+2. render.com → New Web Service → start: node server.mjs
+   Add ADMIN_API_KEY = your password
+3. Share: https://YOUR-LINK.onrender.com
+
+CLIENTS
+-------
+• Phone: open link in browser (or Add to Home Screen)
+• Computer: open same link in Chrome/Safari
+
+YOU
+---
+• Admin: https://YOUR-LINK.onrender.com/admin/
+
+INSTALL ON PHONE (no app store)
+-------------------------------
+Android: Chrome → Install app
+iPhone: Safari → Share → Add to Home Screen
+Help: https://YOUR-LINK.com/install/
+
+MESSAGE TO SEND CLIENTS
+-----------------------
+"Free solar sizer — install on your phone:
+ https://YOUR-LINK.com"
+
+Full guide: docs/PUBLISH-WEB-APP.md

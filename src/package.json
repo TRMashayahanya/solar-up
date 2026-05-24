@@ -1,0 +1,11 @@
+{
+  "name": "solar-up",
+  "private": true,
+  "description": "Render shim — when Root Directory is set to src, server runs from parent folder",
+  "scripts": {
+    "start": "node ../server.mjs"
+  },
+  "engines": {
+    "node": "22.x"
+  }
+}
