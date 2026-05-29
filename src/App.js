@@ -17,7 +17,7 @@ import {
 import { ZapIco, BatIco, PanIco } from "./icons.js";
 import { useCount, ClientModal, Particles, ErrorBoundary } from "./components.js";
 import { HomeScreen, BuildingScreen, ResultScreen, ProductsScreen } from "./screens.js";
-import { globalStyles, BrandHeader, BottomNav } from "./ui.js";
+import { globalStyles, BottomNav } from "./ui.js";
 import { isRestrictedCustomLabel } from "./restricted-appliances.js";
 
 export default function App() {
@@ -345,7 +345,6 @@ export default function App() {
           onPatchCustom: patchCustomItem,
           onRemoveCustom: removeCustomItem,
           catalogActive,
-          customActive,
           totalActive,
           livePeak,
           liveDailyWh,
@@ -398,7 +397,6 @@ export default function App() {
     },
     React.createElement("style", null, globalStyles),
     nav !== "home" && React.createElement(Particles, null),
-    nav !== "home" && React.createElement(BrandHeader, { compact: nav === "size" || nav === "quote" }),
     React.createElement(
       "main",
       {
@@ -421,19 +419,6 @@ export default function App() {
         },
         React.createElement(ErrorBoundary, null, main)
       )
-    ),
-    React.createElement(
-      "p",
-      {
-        style: {
-          marginTop: nav === "home" ? 10 : 16,
-          color: "rgba(255,255,255,.2)",
-          fontSize: 11,
-          zIndex: 1,
-          display: nav === "home" ? "none" : "block",
-        },
-      },
-      "0773757018 · Energi Tech"
     ),
     showModal &&
       sizing &&

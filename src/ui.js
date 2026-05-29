@@ -52,7 +52,17 @@ export const globalStyles =
   "@keyframes pqFillShine{0%{background-position:200% 50%}100%{background-position:-200% 50%}}" +
   "@keyframes pqDotPop{0%{transform:scale(.5);opacity:0}70%{transform:scale(1.2)}100%{transform:scale(1);opacity:1}}" +
   "@keyframes pqTierPulse{0%,100%{box-shadow:0 0 0 0 rgba(232,197,71,0)}50%{box-shadow:0 0 0 6px rgba(232,197,71,.2)}}" +
-  ".power-quest{animation:pqEnter .45s cubic-bezier(.22,1,.36,1) both}" +
+  ".power-quest{animation:pqEnter .35s cubic-bezier(.22,1,.36,1) both}" +
+  ".power-quest--bar{position:sticky;top:0;z-index:80;padding:8px 10px;margin:0 0 6px;border-radius:12px;background:rgba(10,16,13,.94);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.08);box-shadow:0 4px 20px rgba(0,0,0,.35)}" +
+  ".pq-bar-row{display:flex;align-items:center;gap:8px}" +
+  ".pq-bar-main{flex:1;min-width:0}" +
+  ".pq-bar-top{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:5px}" +
+  ".pq-bar-title{color:#F8FAFC;font-size:12px;font-weight:700;margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-0.02em}" +
+  ".pq-bar-stats{color:rgba(255,255,255,.45);font-size:10px;font-weight:500;white-space:nowrap;flex-shrink:0;font-variant-numeric:tabular-nums}" +
+  ".pq-bar-track{position:relative;height:6px;border-radius:999px;background:rgba(0,0,0,.45);overflow:hidden}" +
+  ".pq-dots-row{display:flex;gap:3px;margin-top:6px;padding:0 1px}" +
+  ".pq-dots-row .pq-dot-wrap{flex:1;min-width:0;display:flex;justify-content:center}" +
+  ".pq-sun-wrap--sm{width:32px;height:32px;border-radius:10px;display:grid;place-items:center;flex-shrink:0;background:rgba(255,255,255,.04);border:1px solid rgba(232,197,71,.18)}" +
   ".pq-sun-wrap{animation:pqSunBreathe 2.8s ease-in-out infinite}" +
   ".pq-sun-wrap--pulse{animation:pqSunPulse .6s cubic-bezier(.34,1.56,.64,1) 2}" +
   ".pq-fill{height:100%;border-radius:999px;transition:width .75s cubic-bezier(.34,1.2,.64,1);will-change:width}" +
@@ -100,11 +110,17 @@ export const globalStyles =
   ".home-brand{text-align:center;padding:clamp(8px,2vw,12px) 0 0}" +
   ".home-brand-lockup{display:inline-flex;align-items:center;gap:clamp(12px,3vw,16px);margin-bottom:clamp(10px,2.5vw,14px)}" +
   ".home-brand-icon{display:flex;align-items:center;justify-content:center;flex-shrink:0;background:none;border:none;box-shadow:none;border-radius:0;padding:0}" +
-  ".home-brand-sun{display:inline-flex;animation:homeSunSpin 20s linear infinite;filter:drop-shadow(0 0 14px rgba(232,197,71,.4))}" +
+  ".home-brand-sun{display:inline-flex;background:none;overflow:visible;animation:homeSunSpin 20s linear infinite;filter:drop-shadow(0 0 14px rgba(232,197,71,.4))}" +
+  ".home-brand-sun svg{display:block;background:transparent}" +
   ".home-brand-text{text-align:left}" +
   ".home-brand-mark{font-family:" + FONT_DISPLAY + ";font-size:clamp(1.75rem,6vw,2rem);font-weight:700;line-height:1;margin:0;letter-spacing:0.02em;background:linear-gradient(135deg,#C9A227,#E8C547,#F5E6A8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}" +
   ".home-brand-by{font-size:10px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:rgba(232,197,71,.8);margin:6px 0 0}" +
   ".home-brand-tag{font-size:clamp(13px,3.4vw,14px);color:rgba(255,255,255,.55);margin:0;line-height:1.5;max-width:32ch;margin-left:auto;margin-right:auto;letter-spacing:-0.01em}" +
+  ".home-install-cta{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;max-width:280px;margin:clamp(10px,2.5vw,14px) auto 0;padding:11px 16px;border-radius:14px;" +
+  "font-size:13px;font-weight:600;font-family:inherit;text-decoration:none;cursor:pointer;color:#0a0800;" +
+  "background:linear-gradient(135deg,#C9A227,#E8C547);border:1px solid rgba(232,197,71,.5);box-shadow:0 4px 20px rgba(232,197,71,.2);transition:transform .15s,box-shadow .15s}" +
+  ".home-install-cta:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(232,197,71,.28)}" +
+  ".home-install-cta:active{transform:translateY(0)}" +
   ".home-steps{display:flex;justify-content:center;gap:clamp(6px,2vw,10px);flex-wrap:wrap;margin-top:clamp(14px,3.5vw,18px)}" +
   ".home-step-pill{padding:6px 12px;border-radius:999px;font-size:11px;font-weight:500;color:rgba(255,255,255,.5);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);letter-spacing:-0.01em}" +
   ".home-step-pill span{color:rgba(232,197,71,.85);font-weight:600;margin-right:4px}" +
@@ -136,43 +152,34 @@ export const globalStyles =
   ".section-body{animation:fadeIn .3s ease both}" +
   ".areas-scroll{-webkit-overflow-scrolling:touch;scrollbar-gutter:stable}" +
   ".gold-shimmer{background-size:200% auto;animation:shimmer 4s linear infinite}" +
-  ".sizer-screen{display:flex;flex-direction:column;min-height:0}" +
-  ".sizer-scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;max-height:min(calc(100vh - 280px),560px);padding-bottom:4px}" +
-  ".sizer-calculate{flex-shrink:0}";
+  ".sizer-screen{display:flex;flex-direction:column;min-height:0;flex:1}" +
+  ".sizer-scroll{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;min-height:0;max-height:min(calc(100dvh - 168px),640px);padding-bottom:8px}" +
+  ".sizer-header-outside{flex-shrink:0;margin-bottom:6px}" +
+  ".sizer-end-sentinel{height:1px;width:100%;pointer-events:none;visibility:hidden}" +
+  ".sizer-calculate-end{padding:14px 0 10px;margin-top:4px;border-top:1px solid rgba(255,255,255,.08);animation:pqEnter .35s cubic-bezier(.22,1,.36,1) both}";
 
-export function StepIndicator({ step, total, label }) {
+export function StepIndicator({ step, total }) {
+  if (!total || total < 2) return null;
   return React.createElement(
     "div",
-    { style: { marginBottom: 20 } },
-    React.createElement(
-      "div",
-      { style: { display: "flex", gap: 6, marginBottom: 10 } },
-      Array.from({ length: total }, (_, i) =>
-        React.createElement("div", {
-          key: i,
-          style: {
-            flex: 1,
-            height: 3,
-            borderRadius: 2,
-            background: i < step ? GRAD_GOLD : i === step ? "rgba(232,197,71,.5)" : "rgba(255,255,255,.08)",
-            transition: "background .35s ease",
-          },
-        })
-      )
-    ),
-    React.createElement(
-      "p",
-      {
+    {
+      style: { display: "flex", gap: 5, marginBottom: 12 },
+      role: "progressbar",
+      "aria-valuenow": step + 1,
+      "aria-valuemin": 1,
+      "aria-valuemax": total,
+    },
+    Array.from({ length: total }, (_, i) =>
+      React.createElement("div", {
+        key: i,
         style: {
-          color: G,
-          fontSize: 11,
-          fontWeight: 600,
-          letterSpacing: "0.12em",
-          textTransform: "uppercase",
-          marginBottom: 4,
+          flex: 1,
+          height: 3,
+          borderRadius: 2,
+          background: i <= step ? GRAD_GOLD : "rgba(255,255,255,.08)",
+          transition: "background .35s ease",
         },
-      },
-      "Step " + step + " of " + total + (label ? " · " + label : "")
+      })
     )
   );
 }
@@ -180,23 +187,23 @@ export function StepIndicator({ step, total, label }) {
 export function PageTitle({ title, subtitle }) {
   return React.createElement(
     "div",
-    { style: { marginBottom: 16 } },
+    { style: { marginBottom: subtitle ? 12 : 10 } },
     React.createElement(
       "h1",
       {
         style: {
           fontFamily: FONT_DISPLAY,
-          fontSize: "clamp(1.35rem, 4vw, 1.6rem)",
+          fontSize: "clamp(1.2rem, 4vw, 1.4rem)",
           fontWeight: 700,
           color: W10,
           lineHeight: 1.2,
-          marginBottom: subtitle ? 6 : 0,
+          marginBottom: subtitle ? 4 : 0,
         },
       },
       title
     ),
     subtitle &&
-      React.createElement("p", { style: { color: W4, fontSize: 13, lineHeight: 1.45, margin: 0 } }, subtitle)
+      React.createElement("p", { style: { color: W4, fontSize: 12, lineHeight: 1.35, margin: 0 } }, subtitle)
   );
 }
 
@@ -296,14 +303,7 @@ export function HomeBrand() {
     React.createElement(
       "p",
       { className: "home-brand-tag" },
-      "Professional solar sizing for Zimbabwe homes — tailored to how you actually use power."
-    ),
-    React.createElement(
-      "div",
-      { className: "home-steps", "aria-hidden": true },
-      React.createElement("span", { className: "home-step-pill" }, React.createElement("span", null, "1"), "Property"),
-      React.createElement("span", { className: "home-step-pill" }, React.createElement("span", null, "2"), "Load"),
-      React.createElement("span", { className: "home-step-pill" }, React.createElement("span", null, "3"), "Quote")
+      "Free solar sizing for Zimbabwe"
     )
   );
 }
@@ -341,11 +341,11 @@ export function EcoQuoteFootprint({ dWh, dailyGenWh }) {
           alignItems: "center",
           justifyContent: "center",
           gap: 6,
-          marginBottom: 4,
+          marginBottom: 2,
         },
       },
-      React.createElement(LeafIco, { s: 12, c: M }),
-      React.createElement("span", { style: { color: M, fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" } }, "Green impact estimate")
+      React.createElement(LeafIco, { s: 11, c: M }),
+      React.createElement("span", { style: { color: M, fontSize: 10, fontWeight: 600 } }, "Green impact")
     ),
     items.map((it) =>
       React.createElement(
@@ -469,7 +469,6 @@ export function PowerQuestMeter({ sizingLike, peakW, dailyWh }) {
   const runwayPct = Math.round(emptyZoneFrac * 100);
   const sunWarmth = custom ? 1 : Math.min(1, fillPct / 100);
   const sunColor = custom ? "rgba(248,113,113,.95)" : "rgba(232,197,71," + (0.25 + sunWarmth * 0.75) + ")";
-  const sunWrapClass = "pq-sun-wrap" + (unlockFlash ? " pq-sun-wrap--pulse" : "");
 
   const pkgName = activePkg?.name || firstPkg.name;
   const headline = custom
@@ -479,16 +478,6 @@ export function PowerQuestMeter({ sizingLike, peakW, dailyWh }) {
       : qualified
         ? pkgName
         : "Building your load";
-  const sub = custom
-    ? "Your load exceeds our largest package"
-    : qualified && litIndex >= 0
-      ? "Level " + (litIndex + 1) + " of " + pkgs.length
-      : qualifyingPct + "% to first package";
-  const statusLine = custom
-    ? "Tailored quote"
-    : qualified
-      ? "Add more appliances to level up"
-      : "Keep adding — lights & WiFi count";
 
   const fillClass = "pq-fill pq-fill--" + (custom ? "boss" : qualified ? "package" : "charge");
 
@@ -501,166 +490,67 @@ export function PowerQuestMeter({ sizingLike, peakW, dailyWh }) {
       (unlockFlash && i === 0 ? " pq-dot--pop" : "");
     return React.createElement(
       "div",
-      {
-        key: p.id,
-        style: {
-          flex: 1,
-          minWidth: 26,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          gap: 5,
-          opacity: unlocked || active ? 1 : 0.35,
-          transition: "opacity .4s ease",
-        },
-      },
+      { key: p.id, className: "pq-dot-wrap", style: { opacity: unlocked || active ? 1 : 0.3 } },
       React.createElement("span", {
         className: dotClass,
         style: {
-          width: active ? 11 : unlocked ? 8 : 6,
-          height: active ? 11 : unlocked ? 8 : 6,
+          display: "block",
+          width: active ? 7 : 5,
+          height: active ? 7 : 5,
           borderRadius: 999,
-          background: active ? G : unlocked ? "rgba(232,197,71,.9)" : "rgba(255,255,255,.15)",
-          boxShadow: active ? "0 0 12px rgba(232,197,71,.4)" : "none",
+          background: active ? G : unlocked ? "rgba(232,197,71,.85)" : "rgba(255,255,255,.12)",
+          boxShadow: active ? "0 0 8px rgba(232,197,71,.35)" : "none",
         },
-      }),
-      React.createElement(
-        "span",
-        {
-          style: {
-            color: active ? W10 : unlocked ? W8 : W4,
-            fontSize: 9,
-            fontWeight: active ? 700 : 500,
-            letterSpacing: "-0.02em",
-          },
-        },
-        p.kva + "k"
-      )
+        title: p.kva + " kVA",
+      })
     );
   });
 
+  const sunWrapClass = "pq-sun-wrap pq-sun-wrap--sm" + (unlockFlash ? " pq-sun-wrap--pulse" : "");
+
   return React.createElement(
     "div",
-    {
-      className: "power-quest",
-      style: {
-        padding: "16px",
-        margin: "8px 0 12px",
-        borderRadius: 16,
-        background:
-          "linear-gradient(145deg, rgba(18,32,26,.95) 0%, rgba(8,14,11,.98) 50%, rgba(12,20,16,.95) 100%)",
-        border: "1px solid rgba(255,255,255,.08)",
-        boxShadow: "0 8px 32px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06)",
-      },
-    },
+    { className: "power-quest power-quest--bar", role: "status", "aria-live": "polite" },
     React.createElement(
       "div",
-      { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 14 } },
+      { className: "pq-bar-row" },
       React.createElement(
         "div",
-        { style: { display: "flex", gap: 12, alignItems: "center", minWidth: 0, flex: 1 } },
-        React.createElement(
-          "div",
-          {
-            className: sunWrapClass,
-            style: {
-              width: 44,
-              height: 44,
-              borderRadius: 14,
-              background: "linear-gradient(135deg, rgba(255,255,255,.08), rgba(255,255,255,.02))",
-              border: "1px solid " + (custom ? "rgba(248,113,113,.3)" : "rgba(232,197,71,.2)"),
-              display: "grid",
-              placeItems: "center",
-              flexShrink: 0,
-            },
-          },
-          React.createElement(SunIco, { s: 22, c: sunColor })
-        ),
-        React.createElement(
-          "div",
-          { style: { minWidth: 0 } },
-          React.createElement(
-            "p",
-            {
-              style: {
-                color: G,
-                fontSize: 10,
-                letterSpacing: "0.16em",
-                textTransform: "uppercase",
-                margin: 0,
-                fontWeight: 600,
-              },
-            },
-            "Power Quest"
-          ),
-          React.createElement(
-            "p",
-            { style: { color: W10, fontSize: 15, fontWeight: 700, margin: "3px 0 2px", lineHeight: 1.2, letterSpacing: "-0.02em" } },
-            headline
-          ),
-          React.createElement("p", { style: { color: W6, fontSize: 11, margin: 0 } }, sub)
-        )
+        { className: sunWrapClass },
+        React.createElement(SunIco, { s: 18, c: sunColor })
       ),
       React.createElement(
         "div",
-        { style: { textAlign: "right", flexShrink: 0 } },
+        { className: "pq-bar-main" },
         React.createElement(
-          "p",
-          { style: { color: W8, fontSize: 11, margin: 0, fontVariantNumeric: "tabular-nums", fontWeight: 500 } },
-          (peakW || 0).toLocaleString() + " W"
+          "div",
+          { className: "pq-bar-top" },
+          React.createElement("p", { className: "pq-bar-title" }, headline),
+          React.createElement(
+            "span",
+            { className: "pq-bar-stats" },
+            (peakW || 0).toLocaleString() + "W · " + fmtWh(dailyWh)
+          )
         ),
-        React.createElement("p", { style: { color: W4, fontSize: 10, margin: "2px 0 0" } }, fmtWh(dailyWh)),
         React.createElement(
-          "p",
-          {
-            style: {
-              color: custom ? "#F87171" : qualified ? M : G,
-              fontSize: 10,
-              marginTop: 6,
-              fontWeight: 600,
-            },
-          },
-          statusLine
-        )
+          "div",
+          { className: "pq-bar-track pq-track-glow" },
+          !custom &&
+            React.createElement("div", {
+              style: {
+                position: "absolute",
+                left: runwayPct + "%",
+                top: 0,
+                bottom: 0,
+                width: 1,
+                background: "rgba(232,197,71,.35)",
+                zIndex: 1,
+              },
+            }),
+          React.createElement("div", { className: fillClass, style: { width: fillPct + "%", height: "100%" } })
+        ),
+        React.createElement("div", { className: "pq-dots-row" }, tierDots)
       )
-    ),
-    React.createElement(
-      "div",
-      { className: "pq-track-glow", style: { position: "relative", marginBottom: 14 } },
-      React.createElement(
-        "div",
-        {
-          style: {
-            position: "relative",
-            height: 10,
-            borderRadius: 999,
-            background: "rgba(0,0,0,.45)",
-            overflow: "hidden",
-            boxShadow: "inset 0 2px 6px rgba(0,0,0,.4)",
-          },
-        },
-        !custom &&
-          React.createElement("div", {
-            style: {
-              position: "absolute",
-              left: runwayPct + "%",
-              top: 2,
-              bottom: 2,
-              width: 1,
-              background: "rgba(232,197,71,.35)",
-              zIndex: 1,
-            },
-          }),
-        React.createElement("div", {
-          className: fillClass,
-          style: { width: fillPct + "%" },
-        })
-      )
-    ),
-    React.createElement(
-      "div",
-      { style: { display: "flex", justifyContent: "space-between", gap: 2, padding: "0 1px" } },
-      tierDots
     )
   );
 }
@@ -1147,45 +1037,22 @@ export function BtnWhatsApp({ href, label, sublabel, full }) {
   );
 }
 
-export function ItemGroupHeader({ label, hint, color, iconKey, first }) {
+export function ItemGroupHeader({ label, color, iconKey, first }) {
   const col = color || G;
   return React.createElement(
     "div",
     {
       style: {
         display: "flex",
-        alignItems: "flex-start",
-        gap: 10,
-        padding: first ? "4px 4px 8px" : "14px 4px 8px",
-        marginTop: first ? 0 : 8,
+        alignItems: "center",
+        gap: 8,
+        padding: first ? "2px 0 6px" : "10px 0 6px",
+        marginTop: first ? 0 : 4,
         borderTop: first ? "none" : "1px solid rgba(255,255,255,.06)",
       },
     },
-    React.createElement(
-      IconTile,
-      { size: 32, color: col },
-      React.createElement(CategoryIcon, { iconKey: iconKey, s: 15, c: col })
-    ),
-    React.createElement(
-      "div",
-      { style: { minWidth: 0 } },
-      React.createElement(
-        "p",
-        {
-          style: {
-            color: W10,
-            fontSize: 12,
-            fontWeight: 700,
-            letterSpacing: "0.06em",
-            textTransform: "uppercase",
-            margin: 0,
-          },
-        },
-        label
-      ),
-      hint &&
-        React.createElement("p", { style: { color: W4, fontSize: 11, margin: "4px 0 0", lineHeight: 1.4 } }, hint)
-    )
+    React.createElement(IconTile, { size: 28, color: col }, React.createElement(CategoryIcon, { iconKey: iconKey, s: 14, c: col })),
+    React.createElement("p", { style: { color: W10, fontSize: 12, fontWeight: 600, margin: 0, letterSpacing: "-0.01em" } }, label)
   );
 }
 

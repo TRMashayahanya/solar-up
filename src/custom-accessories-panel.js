@@ -17,7 +17,6 @@ import {
   isRestrictedCustomLabel,
   isRestrictedLibraryEntry,
   RESTRICTED_USER_MESSAGE,
-  RESTRICTED_SHORT_NOTE,
 } from "./restricted-appliances.js";
 
 const panelBg = {

@@ -5,7 +5,6 @@ import {
   HARARE_INSTALL_INCLUDED_NOTE,
   OUTSIDE_DEALER_ADVISORY,
   OUTSIDE_DELIVERY_PER_KM_USD,
-  PACKAGE_PRICE_NOTE,
   getDeliveryQuote,
 } from "./delivery.js";
 
@@ -63,7 +62,7 @@ export function DeliveryInstallOption({ opts, onChange, productTotal, variant = 
         React.createElement(
           "p",
           { style: { color: W4, fontSize: compact ? 11 : 12, margin: 0, lineHeight: 1.45 } },
-          PACKAGE_PRICE_NOTE
+          "Harare install included on packages."
         )
       )
     ),

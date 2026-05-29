@@ -175,28 +175,10 @@ export function ClientModal(p) {
       ),
       React.createElement(
         "p",
-        { style: { color: W4, fontSize: 12, margin: "0 0 16px", lineHeight: 1.45 } },
+        { style: { color: W4, fontSize: 12, margin: "0 0 14px", lineHeight: 1.45 } },
         customQuote
-          ? "Tell us about your site — we'll size a system on WhatsApp and send a quote built for your load."
-          : "Get your official PDF quote, then chat with Energi Tech on WhatsApp to confirm payment and book installation (Harare install included on packages)."
-      ),
-      React.createElement(
-        "p",
-        {
-          style: {
-            margin: "0 0 12px",
-            padding: "8px 10px",
-            borderRadius: 8,
-            background: "rgba(232,197,71,.1)",
-            border: "1px solid rgba(232,197,71,.25)",
-            color: "rgba(255,255,255,.7)",
-            fontSize: 11,
-            lineHeight: 1.45,
-          },
-        },
-        React.createElement("strong", { style: { color: G } }, "Valid " + validity.days + " days"),
-        " on PDF · expires ",
-        validity.validUntilLabel
+          ? "We'll confirm sizing on WhatsApp and send your PDF."
+          : "PDF quote · WhatsApp to confirm payment · valid " + validity.days + " days"
       ),
       !customQuote &&
         React.createElement(DeliveryInstallOption, {

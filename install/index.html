@@ -25,11 +25,11 @@
       }
       .hero { text-align: center; margin-bottom: 20px; }
       .sun {
-        width: 64px;
-        height: 64px;
+        display: inline-flex;
         animation: spin 20s linear infinite;
         filter: drop-shadow(0 0 16px rgba(232, 197, 71, 0.45));
       }
+      .sun svg { display: block; }
       @keyframes spin { to { transform: rotate(360deg); } }
       @media (prefers-reduced-motion: reduce) { .sun { animation: none; } }
       h1 {
@@ -208,7 +208,12 @@
   <body>
     <div class="wrap">
       <header class="hero">
-        <img class="sun" src="/icons/icon.svg" width="64" height="64" alt="" />
+        <span class="sun" aria-hidden="true">
+          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#E8C547" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4.5"/>
+            <path d="M12 1.5v3M12 19.5v3M3.22 3.22l2.12 2.12M18.66 18.66l2.12 2.12M1.5 12h3M19.5 12h3M3.22 20.78l2.12-2.12M18.66 5.34l2.12-2.12"/>
+          </svg>
+        </span>
         <h1>Install SolarApp</h1>
         <p class="lead" id="lead">Add to your home screen — works like an app, no app store.</p>
       </header>
