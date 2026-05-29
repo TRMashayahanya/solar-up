@@ -3,16 +3,14 @@
  * viewBox 0 0 24 24 · stroke-only (no fill on ring) · stroke-width 1.2 · #E8C547
  */
 
-export const ICON_VERSION = "sun2";
+export const ICON_VERSION = "sun3";
 export const SUN_VIEWBOX = 24;
 
 export const SUN_BG = "#040608";
 export const SUN_STROKE = "#E8C547";
 export const SUN_STROKE_WIDTH = 1.2;
 
-/** Rounded app-tile corner radius in viewBox units (≈108px at 512). */
-export const SUN_ICON_CORNER_RX = 5.0625;
-
+/** In-app home logo stroke — unchanged. */
 export const SUN_RING = { cx: 12, cy: 12, r: 4.5 };
 
 /** Same path as SunIco — do not edit without updating the rasterizer. */
@@ -31,16 +29,21 @@ export const SUN_RAY_SEGMENTS = [
   [18.66, 5.34, 20.78, 3.22],
 ];
 
-/** Drop-shadow on home brand at 28px — scale glow for raster icons. */
-export function sunGlowRadiusPx(iconPx) {
-  return (14 * iconPx) / 28;
+/** PWA / home-screen tile — inset sun for safe zone (maskable + iOS). */
+export const ICON_TILE_CORNER_RX = 5.0625;
+export const ICON_SUN_SCALE = 0.68;
+export const ICON_STROKE_WIDTH = 1.38;
+
+export function mapIconPoint(x, y) {
+  return [(x - 12) * ICON_SUN_SCALE + 12, (y - 12) * ICON_SUN_SCALE + 12];
 }
 
 export function sunIconSvgMarkup() {
   return (
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${SUN_VIEWBOX} ${SUN_VIEWBOX}" fill="none">` +
-    `<rect width="${SUN_VIEWBOX}" height="${SUN_VIEWBOX}" rx="${SUN_ICON_CORNER_RX}" fill="${SUN_BG}"/>` +
-    `<g stroke="${SUN_STROKE}" stroke-width="${SUN_STROKE_WIDTH}" stroke-linecap="round" stroke-linejoin="round">` +
+    `<rect width="${SUN_VIEWBOX}" height="${SUN_VIEWBOX}" rx="${ICON_TILE_CORNER_RX}" fill="${SUN_BG}"/>` +
+    `<g transform="translate(12 12) scale(${ICON_SUN_SCALE}) translate(-12 -12)" ` +
+    `stroke="${SUN_STROKE}" stroke-width="${ICON_STROKE_WIDTH}" stroke-linecap="round" stroke-linejoin="round">` +
     `<circle cx="${SUN_RING.cx}" cy="${SUN_RING.cy}" r="${SUN_RING.r}"/>` +
     `<path d="${SUN_RAY_D}"/>` +
     `</g></svg>`

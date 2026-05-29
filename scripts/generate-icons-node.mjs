@@ -1,7 +1,6 @@
 #!/usr/bin/env node
 /**
- * Build PNG app icons — rasterize sun-icon-geometry (same as home SunIco).
- * macOS: uses sips for PPM → PNG.
+ * Build PNG app icons — SunIco geometry, inset for tile safe zone, no glow.
  */
 import { execFileSync } from "child_process";
 import fs from "fs";
@@ -9,18 +8,16 @@ import path from "path";
 import { fileURLToPath } from "url";
 import {
   SUN_VIEWBOX,
-  SUN_BG,
-  SUN_STROKE,
-  SUN_STROKE_WIDTH,
-  SUN_ICON_CORNER_RX,
+  ICON_TILE_CORNER_RX,
+  ICON_STROKE_WIDTH,
+  ICON_SUN_SCALE,
   SUN_RING,
   SUN_RAY_SEGMENTS,
-  sunGlowRadiusPx,
+  mapIconPoint,
   sunIconSvgMarkup,
 } from "../src/sun-icon-geometry.js";
 
 const iconsDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "..", "icons");
-
 const BG = [4, 6, 8];
 const GOLD = [232, 197, 71];
 
@@ -49,23 +46,26 @@ function insideRoundRect(x, y, size, cornerR) {
   return true;
 }
 
-function drawIcon(size) {
-  const scale = size / SUN_VIEWBOX;
-  const cx = (SUN_RING.cx * size) / SUN_VIEWBOX;
-  const cy = (SUN_RING.cy * size) / SUN_VIEWBOX;
-  const ringR = SUN_RING.r * scale;
-  const strokeW = SUN_STROKE_WIDTH * scale;
-  const halfStroke = strokeW / 2;
-  const cornerR = SUN_ICON_CORNER_RX * scale;
-  const aa = Math.max(0.75, strokeW * 0.12);
-  const glowR = sunGlowRadiusPx(size);
+function toPx(coord, size) {
+  return (coord * size) / SUN_VIEWBOX;
+}
 
-  const rays = SUN_RAY_SEGMENTS.map(([x0, y0, x1, y1]) => [
-    (x0 * size) / SUN_VIEWBOX,
-    (y0 * size) / SUN_VIEWBOX,
-    (x1 * size) / SUN_VIEWBOX,
-    (y1 * size) / SUN_VIEWBOX,
-  ]);
+function drawIcon(size) {
+  const unit = size / SUN_VIEWBOX;
+  const [rcx, rcy] = mapIconPoint(SUN_RING.cx, SUN_RING.cy);
+  const cx = toPx(rcx, size);
+  const cy = toPx(rcy, size);
+  const ringR = SUN_RING.r * ICON_SUN_SCALE * unit;
+  const strokeW = ICON_STROKE_WIDTH * unit;
+  const halfStroke = strokeW / 2;
+  const cornerR = ICON_TILE_CORNER_RX * unit;
+  const aa = Math.max(0.6, strokeW * 0.1);
+
+  const rays = SUN_RAY_SEGMENTS.map(([x0, y0, x1, y1]) => {
+    const [mx0, my0] = mapIconPoint(x0, y0);
+    const [mx1, my1] = mapIconPoint(x1, y1);
+    return [toPx(mx0, size), toPx(my0, size), toPx(mx1, size), toPx(my1, size)];
+  });
 
   const data = Buffer.alloc(size * size * 3);
 
@@ -90,8 +90,7 @@ function drawIcon(size) {
     for (const [x0, y0, x1, y1] of rays) {
       minDist = Math.min(minDist, distToSegment(px, py, x0, y0, x1, y1));
     }
-    const ringDist = Math.abs(Math.hypot(px - cx, py - cy) - ringR);
-    minDist = Math.min(minDist, ringDist);
+    minDist = Math.min(minDist, Math.abs(Math.hypot(px - cx, py - cy) - ringR));
     return smoothstep(halfStroke + aa, halfStroke - aa, minDist);
   }
 
@@ -99,21 +98,8 @@ function drawIcon(size) {
     for (let x = 0; x < size; x++) {
       if (!insideRoundRect(x, y, size, cornerR)) continue;
       setPixel(x, y, BG);
-
-      const px = x + 0.5;
-      const py = y + 0.5;
-      const cov = strokeCoverage(px, py);
+      const cov = strokeCoverage(x + 0.5, y + 0.5);
       if (cov > 0) blendPixel(x, y, GOLD, cov);
-
-      let minDist = Infinity;
-      for (const [x0, y0, x1, y1] of rays) {
-        minDist = Math.min(minDist, distToSegment(px, py, x0, y0, x1, y1));
-      }
-      minDist = Math.min(minDist, Math.abs(Math.hypot(px - cx, py - cy) - ringR));
-      if (minDist < glowR) {
-        const glowA = 0.38 * (1 - minDist / glowR) * (1 - minDist / glowR);
-        if (glowA > 0.01) blendPixel(x, y, GOLD, glowA);
-      }
     }
   }
 
@@ -143,5 +129,5 @@ for (const [size, name] of [
   if (ss > 1) {
     execFileSync("sips", ["-z", String(size), String(size), png], { stdio: "pipe" });
   }
-  console.log("Created", name, `(${size}px, SunIco geometry${ss > 1 ? ", 2× supersampled" : ""})`);
+  console.log("Created", name, `(${size}px, inset SunIco, no glow)`);
 }

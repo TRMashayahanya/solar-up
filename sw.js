@@ -1,6 +1,6 @@
 /** SolarApp — service worker (installable PWA; network-first for app code) */
-const CACHE = "solarapp-shell-v26";
-const ICON_VER = "sun2";
+const CACHE = "solarapp-shell-v27";
+const ICON_VER = "sun3";
 
 const SHELL = [
   "/",

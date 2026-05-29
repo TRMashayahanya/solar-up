@@ -1,7 +1,7 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 
-const BUILD = "31";
+const BUILD = "32";
 
 function showBootError(message, detail) {
   const root = document.getElementById("root");
