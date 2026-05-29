@@ -1,4 +1,4 @@
-/** Design tokens — Solar Up × Energi Tech */
+/** Design tokens — SolarApp × Energi Tech */
 export const G = "#E8C547";
 export const GD = "#C9A227";
 export const G_DIM = "rgba(232,197,71,.15)";

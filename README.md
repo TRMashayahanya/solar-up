@@ -1,6 +1,6 @@
-# Solar Up — System Sizer
+# SolarApp — System Sizer
 
-**Free** solar system sizing for Zimbabwe, powered by **Energi Tech**. Pick property type, adjust a flat list of appliances, get a sized system and PDF quote.
+**Free** solar system sizing for Zimbabwe, powered by **Energi Tech** (formerly branded Solar Up). Pick property type, adjust a flat list of appliances, get a sized system and PDF quote.
 
 ## Run locally
 
@@ -54,4 +54,4 @@ curl -H "X-Admin-Key: your-secret" http://localhost:5173/api/leads
 
 ## Contact
 
-**Solar Up** · Powered by Energi Tech · 0773757018 · @SolarUp
+**SolarApp** · Powered by Energi Tech · 0773757018 · WhatsApp

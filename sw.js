@@ -1,5 +1,5 @@
-/** Solar Up — service worker (enables “Install app” on Android + faster reopen) */
-const CACHE = "solarup-shell-v3";
+/** SolarApp — service worker (installable PWA; network-first for app code) */
+const CACHE = "solarapp-shell-v24";
 
 const SHELL = [
   "/",
@@ -32,6 +32,18 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+function networkFirst(request) {
+  return fetch(request)
+    .then((response) => {
+      if (response && response.status === 200) {
+        const copy = response.clone();
+        caches.open(CACHE).then((cache) => cache.put(request, copy));
+      }
+      return response;
+    })
+    .catch(() => caches.match(request));
+}
+
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
 
@@ -39,19 +51,27 @@ self.addEventListener("fetch", (event) => {
   if (url.origin !== self.location.origin) return;
 
   if (event.request.mode === "navigate") {
-    event.respondWith(
-      fetch(event.request).catch(() => caches.match("/index.html"))
-    );
+    event.respondWith(networkFirst(event.request).catch(() => caches.match("/index.html")));
     return;
   }
 
-  const isAppFile =
+  const isAppCode =
     url.pathname.startsWith("/src/") ||
+    url.pathname.startsWith("/vendor/") ||
+    url.pathname === "/sw.js" ||
+    url.pathname.startsWith("/admin/");
+
+  if (isAppCode) {
+    event.respondWith(networkFirst(event.request));
+    return;
+  }
+
+  const isStatic =
     url.pathname.startsWith("/icons/") ||
     url.pathname.startsWith("/install/") ||
     url.pathname.endsWith(".webmanifest");
 
-  if (!isAppFile) return;
+  if (!isStatic) return;
 
   event.respondWith(
     caches.match(event.request).then(

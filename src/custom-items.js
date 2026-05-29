@@ -1,5 +1,7 @@
 /** Client-added appliances not in the catalog. */
 
+import { isRestrictedCustomLabel } from "./restricted-appliances.js";
+
 export function newCustomItem(seed) {
   const row = {
     id: "cus_" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
@@ -21,8 +23,8 @@ export function newCustomItem(seed) {
 }
 
 export function isCustomItemActive(item) {
+  if (!item || isRestrictedCustomLabel(item.label)) return false;
   return (
-    item &&
     (item.qty || 0) > 0 &&
     String(item.label || "").trim().length >= 1 &&
     Number(item.w) > 0 &&

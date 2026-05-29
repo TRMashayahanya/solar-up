@@ -1,6 +1,7 @@
 import { CATS } from "./data.js";
 import { PRESETS } from "./prefills.js";
 import { getCategoryCopy } from "./copy.js";
+import { isRestrictedCatalogItemId } from "./restricted-appliances.js";
 
 /** Flat appliance list for a property type — no room sections. */
 export function getItemsForProperty(propType) {
@@ -16,11 +17,13 @@ export function getGroupedItemsForProperty(propType) {
   for (const cat of CATS) {
     if (skip.has(cat.id)) continue;
     const copy = getCategoryCopy(propType, cat.id);
-    const items = cat.items.map((it) => ({
-      ...it,
-      catId: cat.id,
-      tailoredHint: copy.itemHints?.[it.id],
-    }));
+    const items = cat.items
+      .filter((it) => !isRestrictedCatalogItemId(it.id))
+      .map((it) => ({
+        ...it,
+        catId: cat.id,
+        tailoredHint: copy.itemHints?.[it.id],
+      }));
     groups.push({
       catId: cat.id,
       label: copy.label || cat.q,

@@ -11,7 +11,6 @@ export const PRESETS = {
       ess_phone: 2,
       off_laptop: 1,
       kit_fridge: 1,
-      kit_kettle: 1,
       lng_tv: 1,
       lng_dstv: 1,
       bath_geyser: 1,
@@ -29,7 +28,6 @@ export const PRESETS = {
       ess_phone: 2,
       off_laptop: 1,
       kit_fridge: 1,
-      kit_micro: 1,
       lng_tv: 1,
       bath_geyser: 1,
       out_alarm: 1,
@@ -48,7 +46,6 @@ export const PRESETS = {
       bed_tv: 2,
       bed_ac: 1,
       kit_fridge: 1,
-      kit_kettle: 1,
       lng_tv: 1,
       lng_dstv: 1,
       bath_geyser: 1,
@@ -148,13 +145,10 @@ export const PRESETS = {
   },
 };
 
+/** Property pick — categories only; all appliance counts start at zero. */
 export function applyPreset(propValue) {
   const preset = PRESETS[propValue] || PRESETS.family_home;
   const skipped = {};
   for (const id of preset.skipCats || []) skipped[id] = true;
-  const qtys = { ...preset.qtys };
-  for (const k of Object.keys(qtys)) {
-    if (!qtys[k]) delete qtys[k];
-  }
-  return { qtys, skipped };
+  return { qtys: {}, skipped };
 }

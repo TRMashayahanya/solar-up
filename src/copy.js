@@ -3,8 +3,8 @@
 const DEFAULT = {
   buildingTitle: "Your load",
   buildingSubtitle: "Only items that match your property — adjust counts, then Calculate.",
-  homeTagline: "Free sizing for Zimbabwe homes & businesses.",
-  homeSteps: "Pick your property → tailor the list → PDF quote.",
+  homeTagline: "SolarApp by Energi Tech — free sizing for Zimbabwe homes & businesses.",
+  homeSteps: "Pick property → add only what you use → Calculate → PDF quote.",
 };
 
 export const PROP_COPY = {
@@ -65,7 +65,7 @@ export const CAT_COPY = {
     accessories: { label: "Accessories & gadgets", hint: "Laptops, desktop, printer — homework & home office" },
     bedroom: { label: "Bedrooms", hint: "TV & AC per room — not lights" },
     lounge: { label: "Lounge & TV", hint: "Main living entertainment" },
-    kitchen: { label: "Kitchen", hint: "Fridge runs 24/7 — kettle is short bursts" },
+    kitchen: { label: "Kitchen", hint: "Fridge runs 24/7 — no kettles/microwaves in app" },
     bathroom: { label: "Hot water", hint: "Geyser is often the biggest load" },
     outdoor: { label: "Security & outdoor", hint: "Lights, CCTV, alarm" },
     water: { label: "Borehole", hint: "Add if you pump water" },
@@ -75,7 +75,7 @@ export const CAT_COPY = {
     essentials: { label: "Home basics", hint: "All room lights counted here" },
     accessories: { label: "Accessories", hint: "Laptop, PC, printer if you use them" },
     lounge: { label: "Living room", hint: "TV & decoder" },
-    kitchen: { label: "Kitchen", hint: "Fridge + kettle" },
+    kitchen: { label: "Kitchen", hint: "Fridge & freezer" },
     bathroom: { label: "Geyser", hint: "Usually your peak load" },
     outdoor: { label: "Security", hint: "Flood lights & alarm" },
     laundry: { label: "Laundry", hint: "Washing machine" },
@@ -84,7 +84,7 @@ export const CAT_COPY = {
     essentials: { label: "Flat basics", hint: "Lights, fan, WiFi, chargers" },
     accessories: { label: "Accessories", hint: "Laptop & gadgets for work or study" },
     lounge: { label: "Lounge", hint: "TV" },
-    kitchen: { label: "Kitchen", hint: "Fridge & microwave" },
+    kitchen: { label: "Kitchen", hint: "Fridge & freezer" },
     bathroom: { label: "Geyser", hint: "Check size with your plumber" },
     outdoor: { label: "Security", hint: "Alarm system" },
   },
@@ -175,13 +175,13 @@ export function getOtherAccessoriesCopy(propType) {
 export function advisorPrompt(propType, propLabel, sz) {
   const c = getPropCopy(propType);
   return (
-    "Solar Up Zimbabwe. " +
+    "SolarApp Zimbabwe. " +
     (propLabel || propType) +
     ". " +
     sz.kva +
     "kVA, $" +
     sz.tot +
     ". " +
-    "Free sizing via Solar Up."
+    "Free sizing via SolarApp."
   );
 }

@@ -2,11 +2,13 @@
   "name": "solar-up",
   "type": "module",
   "private": true,
-  "description": "Free solar sizer for Zimbabwe — Energi Tech",
+  "description": "SolarApp — free solar sizer for Zimbabwe — Energi Tech",
   "scripts": {
     "start": "node server.mjs",
     "dev": "node server.mjs",
-    "icons": "node scripts/generate-icons-node.mjs"
+    "icons": "node scripts/generate-icons-node.mjs",
+    "test:power-quest": "node scripts/test-power-quest.mjs",
+    "test:budget": "node scripts/test-budget-search.mjs"
   },
   "engines": {
     "node": "22.x"

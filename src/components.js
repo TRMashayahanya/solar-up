@@ -13,7 +13,7 @@ export class ErrorBoundary extends React.Component {
     return { error };
   }
   componentDidCatch(error, info) {
-    console.error("Solar Up render error:", error, info);
+    console.error("SolarApp render error:", error, info);
   }
   render() {
     if (this.state.error) {
@@ -96,6 +96,7 @@ export function ClientModal(p) {
   const onDone = p.onDone;
   const busy = p.busy;
   const err = p.error || "";
+  const customQuote = !!p.customQuote;
   const deliveryOpts = p.deliveryOpts || { enabled: false, zone: "harare" };
   const onDeliveryChange = p.onDeliveryChange;
   const productTotal = p.productTotal || 0;
@@ -166,12 +167,18 @@ export function ClientModal(p) {
         "div",
         { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 6 } },
         React.createElement(PrtIco, { s: 18, c: G }),
-        React.createElement("h3", { style: { fontFamily: "serif", color: "#fff", fontSize: 20, fontWeight: 600, margin: 0 } }, "Your details")
+        React.createElement(
+          "h3",
+          { style: { fontFamily: "serif", color: "#fff", fontSize: 20, fontWeight: 600, margin: 0 } },
+          customQuote ? "Get your custom quote" : "Secure your package"
+        )
       ),
       React.createElement(
         "p",
         { style: { color: W4, fontSize: 12, margin: "0 0 16px", lineHeight: 1.45 } },
-        "Required to download your PDF quote. Choose delivery below — it appears on your printed quotation only if you select it."
+        customQuote
+          ? "Tell us about your site — we'll size a system on WhatsApp and send a quote built for your load."
+          : "Get your official PDF quote, then chat with Energi Tech on WhatsApp to confirm payment and book installation (Harare install included on packages)."
       ),
       React.createElement(
         "p",
@@ -191,12 +198,13 @@ export function ClientModal(p) {
         " on PDF · expires ",
         validity.validUntilLabel
       ),
-      React.createElement(DeliveryInstallOption, {
-        opts: deliveryOpts,
-        onChange: onDeliveryChange,
-        productTotal,
-        variant: "modal",
-      }),
+      !customQuote &&
+        React.createElement(DeliveryInstallOption, {
+          opts: deliveryOpts,
+          onChange: onDeliveryChange,
+          productTotal,
+          variant: "modal",
+        }),
       React.createElement("div", { style: lbl }, React.createElement(UsrIco, { s: 13, c: G }), "Name *"),
       React.createElement("input", { value: form.name, onChange: upd("name"), required: true, style: inp }),
       React.createElement("div", { style: lbl }, React.createElement(PhIco, { s: 13, c: G }), "Phone / WhatsApp *"),
@@ -273,7 +281,13 @@ export function ClientModal(p) {
             },
           },
           React.createElement(PrtIco, { s: 14, c: ok ? "#0a0800" : W4 }),
-          busy ? "Saving…" : "Save & download PDF"
+          busy
+            ? customQuote
+              ? "Sending to Energi Tech…"
+              : "Preparing your quote…"
+            : customQuote
+              ? "Get my custom quote on WhatsApp"
+              : "Get my quote & pay on WhatsApp"
         )
       )
     )

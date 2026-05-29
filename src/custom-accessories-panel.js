@@ -13,6 +13,12 @@ import {
   findBestLibraryMatch,
 } from "./custom-suggest.js";
 import { getUnifiedSuggestions, seedsFromEntries } from "./custom-predict.js";
+import {
+  isRestrictedCustomLabel,
+  isRestrictedLibraryEntry,
+  RESTRICTED_USER_MESSAGE,
+  RESTRICTED_SHORT_NOTE,
+} from "./restricted-appliances.js";
 
 const panelBg = {
   marginTop: 14,
@@ -88,6 +94,7 @@ function CustomAccessoryRow({ item, onChange, onRemove, onPatch }) {
   const filled = isAutoFilled(item);
 
   function autoFillFromName() {
+    if (isRestrictedCustomLabel(item.label)) return;
     const enrich = suggestEnrichment(item.label, item.w, item.dh);
     if (!enrich || enrich.score < 0.55 || !onPatch) return;
     onPatch(item.id, {
@@ -278,6 +285,7 @@ export function CustomAccessoriesPanel({
   const [open, setOpen] = useState(false);
   const [hi, setHi] = useState(0);
   const [moreChips, setMoreChips] = useState(false);
+  const [blockMsg, setBlockMsg] = useState("");
   const wrapRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -294,7 +302,7 @@ export function CustomAccessoriesPanel({
     try {
       return getUnifiedSuggestions(propType, ctx, 12);
     } catch (err) {
-      console.error("Solar Up: suggestions failed", err);
+      console.error("SolarApp: suggestions failed", err);
       try {
         return getPropertySuggestions(propType, ctx).map((e) => ({
           ...e,
@@ -314,7 +322,10 @@ export function CustomAccessoriesPanel({
   const visibleGeneral = general.slice(0, chipLimit);
   const hiddenGeneral = general.length - visibleGeneral.length;
 
-  const matches = useMemo(() => searchSuggestions(query, propType, 6), [query, propType]);
+  const matches = useMemo(
+    () => searchSuggestions(query, propType, 6).filter((e) => !isRestrictedLibraryEntry(e)),
+    [query, propType]
+  );
 
   useEffect(() => {
     setHi(0);
@@ -340,6 +351,11 @@ export function CustomAccessoriesPanel({
           }
         : seedFromLibrary(seedOrEntry);
     if (!row?.label) return;
+    if (isRestrictedCustomLabel(row.label) || (seedOrEntry?.id && isRestrictedLibraryEntry(seedOrEntry))) {
+      setBlockMsg(RESTRICTED_USER_MESSAGE);
+      return;
+    }
+    setBlockMsg("");
     onAddFromSeed(row);
     setQuery("");
     setOpen(false);
@@ -348,7 +364,10 @@ export function CustomAccessoriesPanel({
 
   function commitQuery() {
     const parsed = parseQuickInput(query);
-    if (!parsed) return;
+    if (!parsed) {
+      if (query.trim() && isRestrictedCustomLabel(query)) setBlockMsg(RESTRICTED_USER_MESSAGE);
+      return;
+    }
     addSeed({
       label: parsed.label,
       w: parsed.w,
@@ -408,7 +427,7 @@ export function CustomAccessoriesPanel({
         React.createElement(
           "span",
           { style: { color: W4, fontSize: 10, marginTop: 2, display: "block" } },
-          "Suggestions from your list — tap to add, watts & hours fill automatically"
+          "Heating elements excluded · other items tap to add"
         )
       ),
       loadBased.length > 0 &&
@@ -459,6 +478,24 @@ export function CustomAccessoriesPanel({
         )
       ),
 
+    blockMsg &&
+      React.createElement(
+        "p",
+        {
+          style: {
+            color: "#f87171",
+            fontSize: 11,
+            lineHeight: 1.45,
+            margin: "0 0 10px",
+            padding: "8px 10px",
+            borderRadius: 8,
+            background: "rgba(248,113,113,.08)",
+            border: "1px solid rgba(248,113,113,.25)",
+          },
+        },
+        blockMsg
+      ),
+
     React.createElement(
       "div",
       { ref: wrapRef, style: { position: "relative", marginBottom: visibleGeneral.length || items.length ? 10 : 0 } },
@@ -480,10 +517,11 @@ export function CustomAccessoriesPanel({
           ref: inputRef,
           type: "text",
           value: query,
-          placeholder: "Type anything — we match name, watts & hours",
+          placeholder: "Add item (no kettles, microwaves, irons…)",
           onChange: (e) => {
             setQuery(e.target.value);
             setOpen(true);
+            if (blockMsg) setBlockMsg("");
           },
           onFocus: () => setOpen(true),
           onKeyDown: onKeyDown,

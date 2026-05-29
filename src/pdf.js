@@ -34,7 +34,7 @@ export async function downloadQuotePdf(client, sz, appList, propLabel, deliveryQ
     await html2pdf()
       .set({
         margin: [8, 8, 8, 8],
-        filename: "SolarUp-Quote-" + ref + ".pdf",
+        filename: "SolarApp-Quote-" + ref + ".pdf",
         image: { type: "jpeg", quality: 0.96 },
         html2canvas: { scale: 2, useCORS: true, logging: false },
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
@@ -55,7 +55,7 @@ export async function downloadQuotePdf(client, sz, appList, propLabel, deliveryQ
 export function printQuoteFallback(client, sz, appList, propLabel, deliveryQuote) {
   const { ref, body } = buildQuoteDocument(client, sz, appList, propLabel, deliveryQuote);
   const html =
-    "<!DOCTYPE html><html><head><meta charset='utf-8'><title>SolarUp " +
+    "<!DOCTYPE html><html><head><meta charset='utf-8'><title>SolarApp " +
     ref +
     "</title></head><body style='margin:0;background:#fff'>" +
     body +

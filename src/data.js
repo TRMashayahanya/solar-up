@@ -77,8 +77,6 @@ export const CATS = [
     items: [
       { id: "kit_fridge", label: "Fridge", sub: "150W", w: 150, iconKey: "fridge", dh: 24 },
       { id: "kit_freeze", label: "Freezer", sub: "150W", w: 150, iconKey: "freezer", dh: 24 },
-      { id: "kit_kettle", label: "Kettle", sub: "1500W", w: 1500, iconKey: "kettle", dh: 0.3 },
-      { id: "kit_micro", label: "Microwave", sub: "900W", w: 900, iconKey: "microwave", dh: 0.5 },
     ],
   },
   {
@@ -175,7 +173,7 @@ const CATALOG_TAB_LABEL = {
 
 /** Home — short general enquiry. */
 export function homeWhatsAppMessage() {
-  return "Hi Energi Tech — I used Solar Up and need help with solar. My name & area:";
+  return "Hi Energi Tech — I used SolarApp and need help with solar. My name & area:";
 }
 
 export function homeWhatsAppUrl() {
@@ -196,7 +194,7 @@ export function productWhatsAppMessage(brand, name, price, category, catalogTab)
   const tab = CATALOG_TAB_LABEL[catalogTab] || "Products";
   if (category === "inverter") {
     return (
-      "Hi Energi Tech — Solar Up " +
+      "Hi Energi Tech — SolarApp " +
       tab +
       ": quote for " +
       brand +
@@ -209,7 +207,7 @@ export function productWhatsAppMessage(brand, name, price, category, catalogTab)
   }
   if (category === "battery") {
     return (
-      "Hi Energi Tech — Solar Up " +
+      "Hi Energi Tech — SolarApp " +
       tab +
       ": quote for " +
       brand +
@@ -222,7 +220,7 @@ export function productWhatsAppMessage(brand, name, price, category, catalogTab)
   }
   if (category === "solar panel") {
     return (
-      "Hi Energi Tech — Solar Up " +
+      "Hi Energi Tech — SolarApp " +
       tab +
       ": quote for " +
       brand +
@@ -233,8 +231,17 @@ export function productWhatsAppMessage(brand, name, price, category, catalogTab)
       "). In stock?"
     );
   }
+  if (category === "package") {
+    return (
+      "Hi Energi Tech — SolarApp: quote for " +
+      name +
+      " (" +
+      usd(price) +
+      ", Harare install included). Available?"
+    );
+  }
   return (
-    "Hi Energi Tech — Solar Up " + tab + ": quote for " + brand + " " + name + " (" + usd(price) + "). In stock?"
+    "Hi Energi Tech — SolarApp " + tab + ": quote for " + brand + " " + name + " (" + usd(price) + "). In stock?"
   );
 }
 
@@ -244,43 +251,93 @@ export function quoteWhatsAppMessage(sizing, propLabel, deliveryQuote) {
   const prop = propLabel || "property";
   const dq = deliveryQuote && deliveryQuote.enabled ? deliveryQuote : null;
   const total = sizing.tot + (dq && !dq.feePending ? dq.fee : 0);
+  const pkgLabel = sizing.pkg ? sizing.pkg.name : sizing.kva + " kVA system";
   let msg =
-    "Hi Energi Tech — Solar Up quote (" +
+    "Hi Energi Tech — SolarApp quote (" +
     prop +
     "): " +
-    sizing.kva +
-    "kVA, " +
+    pkgLabel +
+    ", " +
     usd(total) +
-    (dq?.feePending ? " products" : " total") +
-    (dq
-      ? dq.feePending
-        ? " — delivery & install outside Harare" +
-          (dq.locationLabel ? " (" + dq.locationLabel + ")" : "") +
-          "; please advise cost for my location"
-        : " incl. delivery & install (Harare)"
-      : "") +
-    ". " +
-    sizing.inv.brand +
-    " " +
-    sizing.inv.name +
-    "; " +
-    sizing.bc +
-    "× battery; " +
-    sizing.pc +
-    "×" +
-    sizing.pan.w +
-    "W panels.";
-  if (dq && !dq.feePending) {
-    msg += " Products " + usd(sizing.tot) + " + delivery $" + dq.fee + ".";
-  } else if (dq?.feePending) {
-    msg += " Products " + usd(sizing.tot) + "; delivery TBD by dealer (geographic location).";
+    (dq?.feePending ? " (package only)" : " total") +
+    ". ";
+  if (dq?.zone === "harare" || !dq) {
+    msg += "Harare install included in package. ";
+  } else if (dq.feePending) {
+    msg +=
+      "Outside Harare" +
+      (dq.locationLabel ? " (" + dq.locationLabel + ")" : "") +
+      " — please confirm delivery at $0.50/km. ";
+  } else {
+    msg += "Outside Harare: " + dq.km + " km delivery $" + dq.fee + " ($0.50/km). ";
   }
-  msg += " Please confirm.";
+  msg += "Load sized: " + sizing.pW + "W peak, ~" + sizing.bk + "h backup. Please confirm.";
   return msg;
 }
 
 export function quoteWhatsAppUrl(sizing, propLabel, deliveryQuote) {
   return whatsAppChatUrl(quoteWhatsAppMessage(sizing, propLabel, deliveryQuote));
+}
+
+/** After Save & download PDF — client requests payment / next-step help. */
+export function paymentAssistWhatsAppMessage(client, sizing, propLabel, deliveryQuote, grandTotal, customQuote) {
+  const name = String(client?.name || "").trim() || "—";
+  const phone = String(client?.phone || "").trim() || "—";
+  const email = String(client?.email || "").trim() || "—";
+  const address = String(client?.address || "").trim() || "—";
+  const prop = propLabel || "property";
+  const notes = String(client?.notes || "").trim();
+
+  const lines = [
+    "Hi Energi Tech — SolarApp payment assistance",
+    "",
+    "Name: " + name,
+    "Phone: " + phone,
+    "Email: " + email,
+    "Address: " + address,
+    "Property: " + prop,
+  ];
+
+  if (customQuote) {
+    lines.push("Quote type: Custom sizing (formal quote needed)");
+    lines.push(
+      "Load: " +
+        Number(sizing?.pW || 0).toLocaleString() +
+        "W peak · " +
+        Number(sizing?.dWh || 0).toLocaleString() +
+        " Wh/day"
+    );
+  } else if (sizing?.pkg) {
+    lines.push("Package: " + sizing.pkg.name + " — " + usd(sizing.pkg.price));
+    if (grandTotal != null) lines.push("Total quoted: " + usd(grandTotal));
+  } else if (sizing) {
+    lines.push("System: " + (sizing.kva || "—") + " kVA — " + usd(sizing.tot || 0));
+    if (grandTotal != null) lines.push("Total quoted: " + usd(grandTotal));
+  }
+
+  const dq = deliveryQuote && deliveryQuote.enabled ? deliveryQuote : null;
+  if (dq?.zone === "outside") {
+    if (dq.feePending) {
+      lines.push("Delivery: outside Harare — fee to confirm ($0.50/km)");
+    } else {
+      lines.push("Delivery: " + dq.km + " km — $" + dq.fee);
+    }
+  } else if (!customQuote) {
+    lines.push("Harare install included on package.");
+  }
+
+  if (notes) lines.push("Notes: " + notes);
+  lines.push("");
+  lines.push(
+    "I saved my quote PDF in SolarApp. Please help me with payment options and how to proceed. Thank you!"
+  );
+  return lines.join("\n");
+}
+
+export function paymentAssistWhatsAppUrl(client, sizing, propLabel, deliveryQuote, grandTotal, customQuote) {
+  return whatsAppChatUrl(
+    paymentAssistWhatsAppMessage(client, sizing, propLabel, deliveryQuote, grandTotal, customQuote)
+  );
 }
 
 /** Items / sizing screen — load in progress (optional button). */
@@ -294,7 +351,14 @@ export function itemsWhatsAppMessage(propLabel, peakW, dailyWh, activeCount, cus
     customNames && customNames.length
       ? " Custom: " + customNames.join(", ") + "."
       : "";
-  return "Hi Energi Tech — Solar Up items list (" + prop + "):" + load + custom + " Please check my sizing before I calculate.";
+  return (
+    "Hi Energi Tech — SolarApp quote (" +
+    prop +
+    "):" +
+    load +
+    custom +
+    " Please review my sizing and advise."
+  );
 }
 
 export function itemsWhatsAppUrl(propLabel, peakW, dailyWh, activeCount, customNames) {

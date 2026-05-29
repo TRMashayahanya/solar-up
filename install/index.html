@@ -4,72 +4,407 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#040608" />
-    <title>Install Solar Up on your phone</title>
-    <link rel="icon" href="/icons/icon-192.png" />
+    <meta name="description" content="Install SolarApp on iPhone or Android — free solar sizer by Energi Tech." />
+    <title>Install SolarApp</title>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
     <style>
       * { box-sizing: border-box; }
-      body {
-        font-family: system-ui, -apple-system, sans-serif;
+      html, body {
+        margin: 0;
         background: #040608;
         color: #f8fafc;
-        margin: 0;
-        padding: 24px 16px 48px;
+        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
         line-height: 1.5;
       }
-      h1 { color: #e8c547; font-size: 1.5rem; margin: 0 0 8px; }
-      .sub { color: rgba(255,255,255,.55); margin-bottom: 24px; font-size: 15px; }
-      .card {
-        background: rgba(255,255,255,.05);
-        border: 1px solid rgba(232,197,71,.25);
-        border-radius: 14px;
-        padding: 18px;
-        margin-bottom: 16px;
+      .wrap {
+        max-width: 420px;
+        margin: 0 auto;
+        padding: max(20px, env(safe-area-inset-top)) 18px max(100px, calc(88px + env(safe-area-inset-bottom)));
       }
-      .card h2 { font-size: 1rem; color: #e8c547; margin: 0 0 12px; }
-      ol { margin: 0; padding-left: 20px; }
-      li { margin-bottom: 10px; color: rgba(255,255,255,.85); }
-      .btn {
-        display: inline-block;
-        margin-top: 16px;
-        padding: 14px 20px;
+      .hero { text-align: center; margin-bottom: 20px; }
+      .sun {
+        width: 64px;
+        height: 64px;
+        animation: spin 20s linear infinite;
+        filter: drop-shadow(0 0 16px rgba(232, 197, 71, 0.45));
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      @media (prefers-reduced-motion: reduce) { .sun { animation: none; } }
+      h1 {
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 1.6rem;
+        margin: 14px 0 6px;
+        background: linear-gradient(135deg, #c9a227, #e8c547);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+      .lead { color: rgba(255, 255, 255, 0.55); font-size: 15px; margin: 0; }
+      .banner {
+        display: none;
+        padding: 12px 14px;
+        border-radius: 12px;
+        margin-bottom: 16px;
+        font-size: 13px;
+        line-height: 1.45;
+      }
+      .banner--warn {
+        display: block;
+        background: rgba(251, 191, 36, 0.12);
+        border: 1px solid rgba(251, 191, 36, 0.35);
+        color: rgba(255, 255, 255, 0.88);
+      }
+      .banner--ok {
+        display: block;
+        background: rgba(61, 214, 140, 0.1);
+        border: 1px solid rgba(61, 214, 140, 0.3);
+        color: rgba(255, 255, 255, 0.85);
+      }
+      .banner strong { color: #e8c547; }
+      .steps {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(232, 197, 71, 0.22);
+        border-radius: 16px;
+        padding: 18px 16px;
+        margin-bottom: 14px;
+      }
+      .steps h2 {
+        font-size: 13px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: #e8c547;
+        margin: 0 0 14px;
+      }
+      .step {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 14px;
+        align-items: flex-start;
+      }
+      .step:last-child { margin-bottom: 0; }
+      .step-num {
+        flex-shrink: 0;
+        width: 28px;
+        height: 28px;
+        border-radius: 50%;
+        background: rgba(232, 197, 71, 0.15);
+        border: 1px solid rgba(232, 197, 71, 0.4);
+        color: #e8c547;
+        font-weight: 700;
+        font-size: 14px;
+        display: grid;
+        place-items: center;
+      }
+      .step p { margin: 0; font-size: 14px; color: rgba(255, 255, 255, 0.88); }
+      .step p strong { color: #fff; }
+      .hidden { display: none !important; }
+      .link-box {
+        margin-top: 14px;
+        padding: 12px;
+        border-radius: 12px;
+        background: rgba(0, 0, 0, 0.35);
+        border: 1px dashed rgba(255, 255, 255, 0.12);
+      }
+      .link-box label {
+        display: block;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: rgba(255, 255, 255, 0.4);
+        margin-bottom: 6px;
+      }
+      .link-row {
+        display: flex;
+        gap: 8px;
+        align-items: stretch;
+      }
+      .link-url {
+        flex: 1;
+        min-width: 0;
+        padding: 10px 12px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.05);
+        color: #e8c547;
+        font-size: 13px;
+        font-family: ui-monospace, monospace;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .btn-copy {
+        flex-shrink: 0;
+        padding: 10px 14px;
+        border: 1px solid rgba(232, 197, 71, 0.35);
+        border-radius: 10px;
+        background: rgba(232, 197, 71, 0.1);
+        color: #e8c547;
+        font-size: 12px;
+        font-weight: 600;
+        cursor: pointer;
+        font-family: inherit;
+      }
+      .btn-copy:active { transform: scale(0.98); }
+      .sticky {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        padding: 12px 18px max(14px, env(safe-area-inset-bottom));
+        background: linear-gradient(180deg, transparent, rgba(4, 6, 8, 0.92) 24%, #040608);
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .sticky-inner { max-width: 420px; margin: 0 auto; width: 100%; }
+      .btn-primary {
+        display: block;
+        width: 100%;
+        padding: 16px 20px;
+        border: none;
+        border-radius: 14px;
         background: linear-gradient(135deg, #c9a227, #e8c547);
         color: #0a0800;
+        font-size: 16px;
         font-weight: 700;
+        text-align: center;
         text-decoration: none;
-        border-radius: 12px;
+        font-family: inherit;
+        cursor: pointer;
+        box-shadow: 0 8px 28px rgba(232, 197, 71, 0.25);
       }
-      .note { font-size: 13px; color: rgba(255,255,255,.45); margin-top: 20px; }
+      .btn-install {
+        display: none;
+        width: 100%;
+        padding: 16px 20px;
+        border: none;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #2d8b5e, #3dd68c);
+        color: #041008;
+        font-size: 16px;
+        font-weight: 700;
+        font-family: inherit;
+        cursor: pointer;
+      }
+      .btn-ghost {
+        display: block;
+        width: 100%;
+        padding: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 12px;
+        background: transparent;
+        color: rgba(255, 255, 255, 0.65);
+        font-size: 13px;
+        font-weight: 500;
+        text-align: center;
+        text-decoration: none;
+        font-family: inherit;
+      }
+      .note { font-size: 12px; color: rgba(255, 255, 255, 0.35); text-align: center; margin: 8px 0 0; }
     </style>
   </head>
   <body>
-    <h1>Install Solar Up</h1>
-    <p class="sub">Use it like an app on iPhone or Android — free, from your browser.</p>
+    <div class="wrap">
+      <header class="hero">
+        <img class="sun" src="/icons/icon.svg" width="64" height="64" alt="" />
+        <h1>Install SolarApp</h1>
+        <p class="lead" id="lead">Add to your home screen — works like an app, no app store.</p>
+      </header>
 
-    <div class="card">
-      <h2>iPhone / iPad (Safari)</h2>
-      <ol>
-        <li>Open your Solar Up link in <strong>Safari</strong> (not WhatsApp’s browser).</li>
-        <li>Tap <strong>Share</strong> (square with arrow at the bottom).</li>
-        <li>Scroll and tap <strong>Add to Home Screen</strong>.</li>
-        <li>Tap <strong>Add</strong> — the Solar Up icon appears on your home screen.</li>
-      </ol>
+      <div id="banner-local" class="banner banner--warn hidden">
+        <strong>Test link only.</strong> Other phones cannot open <code>localhost</code>. Deploy SolarApp to a
+        <strong>https://</strong> address, then share that link.
+      </div>
+
+      <div id="banner-inapp" class="banner banner--warn hidden">
+        <strong>Step 1 — open in your browser.</strong>
+        <span id="inapp-text">WhatsApp’s browser cannot install apps.</span>
+        Tap <strong>⋮</strong> or <strong>⋯</strong> → <strong>Open in Safari</strong> or <strong>Chrome</strong>, then return here.
+      </div>
+
+      <div id="banner-installed" class="banner banner--ok hidden">
+        <strong>SolarApp is already installed.</strong> Open it from your home screen (gold sun icon).
+      </div>
+
+      <section id="panel-ios" class="steps hidden" aria-labelledby="ios-title">
+        <h2 id="ios-title">iPhone / iPad</h2>
+        <div class="step">
+          <span class="step-num">1</span>
+          <p>Open this page in <strong>Safari</strong> (not WhatsApp or Instagram).</p>
+        </div>
+        <div class="step">
+          <span class="step-num">2</span>
+          <p>Tap <strong>Share</strong> (↑ at the bottom of Safari).</p>
+        </div>
+        <div class="step">
+          <span class="step-num">3</span>
+          <p>Tap <strong>Add to Home Screen</strong> → <strong>Add</strong>. Done — gold sun on your home screen.</p>
+        </div>
+      </section>
+
+      <section id="panel-android" class="steps hidden" aria-labelledby="android-title">
+        <h2 id="android-title">Android</h2>
+        <div class="step">
+          <span class="step-num">1</span>
+          <p>Open in <strong>Chrome</strong> (not WhatsApp browser).</p>
+        </div>
+        <div class="step" id="android-step-install">
+          <span class="step-num">2</span>
+          <p>Tap <strong>Install app</strong> below (or Chrome menu <strong>⋮</strong> → <strong>Install app</strong>).</p>
+        </div>
+        <div class="step">
+          <span class="step-num">3</span>
+          <p>Confirm — SolarApp opens from your home screen like other apps.</p>
+        </div>
+      </section>
+
+      <section id="panel-desktop" class="steps hidden" aria-labelledby="desktop-title">
+        <h2 id="desktop-title">On your phone</h2>
+        <div class="step">
+          <span class="step-num">1</span>
+          <p>Copy the link below and send it to your phone (WhatsApp, SMS, email).</p>
+        </div>
+        <div class="step">
+          <span class="step-num">2</span>
+          <p>On your phone, open the link in <strong>Safari</strong> (iPhone) or <strong>Chrome</strong> (Android).</p>
+        </div>
+        <div class="step">
+          <span class="step-num">3</span>
+          <p>Follow the install steps shown on your phone.</p>
+        </div>
+      </section>
+
+      <div class="link-box">
+        <label>Link to share (open on phone, then install)</label>
+        <div class="link-row">
+          <div class="link-url" id="share-url" title=""></div>
+          <button type="button" class="btn-copy" id="btn-copy">Copy</button>
+        </div>
+        <p class="note" style="margin-top: 10px">Share this exact link — not a screenshot.</p>
+      </div>
     </div>
 
-    <div class="card">
-      <h2>Android (Chrome)</h2>
-      <ol>
-        <li>Open your Solar Up link in <strong>Chrome</strong>.</li>
-        <li>If you see <strong>Install app</strong> at the bottom of the site, tap it.</li>
-        <li>Or tap menu <strong>⋮</strong> → <strong>Install app</strong> or <strong>Add to Home screen</strong>.</li>
-        <li>Confirm — Solar Up opens from your home screen like other apps.</li>
-      </ol>
+    <div class="sticky">
+      <div class="sticky-inner">
+        <button type="button" class="btn-install" id="btn-android-install">Install SolarApp now</button>
+        <a class="btn-primary" id="btn-open-app" href="/">Open SolarApp</a>
+        <a class="btn-ghost" href="/install/">Refresh install help</a>
+      </div>
     </div>
 
-    <a class="btn" href="/">Open Solar Up</a>
+    <script>
+      (function () {
+        var deferredPrompt = null;
+        var ua = navigator.userAgent || "";
+        var isIos = /iPhone|iPad|iPod/i.test(ua);
+        var isAndroid = /Android/i.test(ua);
+        var isStandalone =
+          window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
+        var inApp = /WhatsApp|WAWeb|Instagram|FBAN|FBAV|Twitter|Line\/|MicroMessenger|Telegram/i.test(ua);
+        var isLocal = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
 
-    <p class="note">
-      You do not need the App Store or Play Store. After you publish online, share your
-      <strong>https://</strong> link — clients install from that address.
-    </p>
+        var appLink = location.origin + "/";
+        var installLink = location.origin + "/install/";
+
+        document.getElementById("share-url").textContent = appLink;
+        document.getElementById("share-url").title = appLink;
+
+        function show(id) {
+          document.getElementById(id).classList.remove("hidden");
+        }
+        function hide(id) {
+          document.getElementById(id).classList.add("hidden");
+        }
+
+        if (isLocal) show("banner-local");
+
+        if (isStandalone) {
+          show("banner-installed");
+          hide("panel-ios");
+          hide("panel-android");
+          hide("panel-desktop");
+          document.getElementById("lead").textContent = "You’re using the installed app.";
+          document.getElementById("btn-open-app").textContent = "Open SolarApp";
+          return;
+        }
+
+        if (inApp) {
+          show("banner-inapp");
+          if (isIos) {
+            document.getElementById("inapp-text").textContent =
+              "WhatsApp cannot add apps to your home screen.";
+          }
+        }
+
+        if (isIos) {
+          show("panel-ios");
+          document.getElementById("lead").textContent = "3 taps in Safari — then the sun icon is on your home screen.";
+          document.getElementById("btn-open-app").textContent = "Open in Safari first";
+          document.getElementById("btn-open-app").href = appLink;
+        } else if (isAndroid) {
+          show("panel-android");
+          document.getElementById("lead").textContent = "One tap to install — free, no Play Store.";
+          document.getElementById("btn-open-app").textContent = "Open SolarApp in Chrome";
+          document.getElementById("btn-open-app").href = appLink;
+
+          window.addEventListener("beforeinstallprompt", function (e) {
+            e.preventDefault();
+            deferredPrompt = e;
+            document.getElementById("btn-android-install").style.display = "block";
+            document.getElementById("btn-open-app").textContent = "Or open SolarApp in browser";
+          });
+
+          document.getElementById("btn-android-install").addEventListener("click", function () {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            deferredPrompt.userChoice.then(function () {
+              deferredPrompt = null;
+              document.getElementById("btn-android-install").style.display = "none";
+            });
+          });
+        } else {
+          show("panel-desktop");
+          document.getElementById("lead").textContent = "Copy the link → open on your phone → install.";
+          var openBtn = document.getElementById("btn-open-app");
+          openBtn.textContent = "Open SolarApp on this device";
+          openBtn.href = appLink;
+        }
+
+        document.getElementById("btn-copy").addEventListener("click", function () {
+          var text = appLink;
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(copied).catch(fallbackCopy);
+          } else fallbackCopy();
+
+          function fallbackCopy() {
+            var ta = document.createElement("textarea");
+            ta.value = text;
+            document.body.appendChild(ta);
+            ta.select();
+            try {
+              document.execCommand("copy");
+              copied();
+            } catch (_) {
+              alert("Copy this link:\n" + text);
+            }
+            document.body.removeChild(ta);
+          }
+
+          function copied() {
+            var btn = document.getElementById("btn-copy");
+            btn.textContent = "Copied!";
+            setTimeout(function () {
+              btn.textContent = "Copy";
+            }, 2000);
+          }
+        });
+
+        if ("serviceWorker" in navigator) {
+          navigator.serviceWorker.register("/sw.js?v=30").catch(function () {});
+        }
+      })();
+    </script>
   </body>
 </html>

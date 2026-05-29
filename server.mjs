@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Solar Up backend — static app + client lead database.
+ * SolarApp backend — static app + client lead database.
  *
  * Public:  POST /api/leads     (browser, final PDF step)
  * Admin:   GET  /api/leads     (list, requires ADMIN_API_KEY)
@@ -24,12 +24,14 @@ const ADMIN_API_KEY = process.env.ADMIN_API_KEY || "";
 const MIME = {
   ".html": "text/html; charset=utf-8",
   ".js": "text/javascript; charset=utf-8",
+  ".mjs": "text/javascript; charset=utf-8",
   ".css": "text/css; charset=utf-8",
   ".json": "application/json",
   ".svg": "image/svg+xml",
   ".ico": "image/x-icon",
   ".webmanifest": "application/manifest+json",
   ".png": "image/png",
+  ".pdf": "application/pdf",
 };
 
 function cors(res, code, body, type = "application/json") {
@@ -91,7 +93,10 @@ function serveStatic(req, res) {
     }
     const ext = path.extname(filePath);
     const headers = { "Content-Type": MIME[ext] || "application/octet-stream" };
-    if (ext === ".js" || ext === ".html") {
+    const isVendor = urlPath.startsWith("/vendor/");
+    if (isVendor) {
+      headers["Cache-Control"] = "public, max-age=31536000, immutable";
+    } else if (ext === ".js" || ext === ".html" || ext === ".mjs") {
       headers["Cache-Control"] = "no-store";
     }
     res.writeHead(200, headers);
@@ -215,7 +220,7 @@ const server = http.createServer((req, res) => {
 
 const boot = await initLeadsDatabase();
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`Solar Up → http://localhost:${PORT}`);
+  console.log(`SolarApp → http://localhost:${PORT}`);
   console.log(`Leads database: ${boot.mode} → ${boot.dbPath}`);
   if (ADMIN_API_KEY) {
     console.log(`Admin page:  http://localhost:${PORT}/admin/`);

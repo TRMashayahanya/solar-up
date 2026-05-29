@@ -1,7 +1,7 @@
 {
-  "name": "Solar Up — Solar Sizer",
-  "short_name": "Solar Up",
-  "description": "Free solar system sizing for Zimbabwe — Energi Tech",
+  "name": "SolarApp — Solar Sizer",
+  "short_name": "SolarApp",
+  "description": "Free solar sizing for Zimbabwe — gold sun icon, Energi Tech",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

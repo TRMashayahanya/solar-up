@@ -3,12 +3,12 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Solar Up — Client records (Admin)</title>
+    <title>SolarApp — Client records (Admin)</title>
     <style>
       * { box-sizing: border-box; }
       body {
         font-family: system-ui, -apple-system, Segoe UI, sans-serif;
-        max-width: 960px;
+        max-width: 1100px;
         margin: 0 auto;
         padding: 24px 16px 48px;
         background: #0a0c0a;
@@ -25,7 +25,7 @@
         margin-bottom: 20px;
       }
       label { display: block; font-size: 12px; color: #e8c547; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.06em; }
-      input[type="password"], input[type="text"] {
+      input[type="password"], input[type="text"], input[type="search"], select {
         width: 100%;
         padding: 12px;
         border-radius: 8px;
@@ -34,6 +34,15 @@
         color: #fff;
         font-size: 16px;
         margin-bottom: 12px;
+      }
+      .toolbar {
+        display: grid;
+        grid-template-columns: 1fr 180px;
+        gap: 12px;
+        margin-bottom: 16px;
+      }
+      @media (max-width: 640px) {
+        .toolbar { grid-template-columns: 1fr; }
       }
       button, .btn {
         display: inline-block;
@@ -49,8 +58,8 @@
       }
       .primary { background: linear-gradient(135deg, #c9a227, #e8c547); color: #0a0800; }
       .secondary { background: rgba(255,255,255,.1); color: #fff; }
+      .wa { background: #25d366; color: #fff; font-size: 12px; padding: 8px 12px; margin: 0; }
       .err { color: #f87171; font-size: 14px; margin-top: 8px; }
-      .ok { color: #3dd68c; font-size: 14px; margin-top: 8px; }
       table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 12px; }
       th, td { text-align: left; padding: 10px 8px; border-bottom: 1px solid rgba(255,255,255,.08); vertical-align: top; }
       th { color: #e8c547; font-size: 11px; text-transform: uppercase; }
@@ -59,17 +68,17 @@
       a { color: #e8c547; }
       #results { display: none; }
       .count { font-size: 14px; color: rgba(255,255,255,.7); margin-bottom: 8px; }
+      .table-scroll { overflow-x: auto; }
     </style>
   </head>
   <body>
-    <h1>Solar Up — Client records</h1>
-    <p class="sub">Energi Tech admin · view everyone who downloaded a PDF quote</p>
+    <h1>SolarApp — Client records</h1>
+    <p class="sub">Energi Tech admin · search clients and follow up on WhatsApp</p>
 
     <div class="card" id="login-card">
       <label for="key">Your admin password</label>
       <p class="help" style="margin-top:0">
         This is the secret you set when starting the server (<code>ADMIN_API_KEY</code>).
-        Only people with this password can see client details.
       </p>
       <input type="password" id="key" placeholder="Enter admin password" autocomplete="current-password" />
       <button type="button" class="primary" id="btn-login">Open client list</button>
@@ -79,10 +88,16 @@
     <div id="results">
       <div class="card">
         <p class="count" id="count"></p>
+        <div class="toolbar">
+          <input type="search" id="search" placeholder="Search name, phone, email, area…" autocomplete="off" />
+          <select id="filter-prop">
+            <option value="">All property types</option>
+          </select>
+        </div>
         <button type="button" class="primary" id="btn-refresh">Refresh list</button>
         <button type="button" class="secondary" id="btn-csv">Download spreadsheet (CSV)</button>
         <button type="button" class="secondary" id="btn-logout">Log out</button>
-        <div id="table-wrap"></div>
+        <div class="table-scroll" id="table-wrap"></div>
         <p class="err" id="load-err" hidden></p>
       </div>
     </div>
@@ -90,20 +105,25 @@
     <div class="card help">
       <strong style="color:#e8c547">Quick help</strong>
       <ul>
-        <li>Open this page at: <strong id="admin-url"></strong></li>
-        <li>If you see “Admin API disabled”, the server must be started with your password set (see guide below).</li>
-        <li>To change prices or text in the app, ask your developer or open the project in Cursor — this page only shows <em>client records</em>.</li>
-        <li>Back to the sizer: <a href="/">Solar Up home</a></li>
+        <li>Admin URL: <strong id="admin-url"></strong></li>
+        <li>Use <strong>Search</strong> to find a client quickly; filter by property type.</li>
+        <li><strong>WhatsApp</strong> opens a pre-filled message for follow-up.</li>
+        <li>Back to the sizer: <a href="/">SolarApp home</a></li>
       </ul>
     </div>
 
     <script>
       const KEY_STORAGE = "solarup-admin-key";
+      const WHATSAPP = "263773757018";
+      let allLeads = [];
+
       const keyInput = document.getElementById("key");
       const loginErr = document.getElementById("login-err");
       const loadErr = document.getElementById("load-err");
       const loginCard = document.getElementById("login-card");
       const results = document.getElementById("results");
+      const searchInput = document.getElementById("search");
+      const filterProp = document.getElementById("filter-prop");
 
       document.getElementById("admin-url").textContent = location.origin + "/admin/";
 
@@ -123,9 +143,7 @@
       }
 
       async function api(path, key) {
-        const res = await fetch(path, {
-          headers: { "X-Admin-Key": key },
-        });
+        const res = await fetch(path, { headers: { "X-Admin-Key": key } });
         const data = await res.json().catch(() => ({}));
         if (!res.ok) throw new Error(data.error || "Could not load (" + res.status + ")");
         return data;
@@ -136,15 +154,63 @@
         return "$" + Number(n).toLocaleString();
       }
 
+      function escapeHtml(s) {
+        return String(s ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+      }
+
+      function waUrl(p) {
+        const msg =
+          "Hi " +
+          (p.name || "there") +
+          " — Energi Tech here. You used SolarApp for a solar quote" +
+          (p.quoteGrandTotal ? " ($" + Number(p.quoteGrandTotal).toLocaleString() + ")" : "") +
+          ". Can we help you with next steps?";
+        return "https://api.whatsapp.com/send?phone=" + WHATSAPP + "&text=" + encodeURIComponent(msg);
+      }
+
+      function filteredLeads() {
+        const q = searchInput.value.trim().toLowerCase();
+        const prop = filterProp.value;
+        return allLeads.filter((row) => {
+          const p = row.payload || row;
+          if (prop && (p.propertyType || "") !== prop) return false;
+          if (!q) return true;
+          const hay = [p.name, p.phone, p.email, p.address, p.propertyLabel, p.propertyType]
+            .join(" ")
+            .toLowerCase();
+          return hay.includes(q);
+        });
+      }
+
+      function fillPropertyFilter() {
+        const types = new Set();
+        for (const row of allLeads) {
+          const p = row.payload || row;
+          if (p.propertyType) types.add(p.propertyType);
+        }
+        const cur = filterProp.value;
+        filterProp.innerHTML = '<option value="">All property types</option>';
+        [...types].sort().forEach((t) => {
+          const opt = document.createElement("option");
+          opt.value = t;
+          opt.textContent = t.replace(/_/g, " ");
+          filterProp.appendChild(opt);
+        });
+        filterProp.value = cur;
+      }
+
       function renderTable(leads) {
         if (!leads.length) {
           document.getElementById("table-wrap").innerHTML =
-            "<p class='help'>No clients yet. When someone completes the PDF form, they will appear here.</p>";
+            "<p class='help'>No matching clients. Try clearing search or refresh after new PDF downloads.</p>";
           return;
         }
         let html =
           "<table><thead><tr>" +
-          "<th>Name</th><th>Phone</th><th>Email</th><th>Area</th><th>Property</th><th>Quote</th><th>Date</th>" +
+          "<th>Name</th><th>Phone</th><th>Email</th><th>Area</th><th>Property</th><th>Quote</th><th>Date</th><th></th>" +
           "</tr></thead><tbody>";
         for (const row of leads) {
           const p = row.payload || row;
@@ -163,17 +229,22 @@
             formatMoney(p.quoteGrandTotal ?? p.quoteTotal) +
             "</td><td>" +
             escapeHtml((p.savedAt || p.submittedAt || "").slice(0, 10)) +
-            "</td></tr>";
+            '</td><td><a class="btn wa" href="' +
+            escapeHtml(waUrl(p)) +
+            '" target="_blank" rel="noopener">WhatsApp</a></td></tr>';
         }
         html += "</tbody></table>";
         document.getElementById("table-wrap").innerHTML = html;
       }
 
-      function escapeHtml(s) {
-        return String(s ?? "")
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;");
+      function updateView() {
+        const shown = filteredLeads();
+        document.getElementById("count").textContent =
+          shown.length +
+          " shown · " +
+          allLeads.length +
+          " total (newest 200 loaded)";
+        renderTable(shown);
       }
 
       async function loadList() {
@@ -182,9 +253,9 @@
         loadErr.hidden = true;
         try {
           const data = await api("/api/leads?limit=200", key);
-          document.getElementById("count").textContent =
-            data.total + " client record" + (data.total === 1 ? "" : "s") + " (showing up to 200 newest)";
-          renderTable(data.leads || []);
+          allLeads = data.leads || [];
+          fillPropertyFilter();
+          updateView();
           results.style.display = "block";
           loginCard.style.display = "none";
         } catch (e) {
@@ -193,6 +264,9 @@
           if (e.message.includes("401") || e.message.includes("Invalid")) clearKey();
         }
       }
+
+      searchInput.addEventListener("input", updateView);
+      filterProp.addEventListener("change", updateView);
 
       document.getElementById("btn-login").onclick = function () {
         const k = keyInput.value.trim();
@@ -213,8 +287,7 @@
         const key = getKey();
         if (!key) return;
         const a = document.createElement("a");
-        a.href = "/api/leads/export";
-        fetch(a.href, { headers: { "X-Admin-Key": key } })
+        fetch("/api/leads/export", { headers: { "X-Admin-Key": key } })
           .then(function (r) {
             if (!r.ok) return r.json().then(function (d) { throw new Error(d.error || "Export failed"); });
             return r.blob();
@@ -222,7 +295,7 @@
           .then(function (blob) {
             const url = URL.createObjectURL(blob);
             a.href = url;
-            a.download = "solarup-clients.csv";
+            a.download = "solarapp-clients.csv";
             a.click();
             URL.revokeObjectURL(url);
           })

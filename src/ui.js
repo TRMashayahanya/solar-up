@@ -26,6 +26,8 @@ export { ApplianceIcon, CategoryIcon, IconTile };
 import { loadValueInsights } from "./loadValue.js";
 import { productWhatsAppMessage, whatsAppChatUrl } from "./data.js";
 import { environmentalImpact } from "./environment.js";
+import { computePowerQuestState } from "./power-quest.js";
+export { computePowerQuestState } from "./power-quest.js";
 
 export const globalStyles =
   "@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Outfit:wght@300;400;500;600;700&display=swap');" +
@@ -44,6 +46,41 @@ export const globalStyles =
   "@keyframes fadeIn{from{opacity:0}to{opacity:1}}" +
   "@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}" +
   "@keyframes shimmer{0%{background-position:0% 50%}100%{background-position:200% 50%}}" +
+  "@keyframes pqEnter{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}" +
+  "@keyframes pqSunPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}" +
+  "@keyframes pqSunBreathe{0%,100%{filter:drop-shadow(0 0 8px rgba(232,197,71,.25))}50%{filter:drop-shadow(0 0 20px rgba(232,197,71,.55))}}" +
+  "@keyframes pqFillShine{0%{background-position:200% 50%}100%{background-position:-200% 50%}}" +
+  "@keyframes pqDotPop{0%{transform:scale(.5);opacity:0}70%{transform:scale(1.2)}100%{transform:scale(1);opacity:1}}" +
+  "@keyframes pqTierPulse{0%,100%{box-shadow:0 0 0 0 rgba(232,197,71,0)}50%{box-shadow:0 0 0 6px rgba(232,197,71,.2)}}" +
+  ".power-quest{animation:pqEnter .45s cubic-bezier(.22,1,.36,1) both}" +
+  ".pq-sun-wrap{animation:pqSunBreathe 2.8s ease-in-out infinite}" +
+  ".pq-sun-wrap--pulse{animation:pqSunPulse .6s cubic-bezier(.34,1.56,.64,1) 2}" +
+  ".pq-fill{height:100%;border-radius:999px;transition:width .75s cubic-bezier(.34,1.2,.64,1);will-change:width}" +
+  ".pq-fill--charge{background:linear-gradient(90deg,#8B6914,#C9A227,#E8C547,#C9A227);background-size:220% 100%;animation:pqFillShine 2.4s linear infinite;box-shadow:0 0 16px rgba(232,197,71,.35)}" +
+  ".pq-fill--package{background:linear-gradient(90deg,#C9A227,#E8C547,#5EE4A0,#3DD68C);background-size:200% 100%;animation:pqFillShine 3s linear infinite;box-shadow:0 0 18px rgba(61,214,140,.3)}" +
+  ".pq-fill--boss{background:linear-gradient(90deg,#DC2626,#F97316,#FBBF24);background-size:200% 100%;animation:pqFillShine 2s linear infinite;box-shadow:0 0 18px rgba(248,113,113,.35)}" +
+  ".pq-dot{transition:transform .35s cubic-bezier(.34,1.56,.64,1),background .3s ease,box-shadow .3s ease}" +
+  ".pq-dot--active{animation:pqTierPulse 2s ease-in-out infinite}" +
+  ".pq-dot--pop{animation:pqDotPop .45s cubic-bezier(.34,1.56,.64,1) both}" +
+  ".pq-track-glow{position:relative}" +
+  ".pq-track-glow::after{content:'';position:absolute;inset:-1px;border-radius:999px;padding:1px;background:linear-gradient(90deg,rgba(232,197,71,.25),rgba(61,214,140,.15),rgba(232,197,71,.1));-webkit-mask:linear-gradient(#fff 0 0) content-box,linear-gradient(#fff 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none;opacity:.6}" +
+  "@keyframes homeSunSpin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}" +
+  "@keyframes homeMarqueeScroll{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}" +
+  ".home-marquee-wrap{position:relative;overflow:hidden;height:36px;margin-bottom:10px;border-radius:10px;" +
+  "background:linear-gradient(90deg,rgba(15,31,23,.9),rgba(8,12,10,.95));" +
+  "border:1px solid rgba(232,197,71,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}" +
+  ".home-marquee-wrap::before,.home-marquee-wrap::after{content:'';position:absolute;top:0;bottom:0;width:28px;z-index:2;pointer-events:none}" +
+  ".home-marquee-wrap::before{left:0;background:linear-gradient(90deg,rgba(8,12,10,.95),transparent)}" +
+  ".home-marquee-wrap::after{right:0;background:linear-gradient(270deg,rgba(8,12,10,.95),transparent)}" +
+  ".home-marquee-track{display:flex;width:max-content;animation:homeMarqueeScroll 32s linear infinite;will-change:transform}" +
+  ".home-marquee-wrap:hover .home-marquee-track{animation-play-state:paused}" +
+  ".home-marquee-set{display:flex;align-items:center;gap:8px;padding:0 6px;flex-shrink:0}" +
+  ".home-marquee-pill{flex-shrink:0;padding:4px 11px;border-radius:999px;font-size:10px;font-weight:600;" +
+  "letter-spacing:.04em;white-space:nowrap;color:rgba(255,255,255,.82);" +
+  "background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1)}" +
+  ".home-marquee-pill--accent{color:#E8C547;background:rgba(232,197,71,.12);border-color:rgba(232,197,71,.35)}" +
+  ".home-marquee-pill--green{color:#3DD68C;background:rgba(61,214,140,.1);border-color:rgba(61,214,140,.3)}" +
+  "@media (prefers-reduced-motion:reduce){.home-marquee-track{animation:none;overflow-x:auto}.home-brand-sun{animation:none}}" +
   ".animate-rise{animation:rise .45s cubic-bezier(.22,1,.36,1) both}" +
   ".card-hover{transition:border-color .25s,box-shadow .25s,transform .25s}" +
   ".card-hover:hover{border-color:rgba(232,197,71,.45)!important;transform:translateY(-2px);box-shadow:0 12px 40px rgba(0,0,0,.35),0 0 0 1px rgba(232,197,71,.12)}" +
@@ -54,15 +91,54 @@ export const globalStyles =
   ".btn-wa:active{transform:translateY(0)}" +
   ".home-prop-card{text-align:left;width:100%;cursor:pointer;font-family:inherit}" +
   ".home-prop-card:hover{border-color:rgba(232,197,71,.4)!important}" +
+  ".home-screen{display:flex;flex-direction:column;gap:0;min-height:0}" +
+  ".home-body{display:flex;flex-direction:column;gap:clamp(16px,4vw,20px);padding-top:clamp(20px,5vw,28px)}" +
+  ".home-section{display:flex;flex-direction:column;gap:clamp(10px,2.5vw,12px)}" +
+  ".home-section-head{display:flex;flex-direction:column;gap:3px}" +
+  ".home-section-label{font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:rgba(255,255,255,.45);margin:0}" +
+  ".home-section-hint{font-size:12px;color:rgba(255,255,255,.35);margin:0;line-height:1.4;letter-spacing:-0.01em}" +
+  ".home-brand{text-align:center;padding:clamp(8px,2vw,12px) 0 0}" +
+  ".home-brand-lockup{display:inline-flex;align-items:center;gap:clamp(12px,3vw,16px);margin-bottom:clamp(10px,2.5vw,14px)}" +
+  ".home-brand-icon{display:flex;align-items:center;justify-content:center;flex-shrink:0;background:none;border:none;box-shadow:none;border-radius:0;padding:0}" +
+  ".home-brand-sun{display:inline-flex;animation:homeSunSpin 20s linear infinite;filter:drop-shadow(0 0 14px rgba(232,197,71,.4))}" +
+  ".home-brand-text{text-align:left}" +
+  ".home-brand-mark{font-family:" + FONT_DISPLAY + ";font-size:clamp(1.75rem,6vw,2rem);font-weight:700;line-height:1;margin:0;letter-spacing:0.02em;background:linear-gradient(135deg,#C9A227,#E8C547,#F5E6A8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}" +
+  ".home-brand-by{font-size:10px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:rgba(232,197,71,.8);margin:6px 0 0}" +
+  ".home-brand-tag{font-size:clamp(13px,3.4vw,14px);color:rgba(255,255,255,.55);margin:0;line-height:1.5;max-width:32ch;margin-left:auto;margin-right:auto;letter-spacing:-0.01em}" +
+  ".home-steps{display:flex;justify-content:center;gap:clamp(6px,2vw,10px);flex-wrap:wrap;margin-top:clamp(14px,3.5vw,18px)}" +
+  ".home-step-pill{padding:6px 12px;border-radius:999px;font-size:11px;font-weight:500;color:rgba(255,255,255,.5);background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.07);letter-spacing:-0.01em}" +
+  ".home-step-pill span{color:rgba(232,197,71,.85);font-weight:600;margin-right:4px}" +
+  ".home-prop-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:clamp(8px,2vw,10px)}" +
+  ".home-prop-tile{position:relative;display:flex;flex-direction:column;align-items:flex-start;gap:10px;padding:14px 14px 13px;min-height:88px;border-radius:16px;background:linear-gradient(160deg,rgba(255,255,255,.045),rgba(255,255,255,.015));border:1px solid rgba(255,255,255,.08);cursor:pointer;font-family:inherit;text-align:left;width:100%;overflow:hidden;transition:background .2s,border-color .2s,transform .2s,box-shadow .2s}" +
+  ".home-prop-tile::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--prop-accent, rgba(232,197,71,.5));opacity:.85;border-radius:16px 0 0 16px}" +
+  ".home-prop-tile:hover{background:linear-gradient(160deg,rgba(232,197,71,.08),rgba(255,255,255,.03));border-color:rgba(232,197,71,.25);transform:translateY(-2px);box-shadow:0 12px 32px rgba(0,0,0,.25)}" +
+  ".home-prop-tile:active{transform:translateY(0)}" +
+  ".home-prop-top{display:flex;align-items:center;gap:10px;width:100%}" +
+  ".home-prop-icon{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;flex-shrink:0}" +
+  ".home-prop-label{color:#F8FAFC;font-size:14px;font-weight:600;margin:0;line-height:1.2;letter-spacing:-0.02em}" +
+  ".home-prop-sub{color:rgba(255,255,255,.42);font-size:11px;margin:3px 0 0;line-height:1.25}" +
+  ".home-prop-arrow{margin-left:auto;opacity:.35;flex-shrink:0}" +
+  ".home-prop-tile:hover .home-prop-arrow{opacity:.7}" +
+  ".home-packages-link{display:block;width:100%;margin-top:4px;padding:12px;border-radius:14px;border:1px solid rgba(255,255,255,.08);background:transparent;color:rgba(255,255,255,.55);font-size:12px;font-weight:500;font-family:inherit;cursor:pointer;text-align:center;transition:background .15s,border-color .15s,color .15s}" +
+  ".home-packages-link:hover{background:rgba(255,255,255,.04);border-color:rgba(255,255,255,.14);color:rgba(255,255,255,.85)}" +
+  ".home-main-card{background:linear-gradient(180deg,rgba(14,20,17,.9),rgba(8,12,10,.94))!important;border:1px solid rgba(255,255,255,.08)!important;box-shadow:0 20px 56px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.06)!important;border-radius:clamp(20px,4.5vw,24px)!important;backdrop-filter:blur(28px)!important;-webkit-backdrop-filter:blur(28px)!important;overflow:hidden!important}" +
+  ".home-main-card::before{content:'';display:block;height:3px;background:linear-gradient(90deg,#C9A227,#E8C547,#3DD68C);opacity:.9}" +
+  ".home-main-inner{padding:clamp(18px,4.5vw,24px) clamp(18px,4.5vw,22px) clamp(20px,5vw,26px)!important}" +
+  ".app-shell--home{justify-content:center;min-height:100dvh;padding-top:max(14px,env(safe-area-inset-top))!important;padding-left:max(16px,env(safe-area-inset-left))!important;padding-right:max(16px,env(safe-area-inset-right))!important}" +
+  ".home-footer-note{text-align:center;font-size:10px;color:rgba(255,255,255,.25);margin-top:clamp(14px,3.5vw,18px);letter-spacing:0.06em}" +
   ".btn-ghost{transition:background .15s,border-color .15s,color .15s}" +
   ".btn-ghost:hover:not(:disabled){background:rgba(255,255,255,.07)!important;border-color:rgba(232,197,71,.25)!important;color:rgba(255,255,255,.85)!important}" +
   ".app-shell{padding-bottom:calc(108px + env(safe-area-inset-bottom, 0px))}" +
+  ".app-shell--home{padding-bottom:calc(92px + env(safe-area-inset-bottom, 0px))}" +
   ".sticky-actions{position:sticky;z-index:100;bottom:calc(76px + env(safe-area-inset-bottom, 0px));padding:16px 0 8px;margin-top:12px;background:linear-gradient(180deg,transparent 0%,rgba(8,12,10,.88) 26%,rgba(8,12,10,.98) 100%)}" +
   ".prop-card{transition:all .25s cubic-bezier(.22,1,.36,1)}" +
   ".prop-card:hover{border-color:rgba(232,197,71,.5)!important;background:linear-gradient(145deg,rgba(232,197,71,.08),rgba(255,255,255,.02))!important;box-shadow:0 8px 32px rgba(0,0,0,.3),0 0 0 1px rgba(232,197,71,.18)}" +
   ".section-body{animation:fadeIn .3s ease both}" +
   ".areas-scroll{-webkit-overflow-scrolling:touch;scrollbar-gutter:stable}" +
-  ".gold-shimmer{background-size:200% auto;animation:shimmer 4s linear infinite}";
+  ".gold-shimmer{background-size:200% auto;animation:shimmer 4s linear infinite}" +
+  ".sizer-screen{display:flex;flex-direction:column;min-height:0}" +
+  ".sizer-scroll{overflow-y:auto;-webkit-overflow-scrolling:touch;max-height:min(calc(100vh - 280px),560px);padding-bottom:4px}" +
+  ".sizer-calculate{flex-shrink:0}";
 
 export function StepIndicator({ step, total, label }) {
   return React.createElement(
@@ -148,57 +224,192 @@ export function StatCard({ label, value, sub, accent }) {
   );
 }
 
-export function EcoImpactStrip({ dWh, dailyGenWh }) {
-  if (!dWh && !dailyGenWh) return null;
-  const eco = environmentalImpact(dWh, dailyGenWh || 0);
-  return React.createElement(
-    "div",
-    {
-      style: {
-        marginTop: 12,
-        padding: "12px 14px",
-        background: "linear-gradient(90deg, rgba(61,214,140,.12), rgba(34,197,94,.06))",
-        border: "1px solid rgba(61,214,140,.28)",
-        borderRadius: 12,
-      },
-    },
+const HOME_MARQUEE_ITEMS = [
+  { text: "Energi Tech · Zimbabwe", accent: true },
+  { text: "SolarApp — free sizing", accent: true },
+  { text: "Tailored appliance lists" },
+  { text: "PDF quote in minutes" },
+  { text: "Homes · shops · farms" },
+  { text: "Load shedding ready" },
+  { text: "Eco-friendly impact" },
+  { text: "Property → load → quote" },
+  { text: "Zimbabwean prefills", green: true },
+  { text: "WhatsApp support" },
+];
+
+export function HomeMarquee({ items }) {
+  const pills = items && items.length ? items : HOME_MARQUEE_ITEMS;
+  const renderSet = (keyPrefix) =>
     React.createElement(
       "div",
-      { style: { display: "flex", alignItems: "center", gap: 8, marginBottom: 6 } },
-      React.createElement(LeafIco, { s: 16, c: M }),
-      React.createElement("p", { style: { color: M, fontSize: 12, fontWeight: 700, margin: 0 } }, "Less pollution")
-    ),
+      { className: "home-marquee-set", key: keyPrefix },
+      pills.map((item, i) =>
+        React.createElement(
+          "span",
+          {
+            key: keyPrefix + i,
+            className:
+              "home-marquee-pill" +
+              (item.accent ? " home-marquee-pill--accent" : "") +
+              (item.green ? " home-marquee-pill--green" : ""),
+          },
+          item.text
+        )
+      )
+    );
+
+  return React.createElement(
+    "div",
+    { className: "home-marquee-wrap", role: "marquee", "aria-label": "SolarApp highlights" },
     React.createElement(
-      "p",
-      { style: { color: W6, fontSize: 12, lineHeight: 1.5, margin: 0 } },
-      "About ",
-      React.createElement("strong", { style: { color: W10 } }, eco.co2KgYear.toLocaleString() + " kg"),
-      " less CO₂ per year vs grid · like ",
-      eco.trees,
-      " trees · ",
-      eco.carKm.toLocaleString(),
-      " km car emissions avoided"
+      "div",
+      { className: "home-marquee-track" },
+      renderSet("a"),
+      renderSet("b")
     )
   );
 }
 
-export function LoadMeter({ pW, dWh, applianceCount, dailyGenWh }) {
+export function HomeBrand() {
+  return React.createElement(
+    "header",
+    { className: "home-brand" },
+    React.createElement(
+      "div",
+      { className: "home-brand-lockup" },
+      React.createElement(
+        "div",
+        { className: "home-brand-icon", "aria-hidden": true },
+        React.createElement(
+          "span",
+          { className: "home-brand-sun" },
+          React.createElement(SunIco, { s: 28, c: G })
+        )
+      ),
+      React.createElement(
+        "div",
+        { className: "home-brand-text" },
+        React.createElement("h1", { className: "home-brand-mark" }, "SolarApp"),
+        React.createElement("p", { className: "home-brand-by" }, "Energi Tech")
+      )
+    ),
+    React.createElement(
+      "p",
+      { className: "home-brand-tag" },
+      "Professional solar sizing for Zimbabwe homes — tailored to how you actually use power."
+    ),
+    React.createElement(
+      "div",
+      { className: "home-steps", "aria-hidden": true },
+      React.createElement("span", { className: "home-step-pill" }, React.createElement("span", null, "1"), "Property"),
+      React.createElement("span", { className: "home-step-pill" }, React.createElement("span", null, "2"), "Load"),
+      React.createElement("span", { className: "home-step-pill" }, React.createElement("span", null, "3"), "Quote")
+    )
+  );
+}
+
+/** Compact eco summary — shown on quote screen & PDF only. */
+export function EcoQuoteFootprint({ dWh, dailyGenWh }) {
+  if (!dWh && !dailyGenWh) return null;
+  const eco = environmentalImpact(dWh, dailyGenWh || 0);
+  const items = [
+    { v: eco.co2Tonnes + "t", l: "CO₂ vs grid/yr" },
+    { v: String(eco.trees), l: "Trees eq." },
+    { v: eco.carKm >= 1000 ? Math.round(eco.carKm / 1000) + "k km" : eco.carKm + " km", l: "Car off-road" },
+  ];
+  return React.createElement(
+    "div",
+    {
+      style: {
+        marginBottom: 12,
+        padding: "10px 8px",
+        borderRadius: 10,
+        background: "linear-gradient(90deg, rgba(61,214,140,.1), rgba(15,31,23,.4))",
+        border: "1px solid rgba(61,214,140,.22)",
+        display: "grid",
+        gridTemplateColumns: "repeat(3, 1fr)",
+        gap: 4,
+        textAlign: "center",
+      },
+    },
+    React.createElement(
+      "div",
+      {
+        style: {
+          gridColumn: "1 / -1",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 6,
+          marginBottom: 4,
+        },
+      },
+      React.createElement(LeafIco, { s: 12, c: M }),
+      React.createElement("span", { style: { color: M, fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase" } }, "Green impact estimate")
+    ),
+    items.map((it) =>
+      React.createElement(
+        "div",
+        { key: it.l },
+        React.createElement("p", { style: { color: W10, fontSize: 15, fontWeight: 700, margin: 0, lineHeight: 1.1 } }, it.v),
+        React.createElement("p", { style: { color: W4, fontSize: 9, margin: "2px 0 0" } }, it.l)
+      )
+    )
+  );
+}
+
+/** @deprecated Use EcoQuoteFootprint on quote; LoadMeter no longer includes eco. */
+export function EcoImpactStrip(props) {
+  return React.createElement(EcoQuoteFootprint, props);
+}
+
+/** Live load on sizer — minimal inline stats only. */
+export function LoadMeter({ pW, dWh, applianceCount, dailyGenWh, minimal }) {
   if (!pW && !dWh) return null;
+  const kwhDay = dWh > 0 ? (dWh / 1000).toFixed(1) : "0";
+  if (minimal) {
+    return React.createElement(
+      "div",
+      {
+        style: {
+          display: "flex",
+          alignItems: "center",
+          gap: 10,
+          fontSize: 11,
+          color: W6,
+          flexShrink: 0,
+        },
+      },
+      React.createElement(
+        "span",
+        null,
+        React.createElement("strong", { style: { color: G, fontWeight: 700 } }, (pW || 0).toLocaleString()),
+        " W"
+      ),
+      React.createElement("span", { style: { color: W4 } }, "·"),
+      React.createElement(
+        "span",
+        null,
+        React.createElement("strong", { style: { color: M, fontWeight: 700 } }, kwhDay),
+        " kWh"
+      )
+    );
+  }
   const v = loadValueInsights(pW, dWh, applianceCount, dailyGenWh);
   return React.createElement(
     "div",
     {
       style: {
         ...CARD,
-        padding: 14,
-        marginBottom: 14,
-        background: "linear-gradient(135deg, rgba(61,214,140,.08), rgba(232,197,71,.05))",
-        border: "1px solid rgba(61,214,140,.2)",
+        padding: 12,
+        marginBottom: 12,
+        background: "rgba(255,255,255,.03)",
+        border: "1px solid rgba(255,255,255,.08)",
       },
     },
     React.createElement(
       "div",
-      { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 } },
+      { style: { display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 } },
       React.createElement(StatCard, {
         label: v.peakLabel,
         value: (pW || 0).toLocaleString() + " W",
@@ -211,10 +422,246 @@ export function LoadMeter({ pW, dWh, applianceCount, dailyGenWh }) {
         sub: v.dailySub,
         accent: M,
       })
+    )
+  );
+}
+
+function clamp01(x) {
+  return Math.max(0, Math.min(1, Number(x) || 0));
+}
+
+function fmtWh(dWh) {
+  if (!dWh) return "0 Wh/day";
+  if (dWh >= 1000) return (dWh / 1000).toFixed(dWh >= 10000 ? 0 : 1) + " kWh/day";
+  return Math.round(dWh) + " Wh/day";
+}
+
+/** Game-style package progress while building a load */
+export function PowerQuestMeter({ sizingLike, peakW, dailyWh }) {
+  const st = computePowerQuestState(sizingLike, peakW, dailyWh);
+  const {
+    pkgs,
+    custom,
+    qualified,
+    qualifyingPct,
+    litIndex,
+    fillPct,
+    emptyZoneFrac,
+    tierKey,
+    firstPkg,
+    activePkg,
+  } = st;
+
+  const prevTier = React.useRef(null);
+  const [unlockFlash, setUnlockFlash] = React.useState(false);
+
+  React.useEffect(() => {
+    const prev = prevTier.current;
+    if (prev !== null && prev !== tierKey && prev.indexOf("charge:") === 0 && tierKey.indexOf("package:") === 0) {
+      setUnlockFlash(true);
+      const t = setTimeout(() => setUnlockFlash(false), 1100);
+      prevTier.current = tierKey;
+      return () => clearTimeout(t);
+    }
+    prevTier.current = tierKey;
+  }, [tierKey]);
+
+  const runwayPct = Math.round(emptyZoneFrac * 100);
+  const sunWarmth = custom ? 1 : Math.min(1, fillPct / 100);
+  const sunColor = custom ? "rgba(248,113,113,.95)" : "rgba(232,197,71," + (0.25 + sunWarmth * 0.75) + ")";
+  const sunWrapClass = "pq-sun-wrap" + (unlockFlash ? " pq-sun-wrap--pulse" : "");
+
+  const pkgName = activePkg?.name || firstPkg.name;
+  const headline = custom
+    ? "Custom system needed"
+    : unlockFlash
+      ? "Package unlocked"
+      : qualified
+        ? pkgName
+        : "Building your load";
+  const sub = custom
+    ? "Your load exceeds our largest package"
+    : qualified && litIndex >= 0
+      ? "Level " + (litIndex + 1) + " of " + pkgs.length
+      : qualifyingPct + "% to first package";
+  const statusLine = custom
+    ? "Tailored quote"
+    : qualified
+      ? "Add more appliances to level up"
+      : "Keep adding — lights & WiFi count";
+
+  const fillClass = "pq-fill pq-fill--" + (custom ? "boss" : qualified ? "package" : "charge");
+
+  const tierDots = pkgs.map((p, i) => {
+    const unlocked = custom ? true : qualified && litIndex >= 0 && i <= litIndex;
+    const active = !custom && litIndex === i;
+    const dotClass =
+      "pq-dot" +
+      (active ? " pq-dot--active" : "") +
+      (unlockFlash && i === 0 ? " pq-dot--pop" : "");
+    return React.createElement(
+      "div",
+      {
+        key: p.id,
+        style: {
+          flex: 1,
+          minWidth: 26,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: 5,
+          opacity: unlocked || active ? 1 : 0.35,
+          transition: "opacity .4s ease",
+        },
+      },
+      React.createElement("span", {
+        className: dotClass,
+        style: {
+          width: active ? 11 : unlocked ? 8 : 6,
+          height: active ? 11 : unlocked ? 8 : 6,
+          borderRadius: 999,
+          background: active ? G : unlocked ? "rgba(232,197,71,.9)" : "rgba(255,255,255,.15)",
+          boxShadow: active ? "0 0 12px rgba(232,197,71,.4)" : "none",
+        },
+      }),
+      React.createElement(
+        "span",
+        {
+          style: {
+            color: active ? W10 : unlocked ? W8 : W4,
+            fontSize: 9,
+            fontWeight: active ? 700 : 500,
+            letterSpacing: "-0.02em",
+          },
+        },
+        p.kva + "k"
+      )
+    );
+  });
+
+  return React.createElement(
+    "div",
+    {
+      className: "power-quest",
+      style: {
+        padding: "16px",
+        margin: "8px 0 12px",
+        borderRadius: 16,
+        background:
+          "linear-gradient(145deg, rgba(18,32,26,.95) 0%, rgba(8,14,11,.98) 50%, rgba(12,20,16,.95) 100%)",
+        border: "1px solid rgba(255,255,255,.08)",
+        boxShadow: "0 8px 32px rgba(0,0,0,.35), inset 0 1px 0 rgba(255,255,255,.06)",
+      },
+    },
+    React.createElement(
+      "div",
+      { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 14 } },
+      React.createElement(
+        "div",
+        { style: { display: "flex", gap: 12, alignItems: "center", minWidth: 0, flex: 1 } },
+        React.createElement(
+          "div",
+          {
+            className: sunWrapClass,
+            style: {
+              width: 44,
+              height: 44,
+              borderRadius: 14,
+              background: "linear-gradient(135deg, rgba(255,255,255,.08), rgba(255,255,255,.02))",
+              border: "1px solid " + (custom ? "rgba(248,113,113,.3)" : "rgba(232,197,71,.2)"),
+              display: "grid",
+              placeItems: "center",
+              flexShrink: 0,
+            },
+          },
+          React.createElement(SunIco, { s: 22, c: sunColor })
+        ),
+        React.createElement(
+          "div",
+          { style: { minWidth: 0 } },
+          React.createElement(
+            "p",
+            {
+              style: {
+                color: G,
+                fontSize: 10,
+                letterSpacing: "0.16em",
+                textTransform: "uppercase",
+                margin: 0,
+                fontWeight: 600,
+              },
+            },
+            "Power Quest"
+          ),
+          React.createElement(
+            "p",
+            { style: { color: W10, fontSize: 15, fontWeight: 700, margin: "3px 0 2px", lineHeight: 1.2, letterSpacing: "-0.02em" } },
+            headline
+          ),
+          React.createElement("p", { style: { color: W6, fontSize: 11, margin: 0 } }, sub)
+        )
+      ),
+      React.createElement(
+        "div",
+        { style: { textAlign: "right", flexShrink: 0 } },
+        React.createElement(
+          "p",
+          { style: { color: W8, fontSize: 11, margin: 0, fontVariantNumeric: "tabular-nums", fontWeight: 500 } },
+          (peakW || 0).toLocaleString() + " W"
+        ),
+        React.createElement("p", { style: { color: W4, fontSize: 10, margin: "2px 0 0" } }, fmtWh(dailyWh)),
+        React.createElement(
+          "p",
+          {
+            style: {
+              color: custom ? "#F87171" : qualified ? M : G,
+              fontSize: 10,
+              marginTop: 6,
+              fontWeight: 600,
+            },
+          },
+          statusLine
+        )
+      )
     ),
-    v.valueLine &&
-      React.createElement("p", { style: { color: W4, fontSize: 11, margin: "10px 0 0" } }, v.valueLine),
-    React.createElement(EcoImpactStrip, { dWh, dailyGenWh })
+    React.createElement(
+      "div",
+      { className: "pq-track-glow", style: { position: "relative", marginBottom: 14 } },
+      React.createElement(
+        "div",
+        {
+          style: {
+            position: "relative",
+            height: 10,
+            borderRadius: 999,
+            background: "rgba(0,0,0,.45)",
+            overflow: "hidden",
+            boxShadow: "inset 0 2px 6px rgba(0,0,0,.4)",
+          },
+        },
+        !custom &&
+          React.createElement("div", {
+            style: {
+              position: "absolute",
+              left: runwayPct + "%",
+              top: 2,
+              bottom: 2,
+              width: 1,
+              background: "rgba(232,197,71,.35)",
+              zIndex: 1,
+            },
+          }),
+        React.createElement("div", {
+          className: fillClass,
+          style: { width: fillPct + "%" },
+        })
+      )
+    ),
+    React.createElement(
+      "div",
+      { style: { display: "flex", justifyContent: "space-between", gap: 2, padding: "0 1px" } },
+      tierDots
+    )
   );
 }
 
@@ -338,7 +785,7 @@ export function BottomNav({ active, onSelect, canSize, canQuote }) {
   const tabs = [
     { id: "home", Ico: NavHomeIco, label: "Home" },
     { id: "products", Ico: NavCatalogIco, label: "Products" },
-    { id: "size", Ico: NavSizeIco, label: "Items", disabled: !canSize },
+    { id: "size", Ico: NavSizeIco, label: "Sizer", disabled: !canSize },
     { id: "quote", Ico: NavQuoteIco, label: "Quote", disabled: !canQuote },
   ];
   return React.createElement(
@@ -874,14 +1321,14 @@ export function BrandHeader({ compact }) {
             fontFamily: FONT_DISPLAY,
             fontSize: compact ? 22 : 26,
             fontWeight: 700,
-            letterSpacing: "0.22em",
+            letterSpacing: "0.08em",
             background: GRAD_GOLD,
             WebkitBackgroundClip: "text",
             WebkitTextFillColor: "transparent",
             backgroundClip: "text",
           },
         },
-        "SOLAR UP"
+        "SolarApp"
       ),
       !compact &&
         React.createElement(
@@ -896,7 +1343,7 @@ export function BrandHeader({ compact }) {
               opacity: 0.85,
             },
           },
-          "Premium solar sizing"
+          "Free solar sizing · Zimbabwe"
         )
     ),
     React.createElement(

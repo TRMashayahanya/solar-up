@@ -1,74 +1,87 @@
-import { INVS, BATS, PANS } from "./data.js";
-
-const SUN_HOURS = 5.5;
-const ARRAY_EFF = 0.77;
-const GEN_MARGIN = 1.2;
-const INV_HEADROOM = 1.3;
-
-function pickPanels(requiredArrayW, dWh) {
-  let best = null;
-  for (const pan of PANS) {
-    let pc = Math.max(2, Math.ceil(requiredArrayW / pan.w));
-    pc = Math.min(pc, 24);
-    const dailyGen = pc * pan.w * SUN_HOURS * ARRAY_EFF;
-    if (dailyGen < dWh * GEN_MARGIN && pc < 24) {
-      pc = Math.min(24, Math.ceil((dWh * GEN_MARGIN) / (pan.w * SUN_HOURS * ARRAY_EFF)));
-    }
-    const cost = pc * pan.price;
-    if (!best || cost < best.cost) best = { pan, pc, cost, dailyGen };
-  }
-  return best;
-}
+import { analyzeLoad, pickPackageForLoad } from "./package-sizing.js";
 
 export function size(list) {
-  let dWh = 0;
-  let pW = 0;
-  for (let i = 0; i < list.length; i++) {
-    dWh += list[i].w * list[i].h;
-    pW += list[i].w;
-  }
-  const kvaReq = (pW * INV_HEADROOM) / 1000;
-  let inv = INVS[INVS.length - 1];
-  for (let j = 0; j < INVS.length; j++) {
-    if (INVS[j].kva >= kvaReq) {
-      inv = INVS[j];
-      break;
-    }
-  }
-  const bWh = (dWh / 0.85 / 0.8) * 1.05;
-  let bat = bWh > 4000 ? BATS[2] : bWh > 2000 ? BATS[1] : BATS[0];
-  let bc = Math.max(1, Math.ceil(bWh / bat.wh));
-  if (bc > 4) {
-    bat = BATS[2];
-    bc = Math.max(1, Math.ceil(bWh / bat.wh));
-  }
-  bc = Math.min(bc, 8);
+  const load = analyzeLoad(list);
+  const pick = pickPackageForLoad(load);
+  const { pkg, req, adequate, customQuote, metrics, notes } = pick;
 
-  const targetGenWh = dWh * GEN_MARGIN;
-  const requiredArrayW = targetGenWh / (SUN_HOURS * ARRAY_EFF);
-  const panelPick = pickPanels(requiredArrayW, dWh);
-  const pan = panelPick.pan;
-  const pc = panelPick.pc;
-  const dailyGenWh = Math.round(panelPick.dailyGen);
-  const solarCoverage = dWh > 0 ? Math.min(999, Math.round((dailyGenWh / dWh) * 100)) : 0;
+  if (customQuote) {
+    const kvaReq = Math.round((req.requiredInverterW / 1000) * 10) / 10;
+    return {
+      dWh: Math.round(load.dailyWh),
+      pW: Math.round(load.peakW),
+      kvaReq,
+      pkg,
+      inv: { brand: "Energi Tech", name: "Custom system", kva: kvaReq, price: 0 },
+      bat: { brand: "Lithium", name: "Sized to your load", wh: req.requiredBatteryWh, price: 0 },
+      bc: 0,
+      pan: { brand: "Solar", name: "Sized to your load", w: 0, price: 0 },
+      pc: 0,
+      tot: 0,
+      kva: kvaReq,
+      sWh: Math.round((load.dailyWh / 0.85 / 0.8) * 1.05),
+      bk: load.peakW > 0 ? Math.round((req.requiredBatteryWh / load.peakW) * 10) / 10 : 0,
+      dailyGenWh: req.requiredSolarWh,
+      solarCoverage: 0,
+      fit: {
+        adequate,
+        customQuote: true,
+        peakMargin: req.peakMargin,
+        minKva: req.minKva,
+        requiredInverterW: req.requiredInverterW,
+        requiredBatteryWh: req.requiredBatteryWh,
+        requiredSolarWh: req.requiredSolarWh,
+        inverterHeadroomPct: metrics.inverterHeadroomPct,
+        referencePkg: pkg,
+        notes,
+      },
+    };
+  }
 
-  const tot = inv.price + bat.price * bc + pan.price * pc;
-  const sWh = bat.wh * bc;
-  const bk = pW > 0 ? Math.round((sWh * 0.8) / pW) : 0;
+  const pc = pkg.panelCount;
+  const pan = { brand: "JINKO", name: pkg.panelW + "W panels", w: pkg.panelW, price: 0 };
+  const bc = pkg.batteryCount;
+  const bat = {
+    brand: "Lithium",
+    name: pkg.includes.find((x) => /battery/i.test(x)) || "Battery bank",
+    wh: pkg.usableBatteryWh,
+    price: 0,
+  };
+  const inv = { brand: "Energi Tech", name: pkg.name, kva: pkg.kva, price: pkg.price };
+
+  const dailyGenWh = pkg.dailyGenWh;
+  const solarCoverage =
+    load.dailyWh > 0 ? Math.min(999, Math.round((dailyGenWh / load.dailyWh) * 100)) : 0;
+  const sWh = Math.round((load.dailyWh / 0.85 / 0.8) * 1.05);
+  const bk = load.peakW > 0 ? Math.round((pkg.usableBatteryWh / load.peakW) * 10) / 10 : 0;
+
   return {
-    dWh: Math.round(dWh),
-    pW: Math.round(pW),
+    dWh: Math.round(load.dailyWh),
+    pW: Math.round(load.peakW),
+    kvaReq: Math.round((req.requiredInverterW / 1000) * 10) / 10,
+    pkg,
     inv,
     bat,
     bc,
     pan,
     pc,
-    tot,
-    kva: inv.kva,
+    tot: pkg.price,
+    kva: pkg.kva,
     sWh,
     bk,
     dailyGenWh,
     solarCoverage,
+    fit: {
+      adequate,
+      customQuote: false,
+      peakMargin: req.peakMargin,
+      minKva: req.minKva,
+      requiredInverterW: req.requiredInverterW,
+      requiredBatteryWh: req.requiredBatteryWh,
+      requiredSolarWh: req.requiredSolarWh,
+      inverterHeadroomPct: metrics.inverterHeadroomPct,
+      notes,
+    },
   };
 }
 

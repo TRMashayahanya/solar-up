@@ -127,6 +127,23 @@ export function VanIco(p) {
 export function NoteIco(p) {
   return React.createElement(Svg, { s: p.s || 16, c: p.c }, path("M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"), pline("14 2 14 8 20 8"), line("16", "13", "8", "13"), line("16", "17", "8", "17"), pline("10 9 9 9 8 9"));
 }
+export function SearchIco(p) {
+  return React.createElement(
+    Svg,
+    { s: p.s || 18, c: p.c, sw: "1.8" },
+    circ({ cx: "11", cy: "11", r: "7" }),
+    line("20", "20", "16.5", "16.5")
+  );
+}
+export function WalletIco(p) {
+  return React.createElement(
+    Svg,
+    { s: p.s || 18, c: p.c, sw: "1.5" },
+    path("M19 7H5a2 2 0 00-2 2v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2z"),
+    path("M16 14h.01"),
+    path("M3 10h18")
+  );
+}
 
 export function NavHomeIco(p) {
   return React.createElement(Svg, { s: p.s || 22, c: p.c, sw: "1.5" }, path("M4 10.5L12 4l8 6.5V19a1 1 0 01-1 1H5a1 1 0 01-1-1v-8.5z"));

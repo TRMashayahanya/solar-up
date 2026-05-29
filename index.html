@@ -4,16 +4,47 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta http-equiv="Cache-Control" content="no-cache" />
-    <meta name="description" content="Solar Up — free solar system sizer for Zimbabwe. Works on phone and computer. Powered by Energi Tech." />
+    <meta name="description" content="SolarApp — free solar system sizer for Zimbabwe. Works on phone and computer. Powered by Energi Tech." />
     <meta name="theme-color" content="#040608" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-    <meta name="apple-mobile-web-app-title" content="Solar Up" />
-    <title>Solar Up — Free Solar Sizer · Energi Tech</title>
+    <meta name="apple-mobile-web-app-title" content="SolarApp" />
+    <title>SolarApp — Free Solar Sizer · Energi Tech</title>
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="icon" href="/icons/icon.svg" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <style>
+      html, body { margin: 0; background: #040608; color: #f8fafc; }
+      .boot {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        min-height: 100dvh;
+        gap: 14px;
+        padding: 24px;
+      }
+      .boot-mark {
+        font-family: Georgia, "Times New Roman", serif;
+        font-size: 1.75rem;
+        font-weight: 700;
+        background: linear-gradient(135deg, #c9a227, #e8c547);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+      }
+      .boot-sub { font-size: 12px; color: rgba(255, 255, 255, 0.45); margin: 0; }
+      .boot-sun {
+        width: 56px;
+        height: 56px;
+        animation: bootSunSpin 20s linear infinite;
+        filter: drop-shadow(0 0 16px rgba(232, 197, 71, 0.45));
+      }
+      @keyframes bootSunSpin { to { transform: rotate(360deg); } }
+      @media (prefers-reduced-motion: reduce) { .boot-sun { animation: none; } }
+    </style>
     <script type="importmap">
       {
         "imports": {
@@ -24,7 +55,13 @@
     </script>
   </head>
   <body>
-    <div id="root"></div>
-    <script type="module" src="./src/main.js?v=17"></script>
+    <div id="root">
+      <div class="boot" role="status" aria-label="Loading SolarApp">
+        <div class="boot-mark">SolarApp</div>
+        <img class="boot-sun" src="/icons/icon.svg" width="56" height="56" alt="" aria-hidden="true" />
+        <p class="boot-sub">Energi Tech · Zimbabwe</p>
+      </div>
+    </div>
+    <script type="module" src="./src/main.js?v=30"></script>
   </body>
 </html>

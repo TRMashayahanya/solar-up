@@ -1,14 +1,10 @@
-# Render.com — Solar Up
-# If Root Directory in dashboard is "src", use the startCommand below.
-# If Root Directory is empty, use: buildCommand true + startCommand node server.mjs
-
+# Render.com — SolarApp (repo root; do not set Root Directory to "src" in dashboard)
 services:
   - type: web
     name: solar-up
     runtime: node
-    rootDir: src
-    buildCommand: npm install
-    startCommand: node ../server.mjs
+    buildCommand: "true"
+    startCommand: node server.mjs
     envVars:
       - key: NODE_VERSION
         value: "22"

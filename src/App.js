@@ -1,19 +1,24 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { BG, GRAD_HERO, CARD, W4 } from "./tokens.js";
-import { PROPS } from "./data.js";
+import { PROPS, paymentAssistWhatsAppUrl } from "./data.js";
 import { size } from "./sizing.js";
-import { downloadQuotePdf } from "./pdf.js";
 import { submitLead } from "./api.js";
 import { applyPreset } from "./prefills.js";
 import { getItemsForProperty } from "./items.js";
 import { newCustomItem, countActiveCustom, customItemsToLoadEntries, isCustomItemActive } from "./custom-items.js";
 import { scrollToTop } from "./scroll.js";
-import { getDeliveryQuote, quoteGrandTotal, isHarareAddress, getOutsideLocationLabel } from "./delivery.js";
+import {
+  getDeliveryQuote,
+  quoteGrandTotal,
+  isHarareAddress,
+  getOutsideLocationLabel,
+  estimateKmFromAddress,
+} from "./delivery.js";
 import { ZapIco, BatIco, PanIco } from "./icons.js";
 import { useCount, ClientModal, Particles, ErrorBoundary } from "./components.js";
 import { HomeScreen, BuildingScreen, ResultScreen, ProductsScreen } from "./screens.js";
 import { globalStyles, BrandHeader, BottomNav } from "./ui.js";
-import { InstallHint } from "./install-hint.js";
+import { isRestrictedCustomLabel } from "./restricted-appliances.js";
 
 export default function App() {
   const [nav, setNav] = useState("home");
@@ -25,7 +30,12 @@ export default function App() {
   const [pdfBusy, setPdfBusy] = useState(false);
   const [leadError, setLeadError] = useState("");
   const [customItems, setCustomItems] = useState([]);
-  const [deliveryOpts, setDeliveryOpts] = useState({ enabled: false, zone: "harare", locationLabel: "" });
+  const [deliveryOpts, setDeliveryOpts] = useState({
+    enabled: true,
+    zone: "harare",
+    locationLabel: "",
+    distanceKm: 0,
+  });
 
   const propInfo = PROPS.find((p) => p.value === propType) || null;
 
@@ -46,7 +56,7 @@ export default function App() {
 
   function mergeSeedIntoList(list, seed) {
     const label = String(seed?.label || "").trim();
-    if (!label) return list;
+    if (!label || isRestrictedCustomLabel(label)) return list;
     const key = label.toLowerCase();
     const existing = list.find((c) => String(c.label || "").trim().toLowerCase() === key);
     if (existing) {
@@ -76,7 +86,11 @@ export default function App() {
     setCustomItems((list) =>
       list.map((c) => {
         if (c.id !== id) return c;
-        if (field === "label") return { ...c, label: value };
+        if (field === "label") {
+          const label = String(value);
+          if (isRestrictedCustomLabel(label)) return { ...c, label, qty: 0 };
+          return { ...c, label };
+        }
         if (field === "qty") return { ...c, qty: Math.max(0, Math.round(Number(value) || 0)) };
         if (field === "w") return { ...c, w: Math.max(1, Number(value) || 1) };
         if (field === "dh") return { ...c, dh: Math.max(0, Number(value) || 0) };
@@ -125,9 +139,15 @@ export default function App() {
     livePeak += a.w;
     liveDailyWh += a.w * a.h;
   }
+  const liveKey = useMemo(
+    () => appList.map((a) => String(a.id || a.label) + ":" + a.w + ":" + a.h).join("|"),
+    [appList]
+  );
+  const liveSizing = useMemo(() => (totalActive > 0 ? size(appList) : null), [totalActive, liveKey]);
 
-  const deliveryQuote = sizing ? getDeliveryQuote(deliveryOpts) : getDeliveryQuote({ enabled: false });
-  const grandTotal = sizing ? quoteGrandTotal(sizing.tot, deliveryQuote) : 0;
+  const isCustomQuote = !!(sizing && sizing.fit && sizing.fit.customQuote);
+  const deliveryQuote = sizing && !isCustomQuote ? getDeliveryQuote(deliveryOpts) : getDeliveryQuote({ enabled: false });
+  const grandTotal = sizing && !isCustomQuote ? quoteGrandTotal(sizing.tot, deliveryQuote) : 0;
   const countTotal = useCount(grandTotal);
 
   useEffect(() => {
@@ -149,7 +169,7 @@ export default function App() {
     setQtys({});
     setHrs({});
     setCustomItems([]);
-    setDeliveryOpts({ enabled: false, zone: "harare", locationLabel: "" });
+    setDeliveryOpts({ enabled: true, zone: "harare", locationLabel: "", distanceKm: 0 });
     setSizing(null);
     setNav("home");
     requestAnimationFrame(() => scrollToTop());
@@ -160,21 +180,33 @@ export default function App() {
     setPdfBusy(true);
     setLeadError("");
 
-    const liveDelivery = getDeliveryQuote(deliveryOpts);
+    const custom = !!(sizing.fit && sizing.fit.customQuote);
+    const liveDelivery = custom ? getDeliveryQuote({ enabled: false }) : getDeliveryQuote(deliveryOpts);
     let pdfDelivery = liveDelivery;
-    if (liveDelivery.enabled && liveDelivery.zone === "outside") {
-      const loc = getOutsideLocationLabel(client.address) || deliveryOpts.locationLabel || "";
-      pdfDelivery = getDeliveryQuote({ enabled: true, zone: "outside", locationLabel: loc });
+    if (!custom && liveDelivery.enabled && liveDelivery.zone === "outside") {
+      const addr = (client.address || "").trim();
+      const loc = getOutsideLocationLabel(addr) || deliveryOpts.locationLabel || addr;
+      const km =
+        deliveryOpts.distanceKm > 0
+          ? deliveryOpts.distanceKm
+          : estimateKmFromAddress(addr) || estimateKmFromAddress(loc) || 0;
+      pdfDelivery = getDeliveryQuote({
+        enabled: true,
+        zone: "outside",
+        locationLabel: loc,
+        distanceKm: km,
+      });
     }
-    const pdfGrand = quoteGrandTotal(sizing.tot, pdfDelivery);
+    const pdfGrand = custom ? null : quoteGrandTotal(sizing.tot, pdfDelivery);
 
     try {
       const leadResult = await submitLead({
         ...client,
         propertyType: propType,
         propertyLabel: propInfo ? propInfo.label : "",
-        quoteTotal: sizing.tot,
-        quoteGrandTotal: pdfGrand,
+        customQuote: custom,
+        quoteTotal: custom ? null : sizing.tot,
+        quoteGrandTotal: custom ? null : pdfGrand,
         deliveryInstall: pdfDelivery.enabled
           ? {
               enabled: true,
@@ -182,8 +214,7 @@ export default function App() {
               fee: pdfDelivery.fee,
               feePending: !!pdfDelivery.feePending,
               locationLabel: pdfDelivery.locationLabel || "",
-              base: pdfDelivery.base,
-              extra: pdfDelivery.extra,
+              km: pdfDelivery.km || 0,
             }
           : { enabled: false },
         peakW: sizing.pW,
@@ -197,6 +228,7 @@ export default function App() {
         submittedAt: new Date().toISOString(),
       });
 
+      const { downloadQuotePdf } = await import("./pdf.js?v=30");
       const result = await downloadQuotePdf(
         client,
         sizing,
@@ -204,13 +236,35 @@ export default function App() {
         propInfo ? propInfo.label : "",
         pdfDelivery
       );
+
+      const waUrl = paymentAssistWhatsAppUrl(
+        client,
+        sizing,
+        propInfo ? propInfo.label : "",
+        pdfDelivery,
+        pdfGrand,
+        custom
+      );
+      const waWin = window.open(waUrl, "_blank", "noopener,noreferrer");
+
       setShowModal(false);
       if (leadResult?.offline) {
-        setLeadError("Quote ready — details saved locally (server unavailable).");
-        setTimeout(() => setLeadError(""), 5000);
+        setLeadError(
+          waWin
+            ? "Quote saved locally — WhatsApp opened for payment help (server unavailable)."
+            : "Quote saved locally — allow pop-ups or message 0773757018 on WhatsApp for payment help."
+        );
+        setTimeout(() => setLeadError(""), 8000);
       } else if (result?.mode === "print") {
-        setLeadError("PDF opened for printing (direct download blocked in browser).");
-        setTimeout(() => setLeadError(""), 5000);
+        setLeadError(
+          waWin
+            ? "PDF opened for printing — WhatsApp opened for payment assistance."
+            : "PDF opened for printing — allow pop-ups to message Energi Tech on WhatsApp."
+        );
+        setTimeout(() => setLeadError(""), 8000);
+      } else if (!waWin) {
+        setLeadError("Quote saved — allow pop-ups to open WhatsApp for payment assistance.");
+        setTimeout(() => setLeadError(""), 6000);
       }
     } catch (e) {
       setLeadError(e.message || "Could not generate your quote. Please try again.");
@@ -227,16 +281,49 @@ export default function App() {
   }
 
   const specs = sizing
-    ? [
-        { label: "Inverter", val: sizing.inv.brand + " " + sizing.inv.name, tot: sizing.inv.price, qty: 1, Ico: ZapIco },
-        { label: "Batteries", val: sizing.bat.brand + " " + sizing.bat.name, tot: sizing.bat.price * sizing.bc, qty: sizing.bc, Ico: BatIco },
-        { label: "Panels", val: sizing.pan.brand + " " + sizing.pan.name, tot: sizing.pan.price * sizing.pc, qty: sizing.pc, Ico: PanIco },
-      ]
+    ? isCustomQuote
+      ? [
+          { label: "Peak load", val: sizing.pW.toLocaleString() + "W simultaneous", custom: true, Ico: ZapIco },
+          { label: "Daily energy", val: sizing.dWh.toLocaleString() + " Wh/day", custom: true, Ico: PanIco },
+          {
+            label: "Estimated inverter",
+            val: "~" + (sizing.kvaReq || sizing.kva) + " kVA+ required",
+            custom: true,
+            Ico: ZapIco,
+          },
+          {
+            label: "Estimated battery",
+            val: "~" + Math.round((sizing.fit.requiredBatteryWh || 0) / 1000) + " kWh+ usable",
+            custom: true,
+            Ico: BatIco,
+          },
+        ]
+      : sizing.pkg
+        ? [
+            {
+              label: "Solar package",
+              val: sizing.pkg.name,
+              tot: sizing.pkg.price,
+              qty: 1,
+              Ico: ZapIco,
+            },
+          ]
+        : [
+            { label: "Inverter", val: sizing.inv.brand + " " + sizing.inv.name, tot: sizing.inv.price, qty: 1, Ico: ZapIco },
+            { label: "Batteries", val: sizing.bat.brand + " " + sizing.bat.name, tot: sizing.bat.price * sizing.bc, qty: sizing.bc, Ico: BatIco },
+            { label: "Panels", val: sizing.pan.brand + " " + sizing.pan.name, tot: sizing.pan.price * sizing.pc, qty: sizing.pc, Ico: PanIco },
+          ]
     : [];
 
   let main = null;
   if (nav === "home") {
-    main = React.createElement(HomeScreen, { onPickProp: pickProp });
+    main = React.createElement(HomeScreen, {
+      onPickProp: pickProp,
+      onViewProducts: () => {
+        setNav("products");
+        scrollToTop();
+      },
+    });
   } else if (nav === "products") {
     main = React.createElement(ProductsScreen, {
       onStartSizing: () => {
@@ -262,6 +349,7 @@ export default function App() {
           totalActive,
           livePeak,
           liveDailyWh,
+          liveSizing,
           onCalculate: goResult,
           onChangeProperty: () => {
             setNav("home");
@@ -278,8 +366,9 @@ export default function App() {
       sizing,
       propInfo,
       specs,
+      isCustomQuote,
       countTotal,
-      productTotal: sizing.tot,
+      productTotal: isCustomQuote ? 0 : sizing.tot,
       deliveryOpts,
       onDeliveryChange: setDeliveryOpts,
       deliveryQuote,
@@ -292,7 +381,7 @@ export default function App() {
   return React.createElement(
     "div",
     {
-      className: "app-shell",
+      className: "app-shell" + (nav === "home" ? " app-shell--home" : ""),
       style: {
         minHeight: "100vh",
         background: BG,
@@ -300,34 +389,50 @@ export default function App() {
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
-        padding: "max(16px, env(safe-area-inset-top)) 16px max(100px, env(safe-area-inset-bottom))",
+        padding:
+          nav === "home"
+            ? "max(10px, env(safe-area-inset-top)) 12px max(88px, env(safe-area-inset-bottom))"
+            : "max(16px, env(safe-area-inset-top)) 16px max(100px, env(safe-area-inset-bottom))",
         position: "relative",
       },
     },
     React.createElement("style", null, globalStyles),
-    React.createElement(Particles, null),
-    React.createElement(BrandHeader, { compact: nav === "size" || nav === "quote" }),
+    nav !== "home" && React.createElement(Particles, null),
+    nav !== "home" && React.createElement(BrandHeader, { compact: nav === "size" || nav === "quote" }),
     React.createElement(
       "main",
       {
+        className: nav === "home" ? "home-main-card" : "",
         style: {
           ...CARD,
           width: "100%",
-          maxWidth: 560,
+          maxWidth: nav === "home" ? "min(560px, 100%)" : 560,
           zIndex: 1,
           overflow: "visible",
         },
       },
-      React.createElement("div", { style: { height: 3, background: "linear-gradient(90deg,#C9A227,#E8C547,#3DD68C)", borderRadius: "20px 20px 0 0" } }),
+      nav !== "home" &&
+        React.createElement("div", { style: { height: 3, background: "linear-gradient(90deg,#C9A227,#E8C547,#3DD68C)", borderRadius: "20px 20px 0 0" } }),
       React.createElement(
         "div",
-        { style: { padding: "clamp(20px, 5vw, 28px)" } },
+        {
+          className: nav === "home" ? "home-main-inner" : "",
+          style: { padding: nav === "home" ? undefined : "clamp(20px, 5vw, 28px)" },
+        },
         React.createElement(ErrorBoundary, null, main)
       )
     ),
     React.createElement(
       "p",
-      { style: { marginTop: 16, color: "rgba(255,255,255,.2)", fontSize: 11, zIndex: 1 } },
+      {
+        style: {
+          marginTop: nav === "home" ? 10 : 16,
+          color: "rgba(255,255,255,.2)",
+          fontSize: 11,
+          zIndex: 1,
+          display: nav === "home" ? "none" : "block",
+        },
+      },
       "0773757018 · Energi Tech"
     ),
     showModal &&
@@ -342,20 +447,34 @@ export default function App() {
         error: leadError,
         deliveryOpts,
         onDeliveryChange: setDeliveryOpts,
-        productTotal: sizing ? sizing.tot : 0,
+        productTotal: sizing ? (isCustomQuote ? 0 : sizing.tot) : 0,
+        customQuote: isCustomQuote,
         onAddressBlur: (address) => {
           const detected = isHarareAddress(address);
           const locationLabel = getOutsideLocationLabel(address);
+          const km = estimateKmFromAddress(address);
           if (detected === true) {
-            setDeliveryOpts((o) => ({ ...o, zone: "harare", locationLabel: "" }));
+            setDeliveryOpts((o) => ({
+              ...o,
+              enabled: true,
+              zone: "harare",
+              locationLabel: "",
+              distanceKm: 0,
+            }));
           } else if (detected === false) {
             setDeliveryOpts((o) => ({
               ...o,
+              enabled: true,
               zone: "outside",
-              locationLabel: locationLabel || o.locationLabel || "",
+              locationLabel: locationLabel || o.locationLabel || address.trim(),
+              distanceKm: km > 0 ? km : o.distanceKm || 0,
             }));
           } else if (locationLabel) {
-            setDeliveryOpts((o) => ({ ...o, locationLabel }));
+            setDeliveryOpts((o) => ({
+              ...o,
+              locationLabel,
+              distanceKm: km > 0 ? km : o.distanceKm || 0,
+            }));
           }
         },
       }),
@@ -364,7 +483,6 @@ export default function App() {
       onSelect: selectNav,
       canSize: !!propType,
       canQuote: !!sizing,
-    }),
-    React.createElement(InstallHint, null)
+    })
   );
 }

@@ -4,6 +4,7 @@
  */
 
 import { LIBRARY, LIB_CATALOG_OVERLAP, seedFromLibrary } from "./custom-library.js";
+import { isRestrictedLibraryEntry } from "./restricted-appliances.js";
 
 function norm(s) {
   return String(s || "")
@@ -25,6 +26,7 @@ function isExcluded(entry, ctx) {
   const labelNorm = norm(entry.label);
   if (customLabels.some((l) => l === labelNorm || l.includes(labelNorm) || labelNorm.includes(l))) return true;
   if (!entry.types.includes("all") && ctx.propType && !entry.types.includes(ctx.propType)) return true;
+  if (isRestrictedLibraryEntry(entry)) return true;
   return false;
 }
 
@@ -36,13 +38,13 @@ const AFFINITY = [
   { ids: ["out_cctv", "out_alarm"], lib: ["electric_fence", "router_extra"], reason: "Extra security & connectivity" },
   { ids: ["kit_freeze"], lib: ["deep_freezer", "second_fridge"], reason: "More cold storage" },
   { ids: ["kit_fridge"], lib: ["second_fridge", "deep_freezer"], reason: "Backup or drinks fridge" },
-  { ids: ["kit_kettle", "kit_micro"], lib: ["airfryer", "blender"], reason: "Kitchen extras" },
-  { ids: ["bath_geyser"], lib: ["water_heater", "hair_dryer"], reason: "Hot water & grooming" },
+  { ids: ["kit_fridge", "kit_freeze"], lib: ["blender", "second_fridge"], reason: "Kitchen extras" },
+  { ids: ["bath_geyser"], lib: ["router_extra"], reason: "Hot water system" },
   { ids: ["off_laptop", "off_desk"], lib: ["router_extra", "gaming_pc"], reason: "Home office / study" },
   { ids: ["off_printer"], lib: ["photocopier", "server_nas"], reason: "Office equipment" },
   { ids: ["lng_tv", "bed_tv"], lib: ["sound_system", "projector"], reason: "Entertainment add-ons" },
-  { ids: ["bed_ac", "lng_ac"], lib: ["iron", "vacuum"], reason: "High-use home appliances" },
-  { ids: ["lnd_wash", "lnd_dryer"], lib: ["iron", "sewing_machine"], reason: "Laundry area extras" },
+  { ids: ["bed_ac", "lng_ac"], lib: ["vacuum", "router_extra"], reason: "High-use home appliances" },
+  { ids: ["lnd_wash", "lnd_dryer"], lib: ["sewing_machine", "vacuum"], reason: "Laundry area extras" },
   { ids: ["ess_wifi"], lib: ["router_extra", "inverter_trolley"], reason: "Backup power & WiFi" },
 ];
 
@@ -56,7 +58,7 @@ const PROP_AFFINITY = {
     { lib: ["cold_room", "workshop_compressor"], reason: "Agri / workshop" },
   ],
   office: [
-    { lib: ["server_nas", "photocopier", "electric_kettle_com"], reason: "Office staples" },
+    { lib: ["server_nas", "photocopier", "router_extra"], reason: "Office staples" },
   ],
   school: [
     { lib: ["projector", "photocopier", "medical_fridge"], reason: "School / clinic" },
@@ -68,10 +70,10 @@ const PROP_AFFINITY = {
     { lib: ["garage_door", "electric_mower", "projector"], reason: "Large property" },
   ],
   apartment: [
-    { lib: ["airfryer", "baby_heater", "router_extra"], reason: "Flat living" },
+    { lib: ["blender", "router_extra", "gaming_pc"], reason: "Flat living" },
   ],
   small_home: [
-    { lib: ["airfryer", "iron", "router_extra"], reason: "Compact home" },
+    { lib: ["blender", "router_extra", "second_fridge"], reason: "Compact home" },
   ],
 };
 
@@ -109,8 +111,8 @@ export function getPredictiveSuggestions(propType, ctx, limit = 6) {
   }
 
   if (acCount(qtys) >= 2) {
-    boost("iron", 8, "Multiple ACs — high household use");
-    boost("vacuum", 7, "Multiple ACs — high household use");
+    boost("vacuum", 8, "Multiple ACs — high household use");
+    boost("router_extra", 6, "Multiple ACs — high household use");
   }
 
   if (activeQty(qtys, "off_printer") > 0 && propType === "shop") {
@@ -142,7 +144,7 @@ export function getUnifiedSuggestions(propType, ctx, limit = 8) {
   try {
     predictive = getPredictiveSuggestions(propType, ctx, limit);
   } catch (err) {
-    console.error("Solar Up: predictive suggestions failed", err);
+    console.error("SolarApp: predictive suggestions failed", err);
   }
   const seen = new Set(predictive.map((e) => e.id));
 

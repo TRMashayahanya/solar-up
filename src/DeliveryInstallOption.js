@@ -2,22 +2,25 @@ import React from "react";
 import { G, W4, W6, W8, W10, G_DIM, GRAD_GOLD, CARD, ci } from "./tokens.js";
 import { VanIco, LocIco } from "./icons.js";
 import {
-  DELIVERY_INSTALL_HARARE_USD,
+  HARARE_INSTALL_INCLUDED_NOTE,
   OUTSIDE_DEALER_ADVISORY,
+  OUTSIDE_DELIVERY_PER_KM_USD,
+  PACKAGE_PRICE_NOTE,
   getDeliveryQuote,
 } from "./delivery.js";
 
 export function DeliveryInstallOption({ opts, onChange, productTotal, variant = "card" }) {
-  const quote = getDeliveryQuote(opts);
-  const grand = (productTotal || 0) + quote.fee;
+  const quote = getDeliveryQuote({ ...opts, enabled: true });
+  const grand = (productTotal || 0) + (quote.feePending ? 0 : quote.fee);
   const compact = variant === "modal";
 
-  function setEnabled(enabled) {
-    onChange({ ...opts, enabled });
+  function setZone(zone) {
+    onChange({ ...opts, enabled: true, zone });
   }
 
-  function setZone(zone) {
-    onChange({ ...opts, zone, enabled: true });
+  function setKm(val) {
+    const km = Math.max(0, Math.round(Number(val) || 0));
+    onChange({ ...opts, enabled: true, zone: "outside", distanceKm: km });
   }
 
   return React.createElement(
@@ -27,16 +30,13 @@ export function DeliveryInstallOption({ opts, onChange, productTotal, variant = 
         ...CARD,
         padding: compact ? "14px 16px" : "18px 20px",
         marginBottom: compact ? 14 : 12,
-        border: opts.enabled ? "1px solid rgba(232,197,71,.45)" : "1px solid rgba(255,255,255,.1)",
-        background: opts.enabled
-          ? "linear-gradient(165deg, rgba(232,197,71,.1) 0%, rgba(8,12,10,.95) 55%)"
-          : "linear-gradient(165deg, rgba(255,255,255,.04) 0%, rgba(8,12,10,.92) 100%)",
-        boxShadow: opts.enabled ? "0 8px 32px rgba(232,197,71,.12)" : "none",
+        border: "1px solid rgba(232,197,71,.35)",
+        background: "linear-gradient(165deg, rgba(232,197,71,.08) 0%, rgba(8,12,10,.95) 55%)",
       },
     },
     React.createElement(
       "div",
-      { style: { display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 14 } },
+      { style: { display: "flex", alignItems: "flex-start", gap: 12, marginBottom: 12 } },
       React.createElement(
         "div",
         {
@@ -44,249 +44,102 @@ export function DeliveryInstallOption({ opts, onChange, productTotal, variant = 
             width: compact ? 40 : 44,
             height: compact ? 40 : 44,
             borderRadius: 12,
-            background: opts.enabled ? G_DIM : "rgba(255,255,255,.06)",
-            border: "1px solid " + (opts.enabled ? "rgba(232,197,71,.35)" : "rgba(255,255,255,.08)"),
+            background: G_DIM,
+            border: "1px solid rgba(232,197,71,.35)",
             ...ci,
             flexShrink: 0,
           },
         },
-        React.createElement(VanIco, { s: compact ? 20 : 22, c: opts.enabled ? G : W6 })
+        React.createElement(VanIco, { s: compact ? 20 : 22, c: G })
       ),
       React.createElement(
         "div",
         { style: { flex: 1, minWidth: 0 } },
         React.createElement(
           "p",
-          {
-            style: {
-              color: W10,
-              fontSize: compact ? 13 : 15,
-              fontWeight: 700,
-              margin: "0 0 4px",
-              letterSpacing: "-0.01em",
-            },
-          },
-          "Delivery & installation"
+          { style: { color: W10, fontSize: compact ? 13 : 15, fontWeight: 700, margin: "0 0 4px" } },
+          "Delivery area"
         ),
         React.createElement(
           "p",
           { style: { color: W4, fontSize: compact ? 11 : 12, margin: 0, lineHeight: 1.45 } },
-          compact
-            ? "Choose whether to include this on your printed quotation."
-            : "Optional add-on — include on your final quotation if you want us to deliver and install."
+          PACKAGE_PRICE_NOTE
         )
       )
     ),
 
     React.createElement(
       "div",
-      {
-        style: {
-          display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: 8,
-          marginBottom: opts.enabled ? 14 : 0,
-        },
-      },
-      React.createElement(ChoicePill, {
-        active: !opts.enabled,
-        onClick: () => setEnabled(false),
-        title: "Products only",
-        sub: "Supply quote",
-        price: "$" + (productTotal || 0).toLocaleString(),
+      { style: { display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 } },
+      React.createElement(ZoneCard, {
+        active: opts.zone !== "outside",
+        onClick: () => setZone("harare"),
+        title: "Harare",
+        price: "Install included",
+        detail: HARARE_INSTALL_INCLUDED_NOTE,
+        badge: "In package",
       }),
-      React.createElement(ChoicePill, {
-        active: !!opts.enabled,
-        onClick: () => setEnabled(true),
-        title: "Include delivery",
-        sub: "On your quotation",
-        price: "from $" + DELIVERY_INSTALL_HARARE_USD,
-        accent: true,
+      React.createElement(ZoneCard, {
+        active: opts.zone === "outside",
+        onClick: () => setZone("outside"),
+        title: "Outside Harare",
+        price: "$" + OUTSIDE_DELIVERY_PER_KM_USD + "/km",
+        detail: OUTSIDE_DEALER_ADVISORY,
+        badge: "Per km",
       })
     ),
 
-    opts.enabled &&
+    opts.zone === "outside" &&
       React.createElement(
-        React.Fragment,
-        null,
+        "div",
+        { style: { marginBottom: 12 } },
         React.createElement(
-          "p",
+          "label",
           {
             style: {
+              display: "block",
               color: W4,
               fontSize: 10,
-              letterSpacing: "0.1em",
+              letterSpacing: "0.08em",
               textTransform: "uppercase",
-              fontWeight: 600,
-              margin: "0 0 8px",
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
+              marginBottom: 6,
             },
           },
-          React.createElement(LocIco, { s: 12, c: G }),
-          "Delivery area"
+          "Distance from Harare (km)"
         ),
-        React.createElement(
-          "div",
-          { style: { display: "flex", flexDirection: "column", gap: 8, marginBottom: 14 } },
-          React.createElement(ZoneCard, {
-            active: opts.zone !== "outside",
-            onClick: () => setZone("harare"),
-            title: "Harare",
-            price: "$" + DELIVERY_INSTALL_HARARE_USD,
-            detail: "Delivery & professional install",
-            badge: "Standard",
-          }),
-          React.createElement(ZoneCard, {
-            active: opts.zone === "outside",
-            onClick: () => setZone("outside"),
-            title: "Outside Harare",
-            price: quote.locationLabel ? quote.locationLabel : "Dealer quote",
-            detail: OUTSIDE_DEALER_ADVISORY,
-            badge: "By location",
-            subdetail:
-              quote.locationLabel
-                ? "Location noted: " + quote.locationLabel + " — final fee on your quotation after dealer review."
-                : "Enter your city/area in your details — the dealer will confirm travel & install cost.",
-          })
-        ),
-        quote.feePending
-          ? React.createElement(PendingTotalStrip, {
-              productTotal: productTotal || 0,
-              locationLabel: quote.locationLabel,
-            })
-          : React.createElement(TotalStrip, {
-              productTotal: productTotal || 0,
-              deliveryFee: quote.fee,
-              grand,
-              deliveryLabel: quote.label,
-            })
-      ),
-
-    !opts.enabled &&
-      !compact &&
-      React.createElement(
-        "p",
-        {
+        React.createElement("input", {
+          type: "number",
+          min: 0,
+          step: 1,
+          value: opts.distanceKm > 0 ? opts.distanceKm : quote.km || "",
+          onChange: (e) => setKm(e.target.value),
+          placeholder: quote.km ? "Suggested: " + quote.km : "e.g. 280",
           style: {
-            margin: 0,
+            width: "100%",
             padding: "10px 12px",
             borderRadius: 10,
-            background: "rgba(255,255,255,.03)",
-            border: "1px dashed rgba(255,255,255,.12)",
-            color: W4,
-            fontSize: 11,
-            lineHeight: 1.45,
-            textAlign: "center",
+            border: "1px solid rgba(255,255,255,.15)",
+            background: "rgba(0,0,0,.3)",
+            color: W10,
+            fontSize: 16,
+            fontFamily: "inherit",
           },
-        },
-        "You can add delivery when you download your PDF quote."
-      )
-  );
-}
-
-function ChoicePill({ active, onClick, title, sub, price, accent }) {
-  return React.createElement(
-    "button",
-    {
-      type: "button",
-      onClick,
-      style: {
-        border: "1px solid " + (active ? (accent ? "rgba(232,197,71,.55)" : "rgba(255,255,255,.25)") : "rgba(255,255,255,.1)"),
-        borderRadius: 12,
-        padding: "12px 10px",
-        cursor: "pointer",
-        textAlign: "left",
-        fontFamily: "inherit",
-        background: active
-          ? accent
-            ? "linear-gradient(145deg, rgba(232,197,71,.18), rgba(232,197,71,.06))"
-            : "rgba(255,255,255,.08)"
-          : "rgba(0,0,0,.25)",
-        boxShadow: active && accent ? "0 4px 16px rgba(232,197,71,.15)" : "none",
-        transition: "border-color .15s, background .15s",
-      },
-    },
-    React.createElement(
-      "p",
-      { style: { color: active ? W10 : W6, fontSize: 12, fontWeight: 700, margin: "0 0 2px" } },
-      title
-    ),
-    React.createElement("p", { style: { color: W4, fontSize: 10, margin: "0 0 6px" } }, sub),
-    React.createElement(
-      "p",
-      {
-        style: {
-          color: active && accent ? G : W8,
-          fontSize: 13,
-          fontWeight: 700,
-          margin: 0,
-        },
-      },
-      price
-    )
-  );
-}
-
-function PendingTotalStrip({ productTotal, locationLabel }) {
-  return React.createElement(
-    "div",
-    {
-      style: {
-        borderRadius: 12,
-        overflow: "hidden",
-        border: "1px solid rgba(91,156,245,.35)",
-        background: "rgba(91,156,245,.08)",
-      },
-    },
-    React.createElement(
-      "div",
-      { style: { padding: "12px 14px" } },
-      React.createElement(LineItem, { label: "Products (on quotation)", value: "$" + productTotal.toLocaleString() }),
-      React.createElement(LineItem, {
-        label: "Delivery & install (outside Harare)",
-        value: "Dealer to advise",
-        accent: true,
-      }),
-      locationLabel &&
-        React.createElement(
-          "p",
-          { style: { color: W6, fontSize: 11, margin: "8px 0 0", lineHeight: 1.45 } },
-          React.createElement("strong", { style: { color: W8 } }, "Area: "),
-          locationLabel
-        ),
-      React.createElement(
-        "p",
-        { style: { color: W4, fontSize: 11, margin: "10px 0 0", lineHeight: 1.5 } },
-        OUTSIDE_DEALER_ADVISORY
-      )
-    ),
-    React.createElement(
-      "div",
-      {
-        style: {
-          padding: "10px 14px",
-          borderTop: "1px solid rgba(255,255,255,.08)",
-          background: "rgba(0,0,0,.2)",
-        },
-      },
-      React.createElement(
-        "p",
-        { style: { color: W4, fontSize: 10, margin: "0 0 4px", textTransform: "uppercase", letterSpacing: "0.08em" } },
-        "Quotation total (products)"
+        })
       ),
-      React.createElement(
-        "p",
-        { style: { color: G, fontSize: 20, fontWeight: 800, margin: 0 } },
-        "$" + productTotal.toLocaleString()
-      ),
-      React.createElement(
-        "p",
-        { style: { color: W4, fontSize: 10, margin: "6px 0 0" } },
-        "+ delivery & install (confirmed by dealer)"
-      )
-    )
+
+    quote.feePending
+      ? React.createElement(PendingTotalStrip, {
+          productTotal: productTotal || 0,
+          locationLabel: quote.locationLabel,
+          perKm: OUTSIDE_DELIVERY_PER_KM_USD,
+        })
+      : React.createElement(TotalStrip, {
+          productTotal: productTotal || 0,
+          deliveryFee: quote.fee,
+          grand,
+          deliveryLabel: quote.label,
+          installIncluded: quote.zone === "harare",
+        })
   );
 }
 
@@ -310,7 +163,6 @@ function ZoneCard({ active, onClick, title, price, detail, badge, subdetail }) {
         cursor: "pointer",
         textAlign: "left",
         fontFamily: "inherit",
-        position: "relative",
       },
     },
     React.createElement(
@@ -326,10 +178,7 @@ function ZoneCard({ active, onClick, title, price, detail, badge, subdetail }) {
           ...ci,
         },
       },
-      active &&
-        React.createElement("div", {
-          style: { width: 8, height: 8, borderRadius: "50%", background: G },
-        })
+      active && React.createElement("div", { style: { width: 8, height: 8, borderRadius: "50%", background: G } })
     ),
     React.createElement(
       "div",
@@ -362,7 +211,7 @@ function ZoneCard({ active, onClick, title, price, detail, badge, subdetail }) {
           "p",
           {
             style: {
-              color: active ? W6 : W4,
+              color: W6,
               fontSize: 10,
               margin: "8px 0 0",
               lineHeight: 1.45,
@@ -376,7 +225,44 @@ function ZoneCard({ active, onClick, title, price, detail, badge, subdetail }) {
   );
 }
 
-function TotalStrip({ productTotal, deliveryFee, grand, deliveryLabel }) {
+function PendingTotalStrip({ productTotal, locationLabel, perKm }) {
+  return React.createElement(
+    "div",
+    {
+      style: {
+        borderRadius: 12,
+        overflow: "hidden",
+        border: "1px solid rgba(91,156,245,.35)",
+        background: "rgba(91,156,245,.08)",
+      },
+    },
+    React.createElement(
+      "div",
+      { style: { padding: "12px 14px" } },
+      React.createElement(LineItem, { label: "Package (Harare install incl.)", value: "$" + productTotal.toLocaleString() }),
+      React.createElement(LineItem, {
+        label: "Delivery outside Harare",
+        value: "Enter km × $" + perKm,
+        accent: true,
+      }),
+      locationLabel &&
+        React.createElement(
+          "p",
+          { style: { color: W6, fontSize: 11, margin: "8px 0 0" } },
+          React.createElement("strong", { style: { color: W8 } }, "Area: "),
+          locationLabel
+        )
+    ),
+    React.createElement(
+      "div",
+      { style: { padding: "10px 14px", borderTop: "1px solid rgba(255,255,255,.08)", background: "rgba(0,0,0,.2)" } },
+      React.createElement("p", { style: { color: G, fontSize: 18, fontWeight: 800, margin: 0 } }, "$" + productTotal.toLocaleString()),
+      React.createElement("p", { style: { color: W4, fontSize: 10, margin: "6px 0 0" } }, "+ delivery km (add distance above)")
+    )
+  );
+}
+
+function TotalStrip({ productTotal, deliveryFee, grand, deliveryLabel, installIncluded }) {
   return React.createElement(
     "div",
     {
@@ -389,12 +275,22 @@ function TotalStrip({ productTotal, deliveryFee, grand, deliveryLabel }) {
     React.createElement(
       "div",
       { style: { padding: "10px 14px", background: "rgba(0,0,0,.25)" } },
-      React.createElement(LineItem, { label: "Products", value: "$" + productTotal.toLocaleString() }),
       React.createElement(LineItem, {
-        label: deliveryLabel || "Delivery & install",
-        value: "+$" + deliveryFee.toLocaleString(),
-        accent: true,
-      })
+        label: "Package",
+        value: "$" + productTotal.toLocaleString(),
+        sub: installIncluded ? "incl. Harare install" : "",
+      }),
+      deliveryFee > 0
+        ? React.createElement(LineItem, {
+            label: deliveryLabel || "Delivery",
+            value: "+$" + deliveryFee.toLocaleString(),
+            accent: true,
+          })
+        : React.createElement(LineItem, {
+            label: "Harare installation",
+            value: "Included",
+            accent: true,
+          })
     ),
     React.createElement(
       "div",
@@ -425,19 +321,23 @@ function TotalStrip({ productTotal, deliveryFee, grand, deliveryLabel }) {
   );
 }
 
-function LineItem({ label, value, accent }) {
+function LineItem({ label, value, accent, sub }) {
   return React.createElement(
     "div",
-    {
-      style: {
-        display: "flex",
-        justifyContent: "space-between",
-        fontSize: 12,
-        color: accent ? W8 : W6,
-        marginBottom: 4,
+    { style: { marginBottom: 6 } },
+    React.createElement(
+      "div",
+      {
+        style: {
+          display: "flex",
+          justifyContent: "space-between",
+          fontSize: 12,
+          color: accent ? W8 : W6,
+        },
       },
-    },
-    React.createElement("span", null, label),
-    React.createElement("span", { style: accent ? { color: G, fontWeight: 600 } : {} }, value)
+      React.createElement("span", null, label),
+      React.createElement("span", { style: accent ? { color: G, fontWeight: 600 } : {} }, value)
+    ),
+    sub && React.createElement("p", { style: { color: W4, fontSize: 10, margin: "2px 0 0" } }, sub)
   );
 }

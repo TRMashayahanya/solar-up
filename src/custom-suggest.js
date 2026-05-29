@@ -2,6 +2,11 @@
  * Smart suggestions & parsing for custom accessories.
  */
 import { LIBRARY, LIB_CATALOG_OVERLAP, seedFromLibrary } from "./custom-library.js";
+import {
+  isRestrictedLibraryEntry,
+  isRestrictedCustomLabel,
+  filterRestrictedLibrary,
+} from "./restricted-appliances.js";
 
 export { LIBRARY, LIB_CATALOG_OVERLAP, seedFromLibrary };
 
@@ -34,6 +39,7 @@ export function findBestLibraryMatch(query) {
   let best = null;
   let bestScore = 0;
   for (const entry of LIBRARY) {
+    if (isRestrictedLibraryEntry(entry)) continue;
     const s = scoreMatch(query, entry);
     if (s > bestScore) {
       bestScore = s;
@@ -47,13 +53,14 @@ export function searchSuggestions(query, propType, limit = 6) {
   const q = norm(query);
   const scored = [];
   for (const entry of LIBRARY) {
+    if (isRestrictedLibraryEntry(entry)) continue;
     if (!entry.types.includes("all") && propType && !entry.types.includes(propType)) continue;
     const s = q ? scoreMatch(q, entry) : 0.3;
     if (q && s < 0.35) continue;
     scored.push({ ...entry, score: s });
   }
   scored.sort((a, b) => b.score - a.score);
-  return scored.slice(0, limit);
+  return filterRestrictedLibrary(scored).slice(0, limit);
 }
 
 export function getPropertySuggestions(propType, ctx) {
@@ -61,6 +68,7 @@ export function getPropertySuggestions(propType, ctx) {
   const customLabels = (ctx?.customLabels || []).map(norm);
   const out = [];
   for (const entry of LIBRARY) {
+    if (isRestrictedLibraryEntry(entry)) continue;
     if (!entry.types.includes("all") && propType && !entry.types.includes(propType)) continue;
     const catId = LIB_CATALOG_OVERLAP[entry.id];
     if (catId && (qtys[catId] || 0) > 0) continue;
@@ -113,6 +121,8 @@ export function parseQuickInput(text) {
       ? lib.label
       : label.replace(/\b\w/g, (c) => c.toUpperCase()).replace(/\bAnd\b/g, "and");
 
+  if (isRestrictedCustomLabel(pretty) || (lib && isRestrictedLibraryEntry(lib))) return null;
+
   return {
     label: pretty,
     w: w != null && w > 0 ? w : lib?.w ?? 100,
@@ -124,8 +134,9 @@ export function parseQuickInput(text) {
 }
 
 export function suggestEnrichment(label, currentW, currentDh) {
+  if (isRestrictedCustomLabel(label)) return null;
   const lib = findBestLibraryMatch(label);
-  if (!lib || lib.score < 0.5) return null;
+  if (!lib || lib.score < 0.5 || isRestrictedLibraryEntry(lib)) return null;
   const wDefault = currentW === 100 || currentW == null;
   const hDefault = currentDh === 4 || currentDh == null;
   return {
