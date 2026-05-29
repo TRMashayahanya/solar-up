@@ -9,7 +9,7 @@ import { fileURLToPath } from "url";
 import {
   SUN_VIEWBOX,
   ICON_TILE_CORNER_RX,
-  ICON_STROKE_WIDTH,
+  SUN_STROKE_WIDTH,
   ICON_SUN_SCALE,
   SUN_RING,
   SUN_RAY_SEGMENTS,
@@ -56,7 +56,7 @@ function drawIcon(size) {
   const cx = toPx(rcx, size);
   const cy = toPx(rcy, size);
   const ringR = SUN_RING.r * ICON_SUN_SCALE * unit;
-  const strokeW = ICON_STROKE_WIDTH * unit;
+  const strokeW = SUN_STROKE_WIDTH * ICON_SUN_SCALE * unit;
   const halfStroke = strokeW / 2;
   const cornerR = ICON_TILE_CORNER_RX * unit;
   const aa = Math.max(0.6, strokeW * 0.1);
