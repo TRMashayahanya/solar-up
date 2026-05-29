@@ -1,14 +1,15 @@
 /** SolarApp — service worker (installable PWA; network-first for app code) */
-const CACHE = "solarapp-shell-v24";
+const CACHE = "solarapp-shell-v26";
+const ICON_VER = "sun2";
 
 const SHELL = [
   "/",
   "/index.html",
-  "/manifest.webmanifest",
-  "/icons/icon.svg",
-  "/icons/icon-192.png",
-  "/icons/icon-512.png",
-  "/icons/apple-touch-icon.png",
+  "/manifest.webmanifest?v=" + ICON_VER,
+  "/icons/icon.svg?v=" + ICON_VER,
+  "/icons/icon-192.png?v=" + ICON_VER,
+  "/icons/icon-512.png?v=" + ICON_VER,
+  "/icons/apple-touch-icon.png?v=" + ICON_VER,
   "/install/",
   "/install/index.html",
 ];
@@ -66,10 +67,16 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  const isStatic =
+  const isIconOrManifest =
     url.pathname.startsWith("/icons/") ||
-    url.pathname.startsWith("/install/") ||
     url.pathname.endsWith(".webmanifest");
+
+  if (isIconOrManifest) {
+    event.respondWith(networkFirst(event.request));
+    return;
+  }
+
+  const isStatic = url.pathname.startsWith("/install/");
 
   if (!isStatic) return;
 

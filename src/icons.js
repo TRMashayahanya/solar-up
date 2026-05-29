@@ -1,4 +1,5 @@
 import React from "react";
+import { SUN_RING, SUN_RAY_D } from "./sun-icon-geometry.js";
 
 function Svg(p) {
   const s = p.s || 18;
@@ -30,8 +31,8 @@ export function SunIco(p) {
   return React.createElement(
     Svg,
     { s: p.s || 20, c: p.c, sw: "1.2" },
-    circ({ cx: "12", cy: "12", r: "4.5" }),
-    path("M12 1.5v3M12 19.5v3M3.22 3.22l2.12 2.12M18.66 18.66l2.12 2.12M1.5 12h3M19.5 12h3M3.22 20.78l2.12-2.12M18.66 5.34l2.12-2.12")
+    circ({ cx: String(SUN_RING.cx), cy: String(SUN_RING.cy), r: String(SUN_RING.r) }),
+    path(SUN_RAY_D)
   );
 }
 export function LeafIco(p) {

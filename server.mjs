@@ -94,8 +94,12 @@ function serveStatic(req, res) {
     const ext = path.extname(filePath);
     const headers = { "Content-Type": MIME[ext] || "application/octet-stream" };
     const isVendor = urlPath.startsWith("/vendor/");
+    const isIconOrManifest =
+      urlPath.startsWith("/icons/") || ext === ".webmanifest" || ext === ".png" || ext === ".svg";
     if (isVendor) {
       headers["Cache-Control"] = "public, max-age=31536000, immutable";
+    } else if (isIconOrManifest) {
+      headers["Cache-Control"] = "no-store, must-revalidate";
     } else if (ext === ".js" || ext === ".html" || ext === ".mjs") {
       headers["Cache-Control"] = "no-store";
     }
