@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from "react";
-import { G, W4, W6, W8, W10, G_DIM, ci } from "./tokens.js";
+import { G, W4, W6, W8, W10, G_DIM, BORDER, BORDER_FOCUS, SURFACE, SURFACE_STRONG, CHIP_BG, PANEL_BG, PANEL_BORDER, ci } from "./tokens.js";
 import { PlsIco, XcoIco } from "./icons.js";
 import { QtyStepper } from "./ui.js";
 import { ApplianceIcon, IconTile } from "./appliance-icons.js";
@@ -23,8 +23,8 @@ const panelBg = {
   marginTop: 14,
   padding: "12px 12px 10px",
   borderRadius: 14,
-  border: "1px solid rgba(255,255,255,.08)",
-  background: "rgba(255,255,255,.025)",
+  border: PANEL_BORDER,
+  background: PANEL_BG,
   position: "relative",
   zIndex: 2,
 };
@@ -45,10 +45,10 @@ const miniNum = {
   width: 44,
   padding: "6px 4px",
   textAlign: "center",
-  background: "rgba(255,255,255,.05)",
-  border: "1px solid rgba(255,255,255,.08)",
+  background: "var(--input-bg)",
+  border: "1px solid " + BORDER,
   borderRadius: 8,
-  color: W10,
+  color: "var(--input-text)",
   fontSize: 12,
   fontFamily: "inherit",
   outline: "none",
@@ -66,7 +66,7 @@ function SmartChip({ entry, onPick, accent }) {
         padding: accent ? "6px 11px" : "5px 10px",
         borderRadius: 999,
         border: accent ? "1px solid rgba(232,197,71,.3)" : "none",
-        background: accent ? "rgba(232,197,71,.1)" : "rgba(255,255,255,.06)",
+        background: accent ? G_DIM : CHIP_BG,
         color: accent ? W8 : W6,
         fontSize: 11,
         cursor: "pointer",
@@ -153,7 +153,7 @@ function CustomAccessoryRow({ item, onChange, onRemove, onPatch }) {
               height: 26,
               borderRadius: 6,
               border: "none",
-              background: "rgba(255,255,255,.05)",
+              background: "var(--input-bg)",
               cursor: "pointer",
               display: "flex",
               alignItems: "center",
@@ -177,7 +177,7 @@ function CustomAccessoryRow({ item, onChange, onRemove, onPatch }) {
         gap: 10,
         padding: "10px 10px",
         borderRadius: 10,
-        border: "1px solid " + (on ? "rgba(232,197,71,.22)" : "rgba(255,255,255,.06)"),
+        border: "1px solid " + (on ? BORDER_FOCUS : BORDER),
         background: on ? "rgba(232,197,71,.05)" : "rgba(0,0,0,.15)",
       },
     },
@@ -276,6 +276,7 @@ export function CustomAccessoriesPanel({
   copy,
   propType,
   qtys = {},
+  embedded = false,
 }) {
   const sectionLabel = (copy && copy.label) || "Add more items";
   if (!onAddFromSeed || !onChange || !onRemove) return null;
@@ -402,62 +403,63 @@ export function CustomAccessoriesPanel({
 
   return React.createElement(
     "div",
-    { style: panelBg },
-    React.createElement(
-      "div",
-      {
-        style: {
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "space-between",
-          gap: 8,
-          marginBottom: 10,
-          flexWrap: "wrap",
-        },
-      },
+    { className: embedded ? "custom-panel--embedded" : undefined, style: embedded ? undefined : panelBg },
+    !embedded &&
       React.createElement(
         "div",
-        null,
-        React.createElement(
-          "span",
-          { style: { color: W8, fontSize: 13, fontWeight: 600, display: "block" } },
-          sectionLabel
-        ),
-        React.createElement(
-          "span",
-          { style: { color: W4, fontSize: 10, marginTop: 2, display: "block" } },
-          "Heating elements excluded · other items tap to add"
-        )
-      ),
-      loadBased.length > 0 &&
-        onAddBulk &&
-        React.createElement(
-          "button",
-          {
-            type: "button",
-            onClick: addAllPredicted,
-            style: {
-              padding: "6px 12px",
-              borderRadius: 8,
-              border: "1px solid rgba(232,197,71,.4)",
-              background: G_DIM,
-              color: G,
-              fontSize: 11,
-              fontWeight: 600,
-              cursor: "pointer",
-              fontFamily: "inherit",
-              flexShrink: 0,
-              ...ci,
-            },
+        {
+          style: {
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            gap: 8,
+            marginBottom: 10,
+            flexWrap: "wrap",
           },
-          "Add all (" + Math.min(loadBased.length, 4) + ")"
-        )
-    ),
+        },
+        React.createElement(
+          "div",
+          null,
+          React.createElement(
+            "span",
+            { style: { color: W8, fontSize: 13, fontWeight: 600, display: "block" } },
+            sectionLabel
+          ),
+          React.createElement(
+            "span",
+            { style: { color: W4, fontSize: 10, marginTop: 2, display: "block" } },
+            "Heating elements excluded · other items tap to add"
+          )
+        ),
+        loadBased.length > 0 &&
+          onAddBulk &&
+          React.createElement(
+            "button",
+            {
+              type: "button",
+              onClick: addAllPredicted,
+              style: {
+                padding: "6px 12px",
+                borderRadius: 8,
+                border: "1px solid rgba(232,197,71,.4)",
+                background: G_DIM,
+                color: G,
+                fontSize: 11,
+                fontWeight: 600,
+                cursor: "pointer",
+                fontFamily: "inherit",
+                flexShrink: 0,
+                ...ci,
+              },
+            },
+            "Add all (" + Math.min(loadBased.length, 4) + ")"
+          )
+      ),
 
     loadBased.length > 0 &&
       React.createElement(
         "div",
-        { style: { marginBottom: 10 } },
+        { className: embedded ? "custom-section" : undefined, style: { marginBottom: embedded ? 6 : 10 } },
         React.createElement(
           "p",
           { style: { color: W4, fontSize: 9, letterSpacing: "0.08em", textTransform: "uppercase", margin: "0 0 6px" } },
@@ -465,7 +467,7 @@ export function CustomAccessoriesPanel({
         ),
         React.createElement(
           "div",
-          { style: { display: "flex", flexWrap: "wrap", gap: 6 } },
+          { className: embedded ? "custom-chip-row" : undefined, style: { display: "flex", flexWrap: "wrap", gap: embedded ? 5 : 6 } },
           loadBased.slice(0, 5).map((entry) =>
             React.createElement(SmartChip, {
               key: entry.id,
@@ -497,7 +499,11 @@ export function CustomAccessoriesPanel({
 
     React.createElement(
       "div",
-      { ref: wrapRef, style: { position: "relative", marginBottom: visibleGeneral.length || items.length ? 10 : 0 } },
+      {
+        ref: wrapRef,
+        className: embedded ? "custom-input-wrap" : undefined,
+        style: { position: "relative", marginBottom: visibleGeneral.length || items.length ? (embedded ? 6 : 10) : 0 },
+      },
       React.createElement(
         "div",
         {
@@ -507,8 +513,8 @@ export function CustomAccessoriesPanel({
             gap: 8,
             padding: "0 12px",
             borderRadius: 12,
-            border: "1px solid " + (open ? "rgba(232,197,71,.35)" : "rgba(255,255,255,.1)"),
-            background: "rgba(0,0,0,.2)",
+            border: "1px solid " + (open ? BORDER_FOCUS : BORDER),
+            background: "var(--input-bg)",
           },
         },
         React.createElement(PlsIco, { s: 14, c: W4 }),
@@ -538,7 +544,7 @@ export function CustomAccessoriesPanel({
               padding: "6px 12px",
               borderRadius: 8,
               border: "none",
-              background: canAdd ? G : "rgba(255,255,255,.08)",
+              background: canAdd ? G : "var(--surface-strong)",
               color: canAdd ? "#0a0800" : W4,
               fontSize: 12,
               fontWeight: 600,
@@ -564,7 +570,7 @@ export function CustomAccessoriesPanel({
               top: "calc(100% + 4px)",
               zIndex: 30,
               background: "rgba(10,14,12,.98)",
-              border: "1px solid rgba(255,255,255,.1)",
+              border: "1px solid " + BORDER,
               borderRadius: 10,
               boxShadow: "0 8px 28px rgba(0,0,0,.45)",
               maxHeight: 180,
@@ -584,7 +590,7 @@ export function CustomAccessoriesPanel({
                   justifyContent: "space-between",
                   padding: "9px 12px",
                   border: "none",
-                  borderBottom: "1px solid rgba(255,255,255,.05)",
+                  borderBottom: "1px solid var(--border)",
                   background: i === hi ? G_DIM : "transparent",
                   color: W8,
                   fontSize: 12,
@@ -604,12 +610,13 @@ export function CustomAccessoriesPanel({
       React.createElement(
         "div",
         {
+          className: embedded ? "custom-chip-row" : undefined,
           style: {
             display: "flex",
             flexWrap: "nowrap",
-            gap: 6,
+            gap: embedded ? 5 : 6,
             overflowX: "auto",
-            marginBottom: items.length ? 10 : 0,
+            marginBottom: items.length ? (embedded ? 6 : 10) : 0,
             paddingBottom: 2,
           },
         },

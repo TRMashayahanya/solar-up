@@ -15,8 +15,20 @@
     <link rel="icon" href="/icons/icon.svg?v=sun4" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png?v=sun4" />
     <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+    <script>
+      (function () {
+        try {
+          if (localStorage.getItem("solarapp-theme") === "light") {
+            document.documentElement.dataset.theme = "light";
+            var m = document.querySelector('meta[name="theme-color"]');
+            if (m) m.setAttribute("content", "#FAFAF9");
+          }
+        } catch (e) {}
+      })();
+    </script>
     <style>
       html, body { margin: 0; background: #040608; color: #f8fafc; }
+      html[data-theme="light"], html[data-theme="light"] body { background: #FAFAF9; color: #1D1D1F; }
       .boot {
         display: flex;
         flex-direction: column;
@@ -36,6 +48,7 @@
         background-clip: text;
       }
       .boot-sub { font-size: 12px; color: rgba(255, 255, 255, 0.45); margin: 0; }
+      html[data-theme="light"] .boot-sub { color: rgba(18, 24, 22, 0.52); }
       .boot-sun {
         display: inline-flex;
         animation: bootSunSpin 20s linear infinite;
@@ -67,6 +80,6 @@
         <p class="boot-sub">Energi Tech · Zimbabwe</p>
       </div>
     </div>
-    <script type="module" src="./src/main.js?v=33"></script>
+    <script type="module" src="./src/main.js?v=45"></script>
   </body>
 </html>

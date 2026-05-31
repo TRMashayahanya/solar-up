@@ -1,5 +1,5 @@
 import React from "react";
-import { G, W4, W6, W8, W10, G_DIM, GRAD_GOLD, CARD, ci } from "./tokens.js";
+import { G, W4, W6, W8, W10, G_DIM, GRAD_GOLD, CARD, BORDER, BORDER_FOCUS, SURFACE_STRONG, ci } from "./tokens.js";
 import { VanIco, LocIco } from "./icons.js";
 import {
   HARARE_INSTALL_INCLUDED_NOTE,
@@ -12,6 +12,7 @@ export function DeliveryInstallOption({ opts, onChange, productTotal, variant = 
   const quote = getDeliveryQuote({ ...opts, enabled: true });
   const grand = (productTotal || 0) + (quote.feePending ? 0 : quote.fee);
   const compact = variant === "modal";
+  const quotePage = variant === "quote" || variant === "modal";
 
   function setZone(zone) {
     onChange({ ...opts, enabled: true, zone });
@@ -25,13 +26,16 @@ export function DeliveryInstallOption({ opts, onChange, productTotal, variant = 
   return React.createElement(
     "div",
     {
-      style: {
-        ...CARD,
-        padding: compact ? "14px 16px" : "18px 20px",
-        marginBottom: compact ? 14 : 12,
-        border: "1px solid rgba(232,197,71,.35)",
-        background: "linear-gradient(165deg, rgba(232,197,71,.08) 0%, rgba(8,12,10,.95) 55%)",
-      },
+      className: quotePage ? "quote-delivery-card" : undefined,
+      style: quotePage
+        ? undefined
+        : {
+            ...CARD,
+            padding: compact ? "14px 16px" : "18px 20px",
+            marginBottom: compact ? 14 : 12,
+            border: "1px solid rgba(232,197,71,.35)",
+            background: "linear-gradient(165deg, rgba(232,197,71,.08) 0%, rgba(8,12,10,.95) 55%)",
+          },
     },
     React.createElement(
       "div",
@@ -49,7 +53,13 @@ export function DeliveryInstallOption({ opts, onChange, productTotal, variant = 
             flexShrink: 0,
           },
         },
-        React.createElement(VanIco, { s: compact ? 20 : 22, c: G })
+        quotePage
+          ? React.createElement(
+              "span",
+              { className: "quote-gold-icon" },
+              React.createElement(VanIco, { s: compact ? 20 : 22, c: "currentColor" })
+            )
+          : React.createElement(VanIco, { s: compact ? 20 : 22, c: G })
       ),
       React.createElement(
         "div",
@@ -71,6 +81,7 @@ export function DeliveryInstallOption({ opts, onChange, productTotal, variant = 
       "div",
       { style: { display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 } },
       React.createElement(ZoneCard, {
+        quotePage,
         active: opts.zone !== "outside",
         onClick: () => setZone("harare"),
         title: "Harare",
@@ -79,6 +90,7 @@ export function DeliveryInstallOption({ opts, onChange, productTotal, variant = 
         badge: "In package",
       }),
       React.createElement(ZoneCard, {
+        quotePage,
         active: opts.zone === "outside",
         onClick: () => setZone("outside"),
         title: "Outside Harare",
@@ -110,19 +122,22 @@ export function DeliveryInstallOption({ opts, onChange, productTotal, variant = 
           type: "number",
           min: 0,
           step: 1,
+          className: quotePage ? "quote-zone-input" : undefined,
           value: opts.distanceKm > 0 ? opts.distanceKm : quote.km || "",
           onChange: (e) => setKm(e.target.value),
           placeholder: quote.km ? "Suggested: " + quote.km : "e.g. 280",
-          style: {
-            width: "100%",
-            padding: "10px 12px",
-            borderRadius: 10,
-            border: "1px solid rgba(255,255,255,.15)",
-            background: "rgba(0,0,0,.3)",
-            color: W10,
-            fontSize: 16,
-            fontFamily: "inherit",
-          },
+          style: quotePage
+            ? undefined
+            : {
+                width: "100%",
+                padding: "10px 12px",
+                borderRadius: 10,
+                border: "1px solid rgba(255,255,255,.15)",
+                background: "rgba(0,0,0,.3)",
+                color: W10,
+                fontSize: 16,
+                fontFamily: "inherit",
+              },
         })
       ),
 
@@ -142,42 +157,47 @@ export function DeliveryInstallOption({ opts, onChange, productTotal, variant = 
   );
 }
 
-function ZoneCard({ active, onClick, title, price, detail, badge, subdetail }) {
+function ZoneCard({ active, onClick, title, price, detail, badge, subdetail, quotePage }) {
+  const gold = quotePage ? "var(--quote-gold)" : G;
   return React.createElement(
     "button",
     {
       type: "button",
       onClick,
-      style: {
-        display: "flex",
-        alignItems: "flex-start",
-        gap: 12,
-        width: "100%",
-        padding: "12px 14px",
-        borderRadius: 12,
-        border: "1px solid " + (active ? "rgba(232,197,71,.5)" : "rgba(255,255,255,.1)"),
-        background: active
-          ? "linear-gradient(135deg, rgba(232,197,71,.12), rgba(232,197,71,.04))"
-          : "rgba(0,0,0,.2)",
-        cursor: "pointer",
-        textAlign: "left",
-        fontFamily: "inherit",
-      },
+      className: quotePage ? "quote-zone-btn" + (active ? " quote-zone-btn--active" : "") : undefined,
+      style: quotePage
+        ? { display: "flex", alignItems: "flex-start", gap: 12, cursor: "pointer", textAlign: "left" }
+        : {
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 12,
+            width: "100%",
+            padding: "12px 14px",
+            borderRadius: 12,
+            border: "1px solid " + (active ? BORDER_FOCUS : BORDER),
+            background: active
+              ? "linear-gradient(135deg, rgba(232,197,71,.12), rgba(232,197,71,.04))"
+              : "rgba(0,0,0,.2)",
+            cursor: "pointer",
+            textAlign: "left",
+            fontFamily: "inherit",
+          },
     },
     React.createElement(
       "div",
       {
+        className: quotePage ? "quote-zone-radio" : undefined,
         style: {
           width: 18,
           height: 18,
           borderRadius: "50%",
-          border: "2px solid " + (active ? G : "rgba(255,255,255,.25)"),
+          border: "2px solid " + (active ? gold : quotePage ? "var(--border)" : "rgba(255,255,255,.25)"),
           flexShrink: 0,
           marginTop: 2,
           ...ci,
         },
       },
-      active && React.createElement("div", { style: { width: 8, height: 8, borderRadius: "50%", background: G } })
+      active && React.createElement("div", { style: { width: 8, height: 8, borderRadius: "50%", background: gold } })
     ),
     React.createElement(
       "div",
@@ -195,7 +215,7 @@ function ZoneCard({ active, onClick, title, price, detail, badge, subdetail }) {
               letterSpacing: "0.08em",
               textTransform: "uppercase",
               color: active ? "#0a0800" : W4,
-              background: active ? GRAD_GOLD : "rgba(255,255,255,.08)",
+              background: active ? GRAD_GOLD : SURFACE_STRONG,
               padding: "2px 8px",
               borderRadius: 20,
             },
@@ -203,7 +223,7 @@ function ZoneCard({ active, onClick, title, price, detail, badge, subdetail }) {
           badge
         )
       ),
-      React.createElement("p", { style: { color: G, fontSize: 15, fontWeight: 700, margin: "0 0 4px" } }, price),
+      React.createElement("p", { style: { color: gold, fontSize: 15, fontWeight: 700, margin: "0 0 4px" } }, price),
       React.createElement("p", { style: { color: W4, fontSize: 11, margin: 0, lineHeight: 1.4 } }, detail),
       subdetail &&
         React.createElement(
@@ -215,7 +235,7 @@ function ZoneCard({ active, onClick, title, price, detail, badge, subdetail }) {
               margin: "8px 0 0",
               lineHeight: 1.45,
               paddingTop: 8,
-              borderTop: "1px solid rgba(255,255,255,.08)",
+              borderTop: "1px solid var(--border)",
             },
           },
           subdetail
@@ -254,7 +274,7 @@ function PendingTotalStrip({ productTotal, locationLabel, perKm }) {
     ),
     React.createElement(
       "div",
-      { style: { padding: "10px 14px", borderTop: "1px solid rgba(255,255,255,.08)", background: "rgba(0,0,0,.2)" } },
+      { style: { padding: "10px 14px", borderTop: "1px solid var(--border)", background: "var(--surface-inset)" } },
       React.createElement("p", { style: { color: G, fontSize: 18, fontWeight: 800, margin: 0 } }, "$" + productTotal.toLocaleString()),
       React.createElement("p", { style: { color: W4, fontSize: 10, margin: "6px 0 0" } }, "+ delivery km (add distance above)")
     )

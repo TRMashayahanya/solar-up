@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { G, GD, W4, W10, GRAD_GOLD, ci } from "./tokens.js";
+import { W4, ci } from "./tokens.js";
 import { PrtIco, UsrIco, PhIco, LocIco, NoteIco } from "./icons.js";
 import { DeliveryInstallOption } from "./DeliveryInstallOption.js";
 import { getQuoteValidity } from "./quote.js";
@@ -32,7 +32,7 @@ export class ErrorBoundary extends React.Component {
           },
         },
         React.createElement("strong", null, "Something went wrong"),
-        React.createElement("p", { style: { margin: "8px 0 0", color: "rgba(255,255,255,.7)" } }, String(this.state.error.message)),
+        React.createElement("p", { style: { margin: "8px 0 0", color: W4 } }, String(this.state.error.message)),
         React.createElement(
           "button",
           {
@@ -42,9 +42,9 @@ export class ErrorBoundary extends React.Component {
               marginTop: 12,
               padding: "8px 14px",
               borderRadius: 8,
-              border: "1px solid rgba(255,255,255,.2)",
+              border: "1px solid var(--border-strong)",
               background: "transparent",
-              color: "#fff",
+              color: "var(--text-primary)",
               cursor: "pointer",
               fontFamily: "inherit",
             },
@@ -109,73 +109,41 @@ export function ClientModal(p) {
     return (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
   }
 
-  const inp = {
-    width: "100%",
-    background: "rgba(255,255,255,.05)",
-    border: "1px solid rgba(212,175,55,.2)",
-    borderRadius: 10,
-    padding: "10px 13px",
-    color: "#fff",
-    fontSize: 13,
-    fontFamily: "inherit",
-    outline: "none",
-    marginBottom: 10,
-    boxSizing: "border-box",
-  };
-  const lbl = {
-    color: "rgba(212,175,55,.65)",
-    fontSize: 9.5,
-    letterSpacing: "0.12em",
-    textTransform: "uppercase",
-    fontWeight: 500,
-    marginBottom: 4,
-    display: "flex",
-    alignItems: "center",
-    gap: 6,
-  };
+  const icon = (Ico, s) =>
+    React.createElement(
+      "span",
+      { className: "quote-gold-icon" },
+      React.createElement(Ico, { s: s || 13, c: "currentColor" })
+    );
 
   return React.createElement(
     "div",
-    {
-      style: {
-        position: "fixed",
-        inset: 0,
-        background: "rgba(0,0,0,.88)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        zIndex: 9998,
-        padding: 16,
-      },
-    },
+    { className: "client-modal-overlay" },
     React.createElement(
       "div",
-      {
-        style: {
-          background: "linear-gradient(145deg,#0A1208,#050A05)",
-          border: "1px solid rgba(212,175,55,.25)",
-          borderRadius: 22,
-          padding: "clamp(22px,5vw,28px)",
-          width: "100%",
-          maxWidth: 440,
-          boxShadow: "0 40px 100px rgba(0,0,0,.9)",
-          maxHeight: "90vh",
-          overflowY: "auto",
-        },
-      },
+      { className: "client-modal-panel", role: "dialog", "aria-labelledby": "client-modal-title" },
       React.createElement(
         "div",
-        { style: { display: "flex", alignItems: "center", gap: 10, marginBottom: 6 } },
-        React.createElement(PrtIco, { s: 18, c: G }),
+        { className: "client-modal-brand" },
         React.createElement(
-          "h3",
-          { style: { fontFamily: "serif", color: "#fff", fontSize: 20, fontWeight: 600, margin: 0 } },
-          customQuote ? "Get your custom quote" : "Secure your package"
+          "span",
+          { className: "quote-gold-icon" },
+          React.createElement(PrtIco, { s: 18, c: "currentColor" })
+        ),
+        React.createElement(
+          "div",
+          null,
+          React.createElement("p", { className: "client-modal-eyebrow" }, "SolarApp · Energi Tech"),
+          React.createElement(
+            "h3",
+            { id: "client-modal-title", className: "client-modal-title" },
+            customQuote ? "Get your custom quote" : "Secure your package"
+          )
         )
       ),
       React.createElement(
         "p",
-        { style: { color: W4, fontSize: 12, margin: "0 0 14px", lineHeight: 1.45 } },
+        { className: "client-modal-sub" },
         customQuote
           ? "We'll confirm sizing on WhatsApp and send your PDF."
           : "PDF quote · WhatsApp to confirm payment · valid " + validity.days + " days"
@@ -187,82 +155,68 @@ export function ClientModal(p) {
           productTotal,
           variant: "modal",
         }),
-      React.createElement("div", { style: lbl }, React.createElement(UsrIco, { s: 13, c: G }), "Name *"),
-      React.createElement("input", { value: form.name, onChange: upd("name"), required: true, style: inp }),
-      React.createElement("div", { style: lbl }, React.createElement(PhIco, { s: 13, c: G }), "Phone / WhatsApp *"),
-      React.createElement("input", { value: form.phone, onChange: upd("phone"), required: true, style: inp }),
-      React.createElement("div", { style: lbl }, React.createElement(NoteIco, { s: 13, c: G }), "Email *"),
-      React.createElement("input", { type: "email", value: form.email, onChange: upd("email"), required: true, style: inp }),
-      React.createElement("div", { style: lbl }, React.createElement(LocIco, { s: 13, c: G }), "Area / address *"),
+      React.createElement("div", { className: "client-modal-label" }, icon(UsrIco), "Name *"),
       React.createElement("input", {
+        className: "client-modal-input",
+        value: form.name,
+        onChange: upd("name"),
+        required: true,
+      }),
+      React.createElement("div", { className: "client-modal-label" }, icon(PhIco), "Phone / WhatsApp *"),
+      React.createElement("input", {
+        className: "client-modal-input",
+        value: form.phone,
+        onChange: upd("phone"),
+        required: true,
+      }),
+      React.createElement("div", { className: "client-modal-label" }, icon(NoteIco), "Email *"),
+      React.createElement("input", {
+        className: "client-modal-input",
+        type: "email",
+        value: form.email,
+        onChange: upd("email"),
+        required: true,
+      }),
+      React.createElement("div", { className: "client-modal-label" }, icon(LocIco), "Area / address *"),
+      React.createElement("input", {
+        className: "client-modal-input",
         value: form.address,
         onChange: upd("address"),
         onBlur: (e) => onAddressBlur && onAddressBlur(e.target.value),
         required: true,
-        style: inp,
         placeholder: "e.g. Borrowdale, Harare — or city outside Harare",
       }),
-      React.createElement("div", { style: lbl }, React.createElement(NoteIco, { s: 13, c: G }), "Notes"),
+      React.createElement("div", { className: "client-modal-label" }, icon(NoteIco), "Notes"),
       React.createElement("textarea", {
+        className: "client-modal-input",
         value: form.notes,
         onChange: upd("notes"),
         rows: 2,
-        style: { ...inp, resize: "vertical", marginBottom: 12 },
+        style: { resize: "vertical", marginBottom: 12 },
       }),
-      err &&
-        React.createElement(
-          "p",
-          { style: { color: "#F87171", fontSize: 12, margin: "0 0 12px" } },
-          err
-        ),
+      err && React.createElement("p", { className: "client-modal-error" }, err),
       React.createElement(
         "div",
-        { style: { display: "flex", gap: 10 } },
+        { className: "client-modal-actions" },
         React.createElement(
           "button",
-          {
-            type: "button",
-            onClick: onClose,
-            disabled: busy,
-            style: {
-              flex: 1,
-              padding: "13px",
-              background: "transparent",
-              border: "1px solid rgba(255,255,255,.1)",
-              borderRadius: 12,
-              color: W4,
-              fontSize: 13,
-              cursor: busy ? "wait" : "pointer",
-              fontFamily: "inherit",
-            },
-          },
+          { type: "button", className: "client-modal-btn-cancel", onClick: onClose, disabled: busy },
           "Cancel"
         ),
         React.createElement(
           "button",
           {
             type: "button",
+            className:
+              "client-modal-btn-primary " + (ok && !busy ? "client-modal-btn-primary--ready" : "client-modal-btn-primary--idle"),
             onClick: () => ok && onDone(form),
             disabled: !ok || busy,
-            style: {
-              flex: 2,
-              padding: "13px",
-              background: ok ? "linear-gradient(135deg," + GD + "," + G + ")" : "rgba(255,255,255,.08)",
-              border: "none",
-              borderRadius: 12,
-              color: ok ? "#0a0800" : W4,
-              fontSize: 13,
-              fontWeight: 700,
-              cursor: !ok || busy ? "not-allowed" : "pointer",
-              fontFamily: "inherit",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              gap: 8,
-              opacity: busy ? 0.7 : 1,
-            },
           },
-          React.createElement(PrtIco, { s: 14, c: ok ? "#0a0800" : W4 }),
+          React.createElement(
+            "span",
+            { style: { display: "inline-flex", color: ok ? "inherit" : "var(--text-muted)" } },
+            React.createElement(PrtIco, { s: 14, c: "currentColor" })
+          ),
           busy
             ? customQuote
               ? "Sending to Energi Tech…"
@@ -278,13 +232,13 @@ export function ClientModal(p) {
 
 export function Particles() {
   const dots = useRef(
-    Array.from({ length: 28 }, (_, i) => ({
+    Array.from({ length: 22 }, (_, i) => ({
       x: Math.random() * 100,
       y: Math.random() * 100,
-      s: Math.random() * 2 + 0.8,
-      o: Math.random() * 0.2 + 0.04,
-      sp: Math.random() * 0.011 + 0.003,
-      gold: i % 3 === 0,
+      s: Math.random() * 1.6 + 0.6,
+      o: Math.random() * 0.12 + 0.03,
+      sp: Math.random() * 0.008 + 0.002,
+      gold: i % 4 === 0,
     }))
   ).current;
   const ref = useRef(null);
@@ -319,6 +273,7 @@ export function Particles() {
   }, []);
   return React.createElement("canvas", {
     ref: ref,
-    style: { position: "fixed", inset: 0, width: "100%", height: "100%", pointerEvents: "none", zIndex: 0 },
+    className: "ambient-particles",
+    "aria-hidden": true,
   });
 }

@@ -1,7 +1,7 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 
-const BUILD = "33";
+import { BUILD } from "./build.js";
 
 function showBootError(message, detail) {
   const root = document.getElementById("root");
@@ -17,7 +17,11 @@ function showBootError(message, detail) {
         escapeHtml(detail) +
         "</pre>"
       : "") +
-    '<p style="margin-top:16px;font-size:12px;color:rgba(255,255,255,.45)">Run <code style="color:#E8C547">./start.sh</code> then open <a href="http://localhost:5173/?v=30" style="color:#E8C547">http://localhost:5173/?v=30</a></p></div>';
+    '<p style="margin-top:16px;font-size:12px;color:rgba(255,255,255,.45)">Run <code style="color:#E8C547">./start.sh</code> then open <a href="http://localhost:5173/?v=' +
+    BUILD +
+    '" style="color:#E8C547">http://localhost:5173/?v=' +
+    BUILD +
+    "</a></p></div>";
 }
 
 function escapeHtml(s) {

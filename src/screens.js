@@ -1,29 +1,37 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { G, W4, W6, W8, W10, FONT_DISPLAY, CARD, G_DIM, ci } from "./tokens.js";
 import {
   PROPS,
   productWhatsAppMessage,
 } from "./data.js";
-import { PACKAGES } from "./packages.js";
+import { PACKAGES, PACKAGE_PRICE_NOTE } from "./packages.js";
 import { getGroupedItemsForProperty } from "./items.js";
 import { getOtherAccessoriesCopy } from "./copy.js";
 import {
   StepIndicator,
-  PageTitle,
   PowerQuestMeter,
   EcoQuoteFootprint,
   ApplianceRow,
   BtnPrimary,
   BtnGhost,
-  ItemGroupHeader,
   EmptyHint,
   ProductCard,
   HomeBrand,
+  SizerAreaAccordion,
+  SIZER_CUSTOM_AREA_ID,
 } from "./ui.js";
+import { countActiveCustom } from "./custom-items.js";
 import { ZapIco, PrtIco, RetIco, ArrRIco } from "./icons.js";
 import { CustomAccessoriesPanel } from "./custom-accessories-panel.js";
 import { DeliveryInstallOption } from "./DeliveryInstallOption.js";
 import { HomeInstallCta } from "./home-install-cta.js";
+import {
+  QuoteBrandBar,
+  QuoteWatermarkShield,
+  QuoteHeroCard,
+  QuoteSpecTable,
+  useQuotePreviewRef,
+} from "./quote-page.js";
 
 export function HomeScreen({ onPickProp, onViewProducts }) {
   return React.createElement(
@@ -70,7 +78,7 @@ export function HomeScreen({ onPickProp, onViewProducts }) {
                 React.createElement(
                   "span",
                   { className: "home-prop-arrow", "aria-hidden": true },
-                  React.createElement(ArrRIco, { s: 14, c: "rgba(255,255,255,.45)" })
+                  React.createElement(ArrRIco, { s: 14, c: W4 })
                 )
               )
             )
@@ -101,11 +109,10 @@ export function ProductsScreen({ onStartSizing }) {
 
   return React.createElement(
     "div",
-    { className: "animate-rise" },
-    React.createElement(PageTitle, { title: "Packages" }),
+    { className: "animate-rise products-screen" },
     React.createElement(
       "div",
-      { style: { display: "flex", flexDirection: "column", gap: 10, marginBottom: 16 } },
+      { className: "products-list" },
       items.map((p) =>
         React.createElement(ProductCard, {
           key: p.name + p.price,
@@ -114,13 +121,22 @@ export function ProductsScreen({ onStartSizing }) {
         })
       )
     ),
+    React.createElement(
+      "p",
+      { className: "products-footnote" },
+      PACKAGE_PRICE_NOTE.split(".")[0] + "."
+    ),
     onStartSizing &&
-      React.createElement(BtnPrimary, {
-        onClick: onStartSizing,
-        full: true,
-        icon: React.createElement(ZapIco, { s: 16, c: "#0a0800" }),
-        children: "Size my system",
-      })
+      React.createElement(
+        "div",
+        { className: "products-cta" },
+        React.createElement(BtnPrimary, {
+          onClick: onStartSizing,
+          full: true,
+          icon: React.createElement(ZapIco, { s: 16, c: "#0a0800" }),
+          children: "Size my system",
+        })
+      )
   );
 }
 
@@ -144,26 +160,22 @@ export function BuildingScreen({
 }) {
   const groups = getGroupedItemsForProperty(propType);
   const otherCopy = getOtherAccessoriesCopy(propType);
-  const scrollRef = useRef(null);
-  const endRef = useRef(null);
-  const [readyToCalculate, setReadyToCalculate] = useState(false);
+  const [openArea, setOpenArea] = useState(() => groups[0]?.catId || SIZER_CUSTOM_AREA_ID);
 
   useEffect(() => {
-    const root = scrollRef.current;
-    const target = endRef.current;
-    if (!root || !target) return;
+    if (groups.length) setOpenArea(groups[0].catId);
+    else setOpenArea(SIZER_CUSTOM_AREA_ID);
+  }, [propType]);
 
-    const obs = new IntersectionObserver(
-      (entries) => {
-        if (entries.some((e) => e.isIntersecting)) setReadyToCalculate(true);
-      },
-      { root, rootMargin: "0px 0px 24px 0px", threshold: 0 }
-    );
-    obs.observe(target);
-    return () => obs.disconnect();
-  }, [groups.length, customItems.length, totalActive]);
+  function selectArea(areaId) {
+    setOpenArea((prev) => (prev === areaId ? null : areaId));
+  }
 
-  const showCalculate = totalActive > 0 && readyToCalculate;
+  function groupActiveCount(group) {
+    return group.items.reduce((n, it) => n + ((qtys[it.id] || 0) > 0 ? 1 : 0), 0);
+  }
+
+  const customActive = countActiveCustom(customItems);
 
   return React.createElement(
     "div",
@@ -171,59 +183,28 @@ export function BuildingScreen({
     React.createElement(
       "div",
       { className: "sizer-header-outside" },
-      React.createElement(StepIndicator, { step: 1, total: 2 }),
+      React.createElement(StepIndicator, { step: 1, total: 2, compact: true }),
       React.createElement(
         "div",
-        {
-          style: {
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            gap: 8,
-            marginTop: 6,
-            flexWrap: "wrap",
-          },
-        },
+        { className: "sizer-prop-bar" },
         propInfo &&
           React.createElement(
             "div",
-            {
-              style: {
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "4px 10px",
-                background: G_DIM,
-                borderRadius: 20,
-              },
-            },
-            React.createElement(propInfo.Icon, { s: 12, c: propInfo.color }),
-            React.createElement("span", { style: { color: W8, fontSize: 11, fontWeight: 600 } }, propInfo.label)
+            { className: "sizer-prop-chip" },
+            React.createElement(propInfo.Icon, { s: 11, c: propInfo.color }),
+            React.createElement("span", { className: "sizer-prop-chip-label" }, propInfo.label)
           ),
         onChangeProperty &&
           React.createElement(
             "button",
-            {
-              type: "button",
-              onClick: onChangeProperty,
-              style: {
-                background: "transparent",
-                border: "none",
-                padding: "4px 0",
-                color: W4,
-                fontSize: 11,
-                cursor: "pointer",
-                fontFamily: "inherit",
-                textDecoration: "underline",
-              },
-            },
+            { type: "button", className: "sizer-change-prop", onClick: onChangeProperty },
             "Change property"
           )
       )
     ),
     React.createElement(
       "div",
-      { className: "sizer-scroll", ref: scrollRef },
+      { className: "sizer-scroll" },
       (livePeak > 0 || liveDailyWh > 0) &&
         React.createElement(PowerQuestMeter, {
           sizingLike: liveSizing,
@@ -232,19 +213,23 @@ export function BuildingScreen({
         }),
       groups.length === 0
         ? React.createElement(EmptyHint, { text: "No items for this type." })
-        : groups.map((group, gi) =>
-            React.createElement(
-              "div",
-              { key: group.catId, style: { marginBottom: gi < groups.length - 1 ? 10 : 0 } },
-              React.createElement(ItemGroupHeader, {
-                label: group.label,
-                color: group.color,
-                iconKey: group.iconKey,
-                first: gi === 0,
-              }),
+        : React.createElement(
+            "div",
+            { className: "sizer-accordion-list" },
+            groups.map((group) =>
               React.createElement(
-                "div",
-                { style: { display: "flex", flexDirection: "column", gap: 8 } },
+                SizerAreaAccordion,
+                {
+                  key: group.catId,
+                  areaId: group.catId,
+                  label: group.label,
+                  hint: group.hint,
+                  color: group.color,
+                  iconKey: group.iconKey,
+                  isOpen: openArea === group.catId,
+                  onSelect: selectArea,
+                  activeCount: groupActiveCount(group),
+                },
                 group.items.map((item) => {
                   const q = qtys[item.id] || 0;
                   const rowItem = item.tailoredHint ? { ...item, sub: item.tailoredHint } : item;
@@ -257,33 +242,46 @@ export function BuildingScreen({
                   });
                 })
               )
+            ),
+            React.createElement(
+              SizerAreaAccordion,
+              {
+                areaId: SIZER_CUSTOM_AREA_ID,
+                label: otherCopy.label || "Add more items",
+                hint: otherCopy.hint || "Tap to add custom items",
+                color: G,
+                iconKey: "accessories",
+                isOpen: openArea === SIZER_CUSTOM_AREA_ID,
+                onSelect: selectArea,
+                activeCount: customActive,
+              },
+              React.createElement(CustomAccessoriesPanel, {
+                embedded: true,
+                items: customItems,
+                onAddFromSeed: onAddCustomFromSeed,
+                onAddBulk: onAddCustomBulk,
+                onChange: onUpdateCustom,
+                onPatch: onPatchCustom,
+                onRemove: onRemoveCustom,
+                copy: otherCopy,
+                propType,
+                qtys,
+                propLabel: propInfo?.label,
+              })
             )
-          ),
-      React.createElement(CustomAccessoriesPanel, {
-        items: customItems,
-        onAddFromSeed: onAddCustomFromSeed,
-        onAddBulk: onAddCustomBulk,
-        onChange: onUpdateCustom,
-        onPatch: onPatchCustom,
-        onRemove: onRemoveCustom,
-        copy: otherCopy,
-        propType,
-        qtys,
-        propLabel: propInfo?.label,
-      }),
-      React.createElement("div", { ref: endRef, className: "sizer-end-sentinel", "aria-hidden": true }),
-      showCalculate &&
-        React.createElement(
-          "div",
-          { className: "sizer-calculate-end" },
-          React.createElement(BtnPrimary, {
-            onClick: onCalculate,
-            full: true,
-            icon: React.createElement(ZapIco, { s: 16, c: "#0a0800" }),
-            children: "Calculate my system",
-          })
-        )
-    )
+          )
+    ),
+    totalActive > 0 &&
+      React.createElement(
+        "div",
+        { className: "sizer-footer" },
+        React.createElement(BtnPrimary, {
+          onClick: onCalculate,
+          full: true,
+          icon: React.createElement(ZapIco, { s: 16, c: "#0a0800" }),
+          children: "Calculate my system",
+        })
+      )
   );
 }
 
@@ -303,119 +301,56 @@ export function ResultScreen({
 }) {
   const custom = !!isCustomQuote;
   const pkg = sizing?.pkg;
+  const previewRef = useQuotePreviewRef();
   const heroTitle = custom ? "Custom quote" : pkg?.name || sizing.kva + " kVA";
-  const heroSub = custom ? null : pkg ? sizing.kva + " kVA" : null;
+  const heroSub = custom ? "Sized to your load — pricing on request" : pkg ? sizing.kva + " kVA package" : null;
+  const priceLabel = custom ? "On request" : "$" + countTotal.toLocaleString();
+  const priceSub =
+    !custom &&
+    (deliveryQuote?.enabled && !deliveryQuote.feePending ? "USD incl. delivery" : "USD · Harare install incl.");
 
   return React.createElement(
     "div",
-    { className: "animate-rise", style: { paddingBottom: 8 } },
+    { className: "animate-rise quote-page", style: { paddingBottom: 8, position: "relative" } },
+    React.createElement(QuoteWatermarkShield, { previewRef }),
     React.createElement(
       "div",
-      {
-        style: {
-          ...CARD,
-          padding: "18px 16px",
-          marginBottom: 14,
-          background: custom
-            ? "linear-gradient(145deg, rgba(40,20,20,.95), rgba(20,12,12,.9))"
-            : "linear-gradient(145deg, rgba(15,31,23,.95), rgba(26,51,40,.6))",
-          border: "1px solid " + (custom ? "rgba(248,113,113,.25)" : "rgba(232,197,71,.2)"),
-        },
-      },
-      React.createElement(
-        "h2",
-        { style: { fontFamily: FONT_DISPLAY, fontSize: "clamp(1.5rem, 5vw, 2rem)", fontWeight: 700, color: W10, marginBottom: heroSub ? 4 : 12, lineHeight: 1.15 } },
-        heroTitle
-      ),
-      heroSub &&
-        React.createElement("p", { style: { color: W6, fontSize: 12, marginBottom: 12, lineHeight: 1.45 } }, heroSub),
+      { className: "quote-page__content" },
+      React.createElement(QuoteBrandBar, { previewRef, custom }),
+      React.createElement(QuoteHeroCard, {
+        custom,
+        title: heroTitle,
+        subtitle: heroSub,
+        peakW: sizing.pW,
+        dailyWh: sizing.dWh,
+        priceLabel,
+        priceSub,
+      }),
+      !custom &&
+        React.createElement(DeliveryInstallOption, {
+          variant: "quote",
+          opts: deliveryOpts || { enabled: true, zone: "harare" },
+          onChange: onDeliveryChange,
+          productTotal: productTotal || sizing.tot,
+        }),
+      React.createElement(EcoQuoteFootprint, { dWh: sizing.dWh, dailyGenWh: sizing.dailyGenWh }),
+      React.createElement(QuoteSpecTable, { specs, custom }),
       React.createElement(
         "div",
-        { style: { display: "flex", justifyContent: "space-between", alignItems: "flex-end", gap: 12 } },
-        React.createElement(
-          "div",
-          null,
-          React.createElement("p", { style: { color: W4, fontSize: 11, margin: 0 } }, sizing.pW.toLocaleString() + "W peak"),
-          React.createElement("p", { style: { color: W4, fontSize: 11, margin: "2px 0 0" } }, sizing.dWh.toLocaleString() + " Wh/day")
-        ),
-        React.createElement(
-          "div",
-          { style: { textAlign: "right" } },
-          React.createElement(
-            "p",
-            {
-              style: {
-                fontFamily: FONT_DISPLAY,
-                fontSize: "clamp(1.75rem, 5vw, 2.25rem)",
-                fontWeight: 700,
-                color: custom ? W8 : G,
-                lineHeight: 1,
-                margin: 0,
-              },
-            },
-            custom ? "Custom" : "$" + countTotal.toLocaleString()
-          ),
-          !custom &&
-            React.createElement(
-              "p",
-              { style: { color: W4, fontSize: 10, marginTop: 4 } },
-              deliveryQuote?.enabled && !deliveryQuote.feePending ? "USD incl. delivery" : "USD · package"
-            )
-        )
+        { className: "sticky-actions" },
+        React.createElement(BtnPrimary, {
+          onClick: () => setShowModal(true),
+          full: true,
+          icon: React.createElement(PrtIco, { s: 16, c: "#0a0800" }),
+          children: custom ? "Request custom PDF quote" : "Get PDF quote",
+        }),
+        React.createElement(BtnGhost, {
+          onClick: reset,
+          full: true,
+          icon: React.createElement(RetIco, { s: 14, c: W4 }),
+          children: "Start over",
+        })
       )
-    ),
-    !custom &&
-      React.createElement(DeliveryInstallOption, {
-        opts: deliveryOpts || { enabled: true, zone: "harare" },
-        onChange: onDeliveryChange,
-        productTotal: productTotal || sizing.tot,
-      }),
-    React.createElement(EcoQuoteFootprint, { dWh: sizing.dWh, dailyGenWh: sizing.dailyGenWh }),
-    specs.length > 0 &&
-      React.createElement(
-        "div",
-        { style: { ...CARD, padding: 0, overflow: "hidden", marginBottom: 12 } },
-        specs.map((r, i) =>
-          React.createElement(
-            "div",
-            {
-              key: r.label,
-              style: {
-                display: "flex",
-                alignItems: "center",
-                gap: 12,
-                padding: "12px 14px",
-                borderBottom: i < specs.length - 1 ? "1px solid rgba(255,255,255,.06)" : "none",
-              },
-            },
-            React.createElement("div", { style: { width: 34, height: 34, borderRadius: 10, background: G_DIM, ...ci } }, React.createElement(r.Ico, { s: 15, c: G })),
-            React.createElement(
-              "div",
-              { style: { flex: 1, minWidth: 0 } },
-              React.createElement("p", { style: { color: W4, fontSize: 10, textTransform: "uppercase", marginBottom: 2 } }, r.label),
-              React.createElement("p", { style: { color: W10, fontSize: 13, fontWeight: 500 } }, r.val)
-            ),
-            r.tot != null &&
-              !custom &&
-              React.createElement("p", { style: { color: G, fontSize: 14, fontWeight: 700 } }, "$" + r.tot.toLocaleString())
-          )
-        )
-      ),
-    React.createElement(
-      "div",
-      { className: "sticky-actions" },
-      React.createElement(BtnPrimary, {
-        onClick: () => setShowModal(true),
-        full: true,
-        icon: React.createElement(PrtIco, { s: 16, c: "#0a0800" }),
-        children: custom ? "Request custom PDF quote" : "Get PDF quote",
-      }),
-      React.createElement(BtnGhost, {
-        onClick: reset,
-        full: true,
-        icon: React.createElement(RetIco, { s: 14, c: W4 }),
-        children: "Start over",
-      })
     )
   );
 }

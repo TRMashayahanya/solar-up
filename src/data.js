@@ -80,14 +80,6 @@ export const CATS = [
     ],
   },
   {
-    id: "bathroom",
-    iconKey: "bathroom",
-    color: "#67E8F9",
-    q: "Bathroom",
-    hint: "Hot water.",
-    items: [{ id: "bath_geyser", label: "Geyser", sub: "3000W", w: 3000, iconKey: "shower", dh: 1 }],
-  },
-  {
     id: "outdoor",
     iconKey: "outdoor",
     color: "#34D399",

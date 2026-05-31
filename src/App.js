@@ -17,7 +17,9 @@ import {
 import { ZapIco, BatIco, PanIco } from "./icons.js";
 import { useCount, ClientModal, Particles, ErrorBoundary } from "./components.js";
 import { HomeScreen, BuildingScreen, ResultScreen, ProductsScreen } from "./screens.js";
-import { globalStyles, BottomNav } from "./ui.js";
+import { globalStyles, BottomNav, ThemeToggle, BrandSunMark } from "./ui.js";
+import { getStoredTheme, applyTheme, toggleTheme } from "./theme.js";
+import { BUILD } from "./build.js";
 import { isRestrictedCustomLabel } from "./restricted-appliances.js";
 
 export default function App() {
@@ -36,6 +38,11 @@ export default function App() {
     locationLabel: "",
     distanceKm: 0,
   });
+  const [theme, setTheme] = useState(() => getStoredTheme());
+
+  useEffect(() => {
+    applyTheme(theme);
+  }, [theme]);
 
   const propInfo = PROPS.find((p) => p.value === propType) || null;
 
@@ -228,7 +235,7 @@ export default function App() {
         submittedAt: new Date().toISOString(),
       });
 
-      const { downloadQuotePdf } = await import("./pdf.js?v=30");
+      const { downloadQuotePdf } = await import("./pdf.js?v=" + BUILD);
       const result = await downloadQuotePdf(
         client,
         sizing,
@@ -380,43 +387,112 @@ export default function App() {
   return React.createElement(
     "div",
     {
-      className: "app-shell" + (nav === "home" ? " app-shell--home" : ""),
+      className:
+        "app-shell" +
+        (nav === "home" ? " app-shell--home" : "") +
+        (nav === "size" ? " app-shell--sizer" : "") +
+        (nav === "products" ? " app-shell--products" : ""),
       style: {
-        minHeight: "100vh",
         background: BG,
         backgroundImage: GRAD_HERO,
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        padding:
-          nav === "home"
-            ? "max(10px, env(safe-area-inset-top)) 12px max(88px, env(safe-area-inset-bottom))"
-            : "max(16px, env(safe-area-inset-top)) 16px max(100px, env(safe-area-inset-bottom))",
-        position: "relative",
       },
     },
     React.createElement("style", null, globalStyles),
-    nav !== "home" && React.createElement(Particles, null),
+    nav === "home" && React.createElement(Particles, null),
     React.createElement(
       "main",
       {
-        className: nav === "home" ? "home-main-card" : "",
+        className:
+          (nav === "home" ? "home-main-card" : "") +
+          (nav === "size" ? " main-card--sizer" : "") +
+          (nav === "products" ? " main-card--products" : "") +
+          (nav !== "home" && nav !== "size" && nav !== "products" ? " app-main-card" : ""),
         style: {
           ...CARD,
           width: "100%",
-          maxWidth: nav === "home" ? "min(560px, 100%)" : 560,
+          maxWidth: "min(560px, 100%)",
           zIndex: 1,
-          overflow: "visible",
+          overflow: nav === "size" ? "hidden" : "visible",
         },
       },
       nav !== "home" &&
-        React.createElement("div", { style: { height: 3, background: "linear-gradient(90deg,#C9A227,#E8C547,#3DD68C)", borderRadius: "20px 20px 0 0" } }),
+        React.createElement("div", { style: { height: 3, background: "linear-gradient(90deg,#C9A227,#E8C547,#3DD68C)", borderRadius: "20px 20px 0 0", flexShrink: 0 } }),
       React.createElement(
         "div",
         {
-          className: nav === "home" ? "home-main-inner" : "",
-          style: { padding: nav === "home" ? undefined : "clamp(20px, 5vw, 28px)" },
+          className:
+            (nav === "home" ? "home-main-inner" : "") + (nav === "size" ? " main-inner--sizer" : ""),
+          style: {
+            padding: nav === "home" ? undefined : nav === "size" ? undefined : "clamp(20px, 5vw, 28px)",
+          },
         },
+        nav === "home" &&
+          React.createElement(ThemeToggle, {
+            theme,
+            onToggle: () => setTheme((t) => toggleTheme(t)),
+            compact: true,
+            inline: true,
+            className: "home-theme-slot",
+          }),
+        nav === "size" &&
+          propType &&
+          React.createElement(
+            "div",
+            { className: "sizer-page-header" },
+            React.createElement(BrandSunMark, { size: 24, showLabel: true, centered: true }),
+            React.createElement(ThemeToggle, {
+              theme,
+              onToggle: () => setTheme((t) => toggleTheme(t)),
+              compact: true,
+              inline: true,
+            })
+          ),
+        nav === "products" &&
+          React.createElement(
+            "div",
+            { className: "products-page-header" },
+            React.createElement(
+              "div",
+              { className: "products-page-title-block" },
+              React.createElement("h1", { className: "products-page-title" }, "Packages"),
+              React.createElement(
+                "p",
+                { className: "products-page-sub" },
+                "Affordable tiers · USD · Harare install included"
+              )
+            ),
+            React.createElement(ThemeToggle, {
+              theme,
+              onToggle: () => setTheme((t) => toggleTheme(t)),
+              compact: true,
+              inline: true,
+            })
+          ),
+        nav !== "home" &&
+          nav !== "size" &&
+          nav !== "products" &&
+          React.createElement(
+            "div",
+            { className: "screen-header" },
+            React.createElement(ThemeToggle, {
+              theme,
+              onToggle: () => setTheme((t) => toggleTheme(t)),
+              compact: true,
+              inline: true,
+            })
+          ),
+        nav === "size" &&
+          !propType &&
+          React.createElement(
+            "div",
+            { className: "screen-header" },
+            React.createElement(ThemeToggle, {
+              theme,
+              onToggle: () => setTheme((t) => toggleTheme(t)),
+              compact: true,
+              inline: true,
+            })
+          ),
         React.createElement(ErrorBoundary, null, main)
       )
     ),

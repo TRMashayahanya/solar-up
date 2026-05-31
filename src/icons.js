@@ -158,3 +158,16 @@ export function NavSizeIco(p) {
 export function NavQuoteIco(p) {
   return React.createElement(Svg, { s: p.s || 22, c: p.c, sw: "1.5" }, path("M8 4h11a1 1 0 011 1v12a1 1 0 01-1 1H9l-4 3V5a1 1 0 011-1z"), line("9", "9", "17", "9"), line("9", "13", "14", "13"));
 }
+export function MoonIco(p) {
+  return React.createElement(Svg, { s: p.s || 18, c: p.c, sw: "1.3" }, path("M20 14.5A8.5 8.5 0 1111.5 4a6.5 6.5 0 108.5 10.5z"));
+}
+/** Light mode — bulb, not the brand sun. */
+export function BulbIco(p) {
+  return React.createElement(
+    Svg,
+    { s: p.s || 18, c: p.c, sw: "1.35" },
+    path("M9 18h6"),
+    path("M10 22h4"),
+    path("M12 2a6 6 0 016 6c0 2.2-1.1 4.1-2.8 5.3L14 16h-4l-.2-2.7C8.1 12.1 7 10.2 7 8a6 6 0 016-6z")
+  );
+}

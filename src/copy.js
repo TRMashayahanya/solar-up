@@ -17,7 +17,7 @@ export const PROP_COPY = {
   apartment: {
     ...DEFAULT,
     buildingTitle: "Apartment — your items",
-    buildingSubtitle: "Flat essentials: kitchen, lounge, geyser — no garden or laundry extras.",
+    buildingSubtitle: "Flat essentials: kitchen, lounge & security — no garden or laundry extras.",
     homeTagline: "Flats & townhouses — lean appliance set.",
   },
   family_home: {
@@ -47,8 +47,8 @@ export const PROP_COPY = {
   school: {
     ...DEFAULT,
     buildingTitle: "School / clinic — your items",
-    buildingSubtitle: "Class & admin lighting, geysers, perimeter security — no bedrooms.",
-    homeTagline: "Classrooms, clinic geysers, borehole & CCTV.",
+    buildingSubtitle: "Class & admin lighting, perimeter security — no bedrooms.",
+    homeTagline: "Classrooms, borehole & CCTV.",
   },
   large_home: {
     ...DEFAULT,
@@ -66,7 +66,6 @@ export const CAT_COPY = {
     bedroom: { label: "Bedrooms", hint: "TV & AC per room — not lights" },
     lounge: { label: "Lounge & TV", hint: "Main living entertainment" },
     kitchen: { label: "Kitchen", hint: "Fridge runs 24/7 — no kettles/microwaves in app" },
-    bathroom: { label: "Hot water", hint: "Geyser is often the biggest load" },
     outdoor: { label: "Security & outdoor", hint: "Lights, CCTV, alarm" },
     water: { label: "Borehole", hint: "Add if you pump water" },
     laundry: { label: "Laundry", hint: "Washer cycles — dryer if you have one" },
@@ -76,7 +75,6 @@ export const CAT_COPY = {
     accessories: { label: "Accessories", hint: "Laptop, PC, printer if you use them" },
     lounge: { label: "Living room", hint: "TV & decoder" },
     kitchen: { label: "Kitchen", hint: "Fridge & freezer" },
-    bathroom: { label: "Geyser", hint: "Usually your peak load" },
     outdoor: { label: "Security", hint: "Flood lights & alarm" },
     laundry: { label: "Laundry", hint: "Washing machine" },
   },
@@ -85,7 +83,6 @@ export const CAT_COPY = {
     accessories: { label: "Accessories", hint: "Laptop & gadgets for work or study" },
     lounge: { label: "Lounge", hint: "TV" },
     kitchen: { label: "Kitchen", hint: "Fridge & freezer" },
-    bathroom: { label: "Geyser", hint: "Check size with your plumber" },
     outdoor: { label: "Security", hint: "Alarm system" },
   },
   office: {
@@ -106,7 +103,6 @@ export const CAT_COPY = {
     bedroom: { label: "Bedrooms", hint: "TV where used" },
     lounge: { label: "Lounge", hint: "" },
     kitchen: { label: "Kitchen & cold storage", hint: "Fridge + deep freezer" },
-    bathroom: { label: "Geysers", hint: "May need two units on large homes" },
     outdoor: { label: "Farm security", hint: "Many outdoor lights & cameras" },
     water: { label: "Borehole pump", hint: "Often essential on farms" },
     laundry: { label: "Laundry", hint: "" },
@@ -115,7 +111,6 @@ export const CAT_COPY = {
     essentials: { label: "Building lighting", hint: "Classrooms, corridors, admin" },
     accessories: { label: "IT & admin", hint: "Laptops, desktops, printers for staff & lab" },
     kitchen: { label: "Kitchen / tuck shop", hint: "Fridges for meals" },
-    bathroom: { label: "Geysers", hint: "Staff or clinic hot water" },
     outdoor: { label: "Perimeter security", hint: "CCTV & flood lighting" },
     water: { label: "Water pump", hint: "Borehole or booster" },
   },
@@ -125,7 +120,6 @@ export const CAT_COPY = {
     bedroom: { label: "Bedrooms", hint: "TV & AC per room" },
     lounge: { label: "Living areas", hint: "Multiple TVs & lounge AC" },
     kitchen: { label: "Kitchen", hint: "Fridge + freezer" },
-    bathroom: { label: "Geysers", hint: "Two units common on large homes" },
     outdoor: { label: "Security & pool", hint: "CCTV, lights, pool pump" },
     water: { label: "Borehole", hint: "" },
     laundry: { label: "Laundry", hint: "Washer & dryer" },

@@ -39,7 +39,6 @@ const AFFINITY = [
   { ids: ["kit_freeze"], lib: ["deep_freezer", "second_fridge"], reason: "More cold storage" },
   { ids: ["kit_fridge"], lib: ["second_fridge", "deep_freezer"], reason: "Backup or drinks fridge" },
   { ids: ["kit_fridge", "kit_freeze"], lib: ["blender", "second_fridge"], reason: "Kitchen extras" },
-  { ids: ["bath_geyser"], lib: ["router_extra"], reason: "Hot water system" },
   { ids: ["off_laptop", "off_desk"], lib: ["router_extra", "gaming_pc"], reason: "Home office / study" },
   { ids: ["off_printer"], lib: ["photocopier", "server_nas"], reason: "Office equipment" },
   { ids: ["lng_tv", "bed_tv"], lib: ["sound_system", "projector"], reason: "Entertainment add-ons" },
