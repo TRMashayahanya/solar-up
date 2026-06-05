@@ -125,11 +125,19 @@ export const globalStyles =
   ".home-brand-mark{font-family:" + FONT_DISPLAY + ";font-size:clamp(1.75rem,6vw,2rem);font-weight:700;line-height:1;margin:0;letter-spacing:0.02em;background:linear-gradient(135deg,#C9A227,#E8C547,#F5E6A8);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}" +
   ".home-brand-by{font-size:10px;font-weight:600;letter-spacing:0.16em;text-transform:uppercase;color:rgba(232,197,71,.8);margin:6px 0 0}" +
   ".home-brand-tag{font-size:clamp(13px,3.4vw,14px);color:var(--text-muted);margin:0;line-height:1.5;max-width:32ch;margin-left:auto;margin-right:auto;letter-spacing:-0.01em}" +
-  ".home-install-cta{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;max-width:280px;margin:clamp(10px,2.5vw,14px) auto 0;padding:11px 16px;border-radius:14px;" +
-  "font-size:13px;font-weight:600;font-family:inherit;text-decoration:none;cursor:pointer;color:#0a0800;" +
+  ".home-install-wrap{max-width:320px;margin:clamp(10px,2.5vw,14px) auto 0}" +
+  ".home-install-cta{display:inline-flex;align-items:center;justify-content:center;gap:8px;width:100%;padding:12px 16px;border-radius:14px;" +
+  "font-size:13px;font-weight:700;font-family:inherit;text-decoration:none;cursor:pointer;color:#0a0800;" +
   "background:linear-gradient(135deg,#C9A227,#E8C547);border:1px solid rgba(232,197,71,.5);box-shadow:0 4px 20px rgba(232,197,71,.2);transition:transform .15s,box-shadow .15s}" +
-  ".home-install-cta:hover{transform:translateY(-1px);box-shadow:0 6px 24px rgba(232,197,71,.28)}" +
-  ".home-install-cta:active{transform:translateY(0)}" +
+  ".home-install-cta:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 24px rgba(232,197,71,.28)}" +
+  ".home-install-cta:active:not(:disabled){transform:translateY(0)}" +
+  ".home-install-cta:disabled{opacity:.88;cursor:wait}" +
+  ".home-install-cta--busy .home-install-spinner{width:15px;height:15px;border:2px solid rgba(10,8,0,.2);border-top-color:#0a0800;border-radius:50%;animation:homeInstallSpin .7s linear infinite}" +
+  "@keyframes homeInstallSpin{to{transform:rotate(360deg)}}" +
+  ".home-install-hint{margin-top:10px;padding:12px 14px;border-radius:14px;text-align:left;background:var(--surface);border:1px solid var(--border)}" +
+  ".home-install-hint-title{margin:0 0 4px;font-size:12px;font-weight:700;color:var(--text-primary)}" +
+  ".home-install-hint-body{margin:0;font-size:11px;line-height:1.45;color:var(--text-body)}" +
+  ".home-install-hint-copy{margin-top:10px;padding:8px 12px;border-radius:10px;border:1px solid rgba(232,197,71,.35);background:rgba(232,197,71,.1);color:var(--quote-gold,#E8C547);font-size:11px;font-weight:600;font-family:inherit;cursor:pointer;width:100%}" +
   ".home-steps{display:flex;justify-content:center;gap:clamp(6px,2vw,10px);flex-wrap:wrap;margin-top:clamp(14px,3.5vw,18px)}" +
   ".home-step-pill{padding:6px 12px;border-radius:999px;font-size:11px;font-weight:500;color:var(--text-body);background:var(--surface);border:1px solid var(--border);letter-spacing:-0.01em}" +
   ".home-step-pill span{color:rgba(232,197,71,.85);font-weight:600;margin-right:4px}" +

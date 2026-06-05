@@ -5,178 +5,110 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta name="theme-color" content="#040608" />
     <meta name="description" content="Install SolarApp on iPhone or Android — free solar sizer by Energi Tech." />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="SolarApp" />
     <title>Install SolarApp</title>
     <link rel="manifest" href="/manifest.webmanifest?v=sun4" />
     <link rel="icon" href="/icons/icon.svg?v=sun4" type="image/svg+xml" />
     <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png?v=sun4" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Outfit:wght@400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
     <style>
       * { box-sizing: border-box; }
       html, body {
         margin: 0;
+        min-height: 100%;
         background: #040608;
         color: #f8fafc;
-        font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+        font-family: "Outfit", system-ui, -apple-system, sans-serif;
         line-height: 1.5;
+        -webkit-font-smoothing: antialiased;
       }
-      .wrap {
-        max-width: 420px;
+      body {
+        background:
+          radial-gradient(ellipse 120% 70% at 50% -20%, rgba(232, 197, 71, 0.14), transparent 55%),
+          radial-gradient(ellipse 50% 40% at 100% 30%, rgba(61, 214, 140, 0.07), transparent),
+          #040608;
+      }
+      .shell {
+        max-width: 440px;
         margin: 0 auto;
-        padding: max(20px, env(safe-area-inset-top)) 18px max(100px, calc(88px + env(safe-area-inset-bottom)));
+        padding: max(24px, env(safe-area-inset-top)) 20px max(120px, calc(100px + env(safe-area-inset-bottom)));
       }
-      .hero { text-align: center; margin-bottom: 20px; }
-      .sun {
+      .hero {
+        text-align: center;
+        margin-bottom: 28px;
+        padding-top: 8px;
+      }
+      .brand-mark {
         display: inline-flex;
-        animation: spin 20s linear infinite;
-        filter: drop-shadow(0 0 16px rgba(232, 197, 71, 0.45));
+        align-items: center;
+        justify-content: center;
+        width: 76px;
+        height: 76px;
+        border-radius: 22px;
+        background: linear-gradient(145deg, rgba(232, 197, 71, 0.18), rgba(232, 197, 71, 0.04));
+        border: 1px solid rgba(232, 197, 71, 0.28);
+        box-shadow: 0 12px 40px rgba(232, 197, 71, 0.12);
+        margin-bottom: 18px;
       }
-      .sun svg { display: block; }
-      @keyframes spin { to { transform: rotate(360deg); } }
-      @media (prefers-reduced-motion: reduce) { .sun { animation: none; } }
+      .brand-mark svg {
+        display: block;
+        animation: sun-spin 24s linear infinite;
+        filter: drop-shadow(0 0 14px rgba(232, 197, 71, 0.45));
+      }
+      @keyframes sun-spin { to { transform: rotate(360deg); } }
+      @media (prefers-reduced-motion: reduce) { .brand-mark svg { animation: none; } }
+      .eyebrow {
+        margin: 0 0 8px;
+        font-size: 10px;
+        font-weight: 600;
+        letter-spacing: 0.16em;
+        text-transform: uppercase;
+        color: rgba(255, 255, 255, 0.42);
+      }
       h1 {
-        font-family: Georgia, "Times New Roman", serif;
-        font-size: 1.6rem;
-        margin: 14px 0 6px;
+        font-family: "Cormorant Garamond", Georgia, serif;
+        font-size: clamp(1.75rem, 6vw, 2rem);
+        font-weight: 700;
+        margin: 0 0 10px;
+        line-height: 1.08;
         background: linear-gradient(135deg, #c9a227, #e8c547);
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
       }
-      .lead { color: rgba(255, 255, 255, 0.55); font-size: 15px; margin: 0; }
-      .banner {
-        display: none;
-        padding: 12px 14px;
-        border-radius: 12px;
-        margin-bottom: 16px;
+      .lead {
+        margin: 0 auto;
+        max-width: 32ch;
+        color: rgba(255, 255, 255, 0.62);
+        font-size: 15px;
+        line-height: 1.5;
+      }
+      .cta-card {
+        margin-bottom: 20px;
+        padding: 18px;
+        border-radius: 18px;
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(232, 197, 71, 0.2);
+        box-shadow: 0 16px 48px rgba(0, 0, 0, 0.28);
+      }
+      .cta-card p {
+        margin: 0 0 14px;
         font-size: 13px;
+        color: rgba(255, 255, 255, 0.55);
+        text-align: center;
         line-height: 1.45;
       }
-      .banner--warn {
-        display: block;
-        background: rgba(251, 191, 36, 0.12);
-        border: 1px solid rgba(251, 191, 36, 0.35);
-        color: rgba(255, 255, 255, 0.88);
-      }
-      .banner--ok {
-        display: block;
-        background: rgba(61, 214, 140, 0.1);
-        border: 1px solid rgba(61, 214, 140, 0.3);
-        color: rgba(255, 255, 255, 0.85);
-      }
-      .banner strong { color: #e8c547; }
-      .steps {
-        background: rgba(255, 255, 255, 0.04);
-        border: 1px solid rgba(232, 197, 71, 0.22);
-        border-radius: 16px;
-        padding: 18px 16px;
-        margin-bottom: 14px;
-      }
-      .steps h2 {
-        font-size: 13px;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: #e8c547;
-        margin: 0 0 14px;
-      }
-      .step {
-        display: flex;
-        gap: 12px;
-        margin-bottom: 14px;
-        align-items: flex-start;
-      }
-      .step:last-child { margin-bottom: 0; }
-      .step-num {
-        flex-shrink: 0;
-        width: 28px;
-        height: 28px;
-        border-radius: 50%;
-        background: rgba(232, 197, 71, 0.15);
-        border: 1px solid rgba(232, 197, 71, 0.4);
-        color: #e8c547;
-        font-weight: 700;
-        font-size: 14px;
-        display: grid;
-        place-items: center;
-      }
-      .step p { margin: 0; font-size: 14px; color: rgba(255, 255, 255, 0.88); }
-      .step p strong { color: #fff; }
-      .hidden { display: none !important; }
-      .link-box {
-        margin-top: 14px;
-        padding: 12px;
-        border-radius: 12px;
-        background: rgba(0, 0, 0, 0.35);
-        border: 1px dashed rgba(255, 255, 255, 0.12);
-      }
-      .link-box label {
-        display: block;
-        font-size: 10px;
-        text-transform: uppercase;
-        letter-spacing: 0.08em;
-        color: rgba(255, 255, 255, 0.4);
-        margin-bottom: 6px;
-      }
-      .link-row {
-        display: flex;
-        gap: 8px;
-        align-items: stretch;
-      }
-      .link-url {
-        flex: 1;
-        min-width: 0;
-        padding: 10px 12px;
-        border-radius: 10px;
-        border: 1px solid rgba(255, 255, 255, 0.1);
-        background: rgba(255, 255, 255, 0.05);
-        color: #e8c547;
-        font-size: 13px;
-        font-family: ui-monospace, monospace;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-      }
-      .btn-copy {
-        flex-shrink: 0;
-        padding: 10px 14px;
-        border: 1px solid rgba(232, 197, 71, 0.35);
-        border-radius: 10px;
-        background: rgba(232, 197, 71, 0.1);
-        color: #e8c547;
-        font-size: 12px;
-        font-weight: 600;
-        cursor: pointer;
-        font-family: inherit;
-      }
-      .btn-copy:active { transform: scale(0.98); }
-      .sticky {
-        position: fixed;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        padding: 12px 18px max(14px, env(safe-area-inset-bottom));
-        background: linear-gradient(180deg, transparent, rgba(4, 6, 8, 0.92) 24%, #040608);
-        display: flex;
-        flex-direction: column;
-        gap: 8px;
-      }
-      .sticky-inner { max-width: 420px; margin: 0 auto; width: 100%; }
-      .btn-primary {
-        display: block;
-        width: 100%;
-        padding: 16px 20px;
-        border: none;
-        border-radius: 14px;
-        background: linear-gradient(135deg, #c9a227, #e8c547);
-        color: #0a0800;
-        font-size: 16px;
-        font-weight: 700;
-        text-align: center;
-        text-decoration: none;
-        font-family: inherit;
-        cursor: pointer;
-        box-shadow: 0 8px 28px rgba(232, 197, 71, 0.25);
-      }
       .btn-install {
-        display: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 10px;
         width: 100%;
         padding: 16px 20px;
         border: none;
@@ -187,50 +119,258 @@
         font-weight: 700;
         font-family: inherit;
         cursor: pointer;
+        box-shadow: 0 10px 32px rgba(61, 214, 140, 0.22);
+        transition: transform 0.15s ease, opacity 0.15s ease;
+      }
+      .btn-install:active { transform: scale(0.98); }
+      .btn-install--pending { opacity: 0.92; }
+      .btn-install--pending::after {
+        content: "";
+        width: 16px;
+        height: 16px;
+        border: 2px solid rgba(4, 16, 8, 0.25);
+        border-top-color: #041008;
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+      }
+      @keyframes spin { to { transform: rotate(360deg); } }
+      .btn-primary {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 100%;
+        padding: 15px 20px;
+        border: none;
+        border-radius: 14px;
+        background: linear-gradient(135deg, #c9a227, #e8c547);
+        color: #0a0800;
+        font-size: 15px;
+        font-weight: 700;
+        text-align: center;
+        text-decoration: none;
+        font-family: inherit;
+        cursor: pointer;
+        box-shadow: 0 8px 28px rgba(232, 197, 71, 0.22);
       }
       .btn-ghost {
         display: block;
         width: 100%;
-        padding: 12px;
-        border: 1px solid rgba(255, 255, 255, 0.12);
+        padding: 11px;
+        border: none;
         border-radius: 12px;
         background: transparent;
-        color: rgba(255, 255, 255, 0.65);
-        font-size: 13px;
+        color: rgba(255, 255, 255, 0.5);
+        font-size: 12px;
         font-weight: 500;
         text-align: center;
         text-decoration: none;
         font-family: inherit;
       }
-      .note { font-size: 12px; color: rgba(255, 255, 255, 0.35); text-align: center; margin: 8px 0 0; }
+      .banner {
+        display: none;
+        padding: 14px 16px;
+        border-radius: 14px;
+        margin-bottom: 18px;
+        font-size: 13px;
+        line-height: 1.5;
+      }
+      .banner--warn {
+        display: block;
+        background: rgba(251, 191, 36, 0.1);
+        border: 1px solid rgba(251, 191, 36, 0.32);
+        color: rgba(255, 255, 255, 0.88);
+      }
+      .banner--ok {
+        display: block;
+        background: rgba(61, 214, 140, 0.1);
+        border: 1px solid rgba(61, 214, 140, 0.28);
+        color: rgba(255, 255, 255, 0.9);
+      }
+      .banner strong { color: #e8c547; }
+      .steps {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 18px;
+        padding: 20px 18px;
+        margin-bottom: 18px;
+      }
+      .steps h2 {
+        font-size: 11px;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: #e8c547;
+        margin: 0 0 16px;
+        font-weight: 700;
+      }
+      .step {
+        display: grid;
+        grid-template-columns: 32px 1fr;
+        gap: 14px;
+        margin-bottom: 16px;
+        align-items: start;
+      }
+      .step:last-child { margin-bottom: 0; }
+      .step-num {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: rgba(232, 197, 71, 0.12);
+        border: 1px solid rgba(232, 197, 71, 0.35);
+        color: #e8c547;
+        font-weight: 700;
+        font-size: 14px;
+        display: grid;
+        place-items: center;
+      }
+      .step p {
+        margin: 4px 0 0;
+        font-size: 14px;
+        color: rgba(255, 255, 255, 0.86);
+        line-height: 1.5;
+      }
+      .step p strong { color: #fff; font-weight: 600; }
+      .hidden { display: none !important; }
+      .link-box {
+        padding: 16px;
+        border-radius: 16px;
+        background: rgba(0, 0, 0, 0.28);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+      }
+      .link-box label {
+        display: block;
+        font-size: 10px;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        color: rgba(255, 255, 255, 0.42);
+        margin-bottom: 8px;
+        font-weight: 600;
+      }
+      .link-row {
+        display: flex;
+        gap: 10px;
+        align-items: stretch;
+      }
+      .link-url {
+        flex: 1;
+        min-width: 0;
+        padding: 12px 14px;
+        border-radius: 12px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        background: rgba(255, 255, 255, 0.04);
+        color: #e8c547;
+        font-size: 13px;
+        font-family: ui-monospace, monospace;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+      .btn-copy {
+        flex-shrink: 0;
+        padding: 12px 16px;
+        border: 1px solid rgba(232, 197, 71, 0.35);
+        border-radius: 12px;
+        background: rgba(232, 197, 71, 0.1);
+        color: #e8c547;
+        font-size: 12px;
+        font-weight: 700;
+        cursor: pointer;
+        font-family: inherit;
+      }
+      .note {
+        font-size: 12px;
+        color: rgba(255, 255, 255, 0.38);
+        text-align: center;
+        margin: 10px 0 0;
+        line-height: 1.4;
+      }
+      .install-status {
+        margin: 10px 0 0;
+        font-size: 12px;
+        text-align: center;
+        color: rgba(255, 255, 255, 0.55);
+        min-height: 1.2em;
+      }
+      .sticky {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        padding: 14px 20px max(16px, env(safe-area-inset-bottom));
+        background: linear-gradient(180deg, transparent 0%, rgba(4, 6, 8, 0.88) 28%, #040608 100%);
+        backdrop-filter: blur(12px);
+        -webkit-backdrop-filter: blur(12px);
+      }
+      .sticky-inner {
+        max-width: 440px;
+        margin: 0 auto;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      body.platform-android .cta-android,
+      body.platform-android .sticky-android { display: flex; flex-direction: column; gap: 10px; }
+      body.platform-ios .cta-ios,
+      body.platform-ios .sticky-ios { display: flex; flex-direction: column; gap: 10px; }
+      body.platform-desktop .cta-desktop,
+      body.platform-desktop .sticky-desktop { display: flex; flex-direction: column; gap: 10px; }
+      .cta-android, .cta-ios, .cta-desktop,
+      .sticky-android, .sticky-ios, .sticky-desktop { display: none; }
+      .install-gate { text-align: center; margin-bottom: 8px; }
+      .install-gate .btn-primary { margin-top: 4px; }
+      #install-sticky { display: none; }
+      #install-sticky.is-visible { display: block; }
     </style>
   </head>
   <body>
-    <div class="wrap">
+    <div class="shell">
       <header class="hero">
-        <span class="sun" aria-hidden="true">
-          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#E8C547" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="4.5"/>
-            <path d="M12 1.5v3M12 19.5v3M3.22 3.22l2.12 2.12M18.66 18.66l2.12 2.12M1.5 12h3M19.5 12h3M3.22 20.78l2.12-2.12M18.66 5.34l2.12-2.12"/>
+        <div class="brand-mark" aria-hidden="true">
+          <svg width="44" height="44" viewBox="0 0 24 24" fill="none" stroke="#E8C547" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4.5" />
+            <path d="M12 1.5v3M12 19.5v3M3.22 3.22l2.12 2.12M18.66 18.66l2.12 2.12M1.5 12h3M19.5 12h3M3.22 20.78l2.12-2.12M18.66 5.34l2.12-2.12" />
           </svg>
-        </span>
-        <h1>Install SolarApp</h1>
-        <p class="lead" id="lead">Add to your home screen — works like an app, no app store.</p>
+        </div>
+        <p class="eyebrow">Energi Tech · Zimbabwe</p>
+        <h1 id="page-title">Download SolarApp</h1>
+        <p class="lead" id="lead">Free solar sizer for Zimbabwe — works like an app, no app store.</p>
       </header>
 
+      <div id="install-gate" class="cta-card install-gate">
+        <p>Tap below to get SolarApp on your phone — sizing, quotes, and packages anytime.</p>
+        <button type="button" class="btn-primary" id="btn-start-download">Download SolarApp</button>
+        <p class="note">Free · No Play Store · Energi Tech</p>
+      </div>
+
+      <div id="install-sequence" class="hidden">
       <div id="banner-local" class="banner banner--warn hidden">
-        <strong>Test link only.</strong> Other phones cannot open <code>localhost</code>. Deploy SolarApp to a
+        <strong>Test link only.</strong> Other phones cannot open <code>localhost</code>. Deploy to a
         <strong>https://</strong> address, then share that link.
       </div>
 
       <div id="banner-inapp" class="banner banner--warn hidden">
-        <strong>Step 1 — open in your browser.</strong>
-        <span id="inapp-text">WhatsApp’s browser cannot install apps.</span>
-        Tap <strong>⋮</strong> or <strong>⋯</strong> → <strong>Open in Safari</strong> or <strong>Chrome</strong>, then return here.
+        <strong>Open in your browser first.</strong>
+        <span id="inapp-text">In-app browsers cannot install apps.</span>
+        Tap <strong>⋮</strong> → <strong>Open in Safari</strong> or <strong>Chrome</strong>.
       </div>
 
       <div id="banner-installed" class="banner banner--ok hidden">
-        <strong>SolarApp is already installed.</strong> Open it from your home screen (gold sun icon).
+        <strong>Already installed.</strong> Opening SolarApp on your device…
+      </div>
+
+      <div class="cta-card cta-android" id="cta-android">
+        <p>Tap install — SolarApp opens from your home screen like any other app.</p>
+        <button type="button" class="btn-install btn-install--pending" id="btn-install-hero">Install SolarApp</button>
+        <p class="install-status" id="install-status-hero" aria-live="polite"></p>
+      </div>
+
+      <div class="cta-card cta-ios" id="cta-ios">
+        <p>Add SolarApp to your home screen in Safari — 3 quick taps.</p>
+        <a class="btn-primary" id="btn-ios-open" href="/">Open in Safari</a>
+      </div>
+
+      <div class="cta-card cta-desktop" id="cta-desktop">
+        <p>Send the link to your phone, then install from Safari or Chrome.</p>
+        <a class="btn-primary" id="btn-desktop-open" href="/">Open SolarApp here</a>
       </div>
 
       <section id="panel-ios" class="steps hidden" aria-labelledby="ios-title">
@@ -245,7 +385,7 @@
         </div>
         <div class="step">
           <span class="step-num">3</span>
-          <p>Tap <strong>Add to Home Screen</strong> → <strong>Add</strong>. Done — gold sun on your home screen.</p>
+          <p>Tap <strong>Add to Home Screen</strong> → <strong>Add</strong>. Gold sun icon on your home screen.</p>
         </div>
       </section>
 
@@ -253,15 +393,15 @@
         <h2 id="android-title">Android</h2>
         <div class="step">
           <span class="step-num">1</span>
-          <p>Open in <strong>Chrome</strong> (not WhatsApp browser).</p>
+          <p>Use <strong>Chrome</strong> (not WhatsApp browser).</p>
         </div>
-        <div class="step" id="android-step-install">
+        <div class="step">
           <span class="step-num">2</span>
-          <p>Tap <strong>Install app</strong> below (or Chrome menu <strong>⋮</strong> → <strong>Install app</strong>).</p>
+          <p>Tap <strong>Install SolarApp</strong> above, or Chrome menu <strong>⋮</strong> → <strong>Install app</strong>.</p>
         </div>
         <div class="step">
           <span class="step-num">3</span>
-          <p>Confirm — SolarApp opens from your home screen like other apps.</p>
+          <p>Confirm install — SolarApp opens automatically on your device.</p>
         </div>
       </section>
 
@@ -269,39 +409,48 @@
         <h2 id="desktop-title">On your phone</h2>
         <div class="step">
           <span class="step-num">1</span>
-          <p>Copy the link below and send it to your phone (WhatsApp, SMS, email).</p>
+          <p>Copy the link below and send it to your phone.</p>
         </div>
         <div class="step">
           <span class="step-num">2</span>
-          <p>On your phone, open the link in <strong>Safari</strong> (iPhone) or <strong>Chrome</strong> (Android).</p>
+          <p>Open in <strong>Safari</strong> (iPhone) or <strong>Chrome</strong> (Android).</p>
         </div>
         <div class="step">
           <span class="step-num">3</span>
-          <p>Follow the install steps shown on your phone.</p>
+          <p>Follow the install steps on your phone.</p>
         </div>
       </section>
 
       <div class="link-box">
-        <label>Link to share (open on phone, then install)</label>
+        <label>Link to share</label>
         <div class="link-row">
           <div class="link-url" id="share-url" title=""></div>
           <button type="button" class="btn-copy" id="btn-copy">Copy</button>
         </div>
-        <p class="note" style="margin-top: 10px">Share this exact link — not a screenshot.</p>
+        <p class="note">Share this link — not a screenshot.</p>
+      </div>
       </div>
     </div>
 
-    <div class="sticky">
+    <div class="sticky" id="install-sticky">
       <div class="sticky-inner">
-        <button type="button" class="btn-install" id="btn-android-install">Install SolarApp now</button>
-        <a class="btn-primary" id="btn-open-app" href="/">Open SolarApp</a>
-        <a class="btn-ghost" href="/install/">Refresh install help</a>
+        <div class="sticky-android">
+          <button type="button" class="btn-install btn-install--pending" id="btn-install-sticky">Install SolarApp</button>
+          <a class="btn-ghost" id="btn-open-browser" href="/">Open in browser instead</a>
+        </div>
+        <div class="sticky-ios">
+          <a class="btn-primary" id="btn-open-app-ios" href="/">Open SolarApp in Safari</a>
+        </div>
+        <div class="sticky-desktop">
+          <a class="btn-primary" id="btn-open-app-desktop" href="/">Open SolarApp</a>
+        </div>
       </div>
     </div>
 
     <script>
       (function () {
         var deferredPrompt = null;
+        var installQueued = false;
         var ua = navigator.userAgent || "";
         var isIos = /iPhone|iPad|iPod/i.test(ua);
         var isAndroid = /Android/i.test(ua);
@@ -309,9 +458,11 @@
           window.matchMedia("(display-mode: standalone)").matches || window.navigator.standalone === true;
         var inApp = /WhatsApp|WAWeb|Instagram|FBAN|FBAV|Twitter|Line\/|MicroMessenger|Telegram/i.test(ua);
         var isLocal = /^(localhost|127\.0\.0\.1)$/.test(location.hostname);
-
         var appLink = location.origin + "/";
-        var installLink = location.origin + "/install/";
+
+        if ("serviceWorker" in navigator) {
+          navigator.serviceWorker.register("/sw.js?v=55").catch(function () {});
+        }
 
         document.getElementById("share-url").textContent = appLink;
         document.getElementById("share-url").title = appLink;
@@ -323,58 +474,132 @@
           document.getElementById(id).classList.add("hidden");
         }
 
-        if (isLocal) show("banner-local");
+        function openInstalledApp() {
+          window.location.replace(appLink);
+        }
 
         if (isStandalone) {
+          hide("install-gate");
+          show("install-sequence");
           show("banner-installed");
-          hide("panel-ios");
-          hide("panel-android");
-          hide("panel-desktop");
-          document.getElementById("lead").textContent = "You’re using the installed app.";
-          document.getElementById("btn-open-app").textContent = "Open SolarApp";
+          document.getElementById("page-title").textContent = "SolarApp";
+          document.getElementById("lead").textContent = "SolarApp is on your home screen.";
+          setTimeout(openInstalledApp, 400);
           return;
         }
 
-        if (inApp) {
-          show("banner-inapp");
+        function setupInstallSequence() {
+          document.getElementById("page-title").textContent = "Install SolarApp";
+          if (isLocal) show("banner-local");
+          if (inApp) {
+            show("banner-inapp");
+            if (isIos) {
+              document.getElementById("inapp-text").textContent = "WhatsApp cannot add apps to your home screen.";
+            }
+          }
+
           if (isIos) {
-            document.getElementById("inapp-text").textContent =
-              "WhatsApp cannot add apps to your home screen.";
+            document.body.classList.add("platform-ios");
+            show("panel-ios");
+            document.getElementById("lead").textContent = "3 taps in Safari — gold sun on your home screen.";
+            document.getElementById("btn-ios-open").href = appLink;
+            document.getElementById("btn-open-app-ios").href = appLink;
+          } else if (isAndroid) {
+            document.body.classList.add("platform-android");
+            show("panel-android");
+            document.getElementById("lead").textContent = "One tap to install — free, no Play Store.";
+            document.getElementById("btn-open-browser").href = appLink;
+
+            var installButtons = [
+              document.getElementById("btn-install-hero"),
+              document.getElementById("btn-install-sticky"),
+            ];
+            var statusEl = document.getElementById("install-status-hero");
+
+            function setInstallReady(ready) {
+              installButtons.forEach(function (btn) {
+                if (!btn) return;
+                btn.classList.toggle("btn-install--pending", !ready);
+              });
+              if (ready && statusEl) statusEl.textContent = "";
+            }
+
+            function setInstallStatus(msg) {
+              if (statusEl) statusEl.textContent = msg || "";
+            }
+
+            function launchInstalledApp() {
+              setInstallStatus("Opening SolarApp…");
+              setTimeout(openInstalledApp, 350);
+            }
+
+            function runInstall() {
+              if (!deferredPrompt) {
+                installQueued = true;
+                setInstallStatus("Getting install ready — tap again in a moment.");
+                return;
+              }
+              installQueued = false;
+              deferredPrompt
+                .prompt()
+                .then(function () {
+                  return deferredPrompt.userChoice;
+                })
+                .then(function (choice) {
+                  deferredPrompt = null;
+                  if (choice && choice.outcome === "accepted") {
+                    launchInstalledApp();
+                  } else {
+                    setInstallStatus("Install cancelled — try again or use Chrome menu ⋮ → Install app.");
+                  }
+                })
+                .catch(function () {
+                  setInstallStatus("Use Chrome menu ⋮ → Install app.");
+                });
+            }
+
+            installButtons.forEach(function (btn) {
+              if (btn) btn.addEventListener("click", runInstall);
+            });
+
+            window.addEventListener("beforeinstallprompt", function (e) {
+              e.preventDefault();
+              deferredPrompt = e;
+              setInstallReady(true);
+              if (installQueued) runInstall();
+            });
+
+            window.addEventListener("appinstalled", function () {
+              launchInstalledApp();
+            });
+
+            setInstallReady(false);
+          } else {
+            document.body.classList.add("platform-desktop");
+            show("panel-desktop");
+            document.getElementById("lead").textContent = "Copy the link → open on your phone → install.";
+            document.getElementById("btn-desktop-open").href = appLink;
+            document.getElementById("btn-open-app-desktop").href = appLink;
           }
         }
 
-        if (isIos) {
-          show("panel-ios");
-          document.getElementById("lead").textContent = "3 taps in Safari — then the sun icon is on your home screen.";
-          document.getElementById("btn-open-app").textContent = "Open in Safari first";
-          document.getElementById("btn-open-app").href = appLink;
-        } else if (isAndroid) {
-          show("panel-android");
-          document.getElementById("lead").textContent = "One tap to install — free, no Play Store.";
-          document.getElementById("btn-open-app").textContent = "Open SolarApp in Chrome";
-          document.getElementById("btn-open-app").href = appLink;
-
-          window.addEventListener("beforeinstallprompt", function (e) {
-            e.preventDefault();
-            deferredPrompt = e;
-            document.getElementById("btn-android-install").style.display = "block";
-            document.getElementById("btn-open-app").textContent = "Or open SolarApp in browser";
+        var sequenceStarted = false;
+        function startInstallSequence() {
+          if (sequenceStarted) return;
+          sequenceStarted = true;
+          hide("install-gate");
+          show("install-sequence");
+          document.getElementById("install-sticky").classList.add("is-visible");
+          setupInstallSequence();
+          requestAnimationFrame(function () {
+            document.getElementById("install-sequence").scrollIntoView({ behavior: "smooth", block: "start" });
           });
+        }
 
-          document.getElementById("btn-android-install").addEventListener("click", function () {
-            if (!deferredPrompt) return;
-            deferredPrompt.prompt();
-            deferredPrompt.userChoice.then(function () {
-              deferredPrompt = null;
-              document.getElementById("btn-android-install").style.display = "none";
-            });
-          });
-        } else {
-          show("panel-desktop");
-          document.getElementById("lead").textContent = "Copy the link → open on your phone → install.";
-          var openBtn = document.getElementById("btn-open-app");
-          openBtn.textContent = "Open SolarApp on this device";
-          openBtn.href = appLink;
+        document.getElementById("btn-start-download").addEventListener("click", startInstallSequence);
+
+        if (new URLSearchParams(location.search).get("from") === "download") {
+          startInstallSequence();
         }
 
         document.getElementById("btn-copy").addEventListener("click", function () {
@@ -405,10 +630,6 @@
             }, 2000);
           }
         });
-
-        if ("serviceWorker" in navigator) {
-          navigator.serviceWorker.register("/sw.js?v=30").catch(function () {});
-        }
       })();
     </script>
   </body>
