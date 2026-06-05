@@ -1,145 +1,125 @@
 import React, { useMemo } from "react";
-import { ShldIco } from "./icons.js";
-import { QUOTE_VALIDITY_DAYS } from "./quote.js";
+import { ShldIco, LeafIco } from "./icons.js";
+import { environmentalImpact } from "./environment.js";
 
 export function makeQuotePreviewRef() {
   return "SA-" + Date.now().toString().slice(-6);
 }
 
-/** Diagonal watermark — discourages casual screenshots; official terms on PDF. */
-export function QuoteWatermarkShield({ previewRef }) {
-  const tiles = Array.from({ length: 18 }, (_, i) =>
-    React.createElement(
-      "span",
-      { key: i, className: "quote-wm-tile" },
-      "SolarApp · Energi Tech · Preview · Not for redistribution"
-    )
-  );
-  return React.createElement(
-    "div",
-    { className: "quote-wm-shield", "aria-hidden": true },
-    React.createElement("div", { className: "quote-wm-grid" }, tiles),
-    previewRef &&
-      React.createElement("p", { className: "quote-wm-ref" }, "Ref " + previewRef + " · Request PDF for official quote")
-  );
-}
-
-export function QuoteBrandBar({ previewRef, custom }) {
+/** Slim header — ref only; PDF is the official document. */
+export function QuotePageHeader({ previewRef, custom, themeToggle }) {
   return React.createElement(
     "header",
-    { className: "quote-brand-bar" },
+    { className: "quote-page-header" },
     React.createElement(
       "div",
-      { className: "quote-brand-bar-top" },
-      React.createElement(
-        "div",
-        { className: "quote-brand-bar-lockup" },
-        React.createElement(
-          "span",
-          { className: "quote-gold-icon" },
-          React.createElement(ShldIco, { s: 18, c: "currentColor" })
-        ),
-        React.createElement(
-          "div",
-          null,
-          React.createElement("p", { className: "quote-brand-bar-title" }, "Solar", React.createElement("em", null, "App")),
-          React.createElement("p", { className: "quote-brand-bar-sub" }, "Energi Tech · Zimbabwe")
-        )
-      ),
-      previewRef &&
-        React.createElement(
-          "div",
-          { className: "quote-brand-bar-ref" },
-          React.createElement("p", { className: "quote-brand-bar-ref-label" }, custom ? "Custom sizing" : "Quotation"),
-          React.createElement("p", { className: "quote-brand-bar-ref-id" }, previewRef)
-        )
-    ),
-    React.createElement(
-      "p",
-      { className: "quote-brand-bar-note" },
+      { className: "quote-page-header-brand" },
       React.createElement(
         "span",
         { className: "quote-gold-icon" },
-        React.createElement(ShldIco, { s: 12, c: "currentColor" })
+        React.createElement(ShldIco, { s: 14, c: "currentColor" })
       ),
-      " Screen preview only — download PDF for the official ",
-      QUOTE_VALIDITY_DAYS,
-      "-day quote. Not valid if shared as a screenshot."
-    )
-  );
-}
-
-export function QuoteHeroCard({ custom, title, subtitle, peakW, dailyWh, priceLabel, priceSub }) {
-  return React.createElement(
-    "div",
-    { className: "quote-hero-card" + (custom ? " quote-hero-card--custom" : "") },
-    React.createElement(
-      "div",
-      { className: "quote-hero-card-head" },
-      React.createElement(
-        "div",
-        { className: "quote-hero-card-left" },
-        React.createElement("p", { className: "quote-hero-eyebrow" }, custom ? "Tailored system" : "Recommended package"),
-        React.createElement("h2", { className: "quote-hero-title" }, title),
-        subtitle && React.createElement("p", { className: "quote-hero-sub" }, subtitle)
-      ),
-      React.createElement(
-        "div",
-        { className: "quote-hero-card-price" },
-        React.createElement("p", { className: "quote-hero-price" }, priceLabel),
-        priceSub && React.createElement("p", { className: "quote-hero-price-sub" }, priceSub)
-      )
+      React.createElement("span", { className: "quote-page-header-title" }, "Solar", React.createElement("em", null, "App"))
     ),
     React.createElement(
       "div",
-      { className: "quote-hero-stats" },
-      React.createElement(
-        "div",
-        { className: "quote-hero-stat" },
-        React.createElement("p", { className: "quote-hero-stat-val" }, (peakW || 0).toLocaleString() + "W"),
-        React.createElement("p", { className: "quote-hero-stat-lbl" }, "Peak load")
-      ),
-      React.createElement(
-        "div",
-        { className: "quote-hero-stat" },
-        React.createElement("p", { className: "quote-hero-stat-val" }, (dailyWh || 0).toLocaleString()),
-        React.createElement("p", { className: "quote-hero-stat-lbl" }, "Wh / day")
-      )
+      { className: "quote-page-header-end" },
+      previewRef &&
+        React.createElement(
+          "span",
+          { className: "quote-page-header-ref" },
+          custom ? "Custom" : "Quote",
+          " · ",
+          previewRef
+        ),
+      themeToggle
     )
   );
 }
 
-export function QuoteSpecTable({ specs, custom }) {
-  if (!specs?.length) return null;
+/** Package + price + load — one premium card. */
+export function QuotePackageCard({ custom, title, peakW, dailyWh, priceLabel, priceSub, includesLine, dWh, dailyGenWh }) {
+  const loadChip =
+    (peakW || dailyWh) &&
+    [peakW ? peakW.toLocaleString() + "W peak" : null, dailyWh ? (dailyWh / 1000).toFixed(1) + " kWh/day" : null]
+      .filter(Boolean)
+      .join(" · ");
+
   return React.createElement(
-    "div",
-    { className: "quote-spec-table" },
-    React.createElement("p", { className: "quote-spec-table-title" }, "System breakdown"),
-    specs.map((r, i) =>
+    "section",
+    { className: "quote-package-card" + (custom ? " quote-package-card--custom" : "") },
+    React.createElement(
+      "div",
+      { className: "quote-package-card-top" },
       React.createElement(
         "div",
-        {
-          key: r.label,
-          className: "quote-spec-row" + (i < specs.length - 1 ? " quote-spec-row--border" : ""),
-        },
-        React.createElement(
-          "div",
-          { className: "quote-spec-icon" },
-          React.createElement("span", { className: "quote-gold-icon" }, React.createElement(r.Ico, { s: 15, c: "currentColor" }))
-        ),
-        React.createElement(
-          "div",
-          { className: "quote-spec-main" },
-          React.createElement("p", { className: "quote-spec-label" }, r.label),
-          React.createElement("p", { className: "quote-spec-val" }, r.val)
-        ),
-        r.tot != null && !custom &&
-          React.createElement("p", { className: "quote-spec-price" }, "$" + r.tot.toLocaleString())
+        { className: "quote-package-card-main" },
+        React.createElement("h2", { className: "quote-package-name" }, title),
+        includesLine && React.createElement("p", { className: "quote-package-includes" }, includesLine)
+      ),
+      React.createElement(
+        "div",
+        { className: "quote-package-price-block" },
+        React.createElement("p", { className: "quote-package-price" }, priceLabel),
+        priceSub && React.createElement("p", { className: "quote-package-price-sub" }, priceSub)
       )
-    )
+    ),
+    loadChip && React.createElement("p", { className: "quote-package-load" }, loadChip),
+    React.createElement(QuoteEcoRibbon, { dWh, dailyGenWh })
   );
 }
 
 export function useQuotePreviewRef() {
   return useMemo(() => makeQuotePreviewRef(), []);
+}
+
+/** Plain-language planet benefit — easy for anyone to read. */
+export function QuoteEcoRibbon({ dWh, dailyGenWh }) {
+  if (!dWh && !dailyGenWh) return null;
+  const eco = environmentalImpact(dWh, dailyGenWh || 0);
+  const trees = eco.trees;
+  const benefit =
+    trees >= 2
+      ? "About the same clean-air benefit as planting " + trees + " trees every year."
+      : "Uses sunshine instead of coal power from the grid — cleaner air for your home.";
+
+  return React.createElement(
+    "div",
+    { className: "quote-eco-ribbon", role: "note" },
+    React.createElement(
+      "div",
+      { className: "quote-eco-ribbon-head" },
+      React.createElement(LeafIco, { s: 12, c: "currentColor" }),
+      React.createElement("span", { className: "quote-eco-ribbon-title" }, "Good for the planet")
+    ),
+    React.createElement("p", { className: "quote-eco-ribbon-text" }, benefit)
+  );
+}
+
+/** @deprecated Preview watermark removed from quote screen — PDF is official. */
+export function QuoteWatermarkShield() {
+  return null;
+}
+
+/** @deprecated Use QuotePageHeader */
+export function QuoteBrandBar(props) {
+  return React.createElement(QuotePageHeader, props);
+}
+
+/** @deprecated Use QuotePackageCard */
+export function QuoteHeroCard(props) {
+  return React.createElement(QuotePackageCard, {
+    custom: props.custom,
+    title: props.title,
+    peakW: props.peakW,
+    dailyWh: props.dailyWh,
+    priceLabel: props.priceLabel,
+    priceSub: props.priceSub,
+    includesLine: props.subtitle,
+  });
+}
+
+/** @deprecated Spec table hidden on quote screen — details are in the PDF. */
+export function QuoteSpecTable() {
+  return null;
 }

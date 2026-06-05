@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { W4, ci } from "./tokens.js";
 import { PrtIco, UsrIco, PhIco, LocIco, NoteIco } from "./icons.js";
-import { DeliveryInstallOption } from "./DeliveryInstallOption.js";
 import { getQuoteValidity } from "./quote.js";
+import { getDeliveryQuote } from "./delivery.js";
+import { LocationPinField } from "./LocationPinField.js";
 
 export class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -91,18 +92,48 @@ function validLead(form) {
   );
 }
 
+function ModalDeliverySnippet({ deliveryOpts, productTotal }) {
+  const quote = getDeliveryQuote({ ...deliveryOpts, enabled: true });
+  const grand = (productTotal || 0) + (quote.feePending ? 0 : quote.fee);
+  const zone =
+    quote.zone === "outside"
+      ? "Outside Harare" + (quote.km ? " · " + quote.km + " km" : "")
+      : "Harare · install included";
+  const total = quote.feePending
+    ? "$" + (productTotal || 0).toLocaleString() + " + delivery (enter km on quote)"
+    : "$" + grand.toLocaleString();
+
+  return React.createElement(
+    "div",
+    { className: "client-modal-delivery-snippet", role: "status" },
+    React.createElement("p", { className: "client-modal-delivery-snippet-label" }, "Delivery & total"),
+    React.createElement("p", { className: "client-modal-delivery-snippet-zone" }, zone),
+    React.createElement("p", { className: "client-modal-delivery-snippet-total" }, total),
+    React.createElement(
+      "p",
+      { className: "client-modal-delivery-snippet-hint" },
+      "Change delivery zone on the quote screen before opening this form."
+    )
+  );
+}
+
 export function ClientModal(p) {
   const onClose = p.onClose;
   const onDone = p.onDone;
-  const busy = p.busy;
+  const busy = !!p.busy;
   const err = p.error || "";
   const customQuote = !!p.customQuote;
   const deliveryOpts = p.deliveryOpts || { enabled: false, zone: "harare" };
-  const onDeliveryChange = p.onDeliveryChange;
   const productTotal = p.productTotal || 0;
   const onAddressBlur = p.onAddressBlur;
   const validity = getQuoteValidity();
-  const [form, setForm] = useState({ name: "", phone: "", email: "", address: "", notes: "" });
+  const [form, setForm] = useState({
+    name: "",
+    phone: "",
+    email: "",
+    address: String(p.initialAddress || "").trim(),
+    notes: "",
+  });
   const ok = validLead(form);
 
   function upd(k) {
@@ -145,16 +176,9 @@ export function ClientModal(p) {
         "p",
         { className: "client-modal-sub" },
         customQuote
-          ? "We'll confirm sizing on WhatsApp and send your PDF."
-          : "PDF quote · WhatsApp to confirm payment · valid " + validity.days + " days"
+          ? "PDF downloads in the background — you can return home right away."
+          : "PDF downloads in the background · WhatsApp for payment · valid " + validity.days + " days"
       ),
-      !customQuote &&
-        React.createElement(DeliveryInstallOption, {
-          opts: deliveryOpts,
-          onChange: onDeliveryChange,
-          productTotal,
-          variant: "modal",
-        }),
       React.createElement("div", { className: "client-modal-label" }, icon(UsrIco), "Name *"),
       React.createElement("input", {
         className: "client-modal-input",
@@ -178,13 +202,15 @@ export function ClientModal(p) {
         required: true,
       }),
       React.createElement("div", { className: "client-modal-label" }, icon(LocIco), "Area / address *"),
-      React.createElement("input", {
-        className: "client-modal-input",
+      React.createElement(LocationPinField, {
+        id: "client-modal-address",
         value: form.address,
         onChange: upd("address"),
-        onBlur: (e) => onAddressBlur && onAddressBlur(e.target.value),
+        onLocated: (address, meta) => onAddressBlur && onAddressBlur(address, meta),
+        smart: true,
         required: true,
-        placeholder: "e.g. Borrowdale, Harare — or city outside Harare",
+        inputClassName: "client-modal-input client-modal-input--with-pin",
+        wrapClassName: "location-pin-wrap client-modal-address-wrap",
       }),
       React.createElement("div", { className: "client-modal-label" }, icon(NoteIco), "Notes"),
       React.createElement("textarea", {
@@ -194,6 +220,11 @@ export function ClientModal(p) {
         rows: 2,
         style: { resize: "vertical", marginBottom: 12 },
       }),
+      !customQuote &&
+        React.createElement(ModalDeliverySnippet, {
+          deliveryOpts,
+          productTotal,
+        }),
       err && React.createElement("p", { className: "client-modal-error" }, err),
       React.createElement(
         "div",
@@ -219,11 +250,11 @@ export function ClientModal(p) {
           ),
           busy
             ? customQuote
-              ? "Sending to Energi Tech…"
-              : "Preparing your quote…"
+              ? "Starting download…"
+              : "Starting download…"
             : customQuote
-              ? "Get my custom quote on WhatsApp"
-              : "Get my quote & pay on WhatsApp"
+              ? "Download PDF & WhatsApp"
+              : "Download PDF quote"
         )
       )
     )

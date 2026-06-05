@@ -113,6 +113,15 @@ export function PhIco(p) {
 export function LocIco(p) {
   return React.createElement(Svg, { s: p.s || 16, c: p.c }, path("M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"), circ({ cx: "12", cy: "10", r: "3" }));
 }
+/** Map pin — Google Maps–style teardrop for location actions */
+export function MapPinIco(p) {
+  return React.createElement(
+    Svg,
+    { s: p.s || 18, c: p.c, sw: "1.35" },
+    path("M12 21s-6-5.2-6-11a6 6 0 1112 0c0 5.8-6 11-6 11z"),
+    circ({ cx: "12", cy: "10", r: "2.25", fill: "currentColor", stroke: "none" })
+  );
+}
 export function VanIco(p) {
   return React.createElement(
     Svg,

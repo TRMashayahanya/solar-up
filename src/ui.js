@@ -157,6 +157,10 @@ export const globalStyles =
   ".app-shell--home{justify-content:center;padding-bottom:calc(92px + env(safe-area-inset-bottom,0px))!important;padding-top:max(14px,env(safe-area-inset-top))!important;padding-left:max(12px,env(safe-area-inset-left))!important;padding-right:max(12px,env(safe-area-inset-right))!important}" +
   ".app-shell--sizer{padding:max(8px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-left)) calc(84px + env(safe-area-inset-bottom,0px)) max(10px,env(safe-area-inset-right));min-height:100dvh;box-sizing:border-box}" +
   ".app-shell--sizer>main,.main-card--sizer{flex:1;min-height:0;display:flex;flex-direction:column;width:100%;max-width:min(560px,100%)}" +
+  ".app-shell--quote{padding:max(8px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-left)) calc(80px + env(safe-area-inset-bottom,0px)) max(10px,env(safe-area-inset-right));min-height:100dvh;box-sizing:border-box}" +
+  ".app-shell--quote{display:flex;flex-direction:column;min-height:0;flex:1}" +
+  ".app-shell--quote>main.main-card--quote{flex:1;min-height:0;display:flex;flex-direction:column;padding:clamp(12px,3vw,18px) clamp(14px,3.5vw,20px) 8px!important;max-height:calc(100dvh - 56px - env(safe-area-inset-top) - env(safe-area-inset-bottom));overflow:hidden}" +
+  ".main-card--quote .main-inner--quote,.main-card--quote>div:last-child{flex:1;min-height:0;display:flex;flex-direction:column}" +
   ".app-main-card{width:100%;max-width:min(560px,100%);min-width:0;padding:clamp(16px,4vw,28px)}" +
   ".main-inner--sizer{flex:1;min-height:0;display:flex;flex-direction:column;padding:12px 14px 10px!important;overflow:hidden}" +
   ".app-shell--sizer .sizer-screen{flex:1;min-height:0;display:flex;flex-direction:column}" +

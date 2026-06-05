@@ -1,6 +1,7 @@
 /** Delivery pricing — Energi Tech Zimbabwe */
 
 import { OUTSIDE_DELIVERY_PER_KM_USD, PACKAGE_PRICE_NOTE } from "./packages.js";
+import { roadKmFromHarare } from "./geo-distance.js";
 
 export { OUTSIDE_DELIVERY_PER_KM_USD, PACKAGE_PRICE_NOTE };
 
@@ -11,7 +12,7 @@ export const HARARE_INSTALL_INCLUDED_NOTE =
   "Full installation in Harare is included in your package price.";
 
 export const OUTSIDE_DEALER_ADVISORY =
-  "Outside Harare: delivery charged at $0.50 per km from Harare. Enter your city or km below for an estimate.";
+  "Outside Harare: delivery at $0.50/km from Harare. Use the map pin or type your suburb or city — distance is estimated automatically.";
 
 /** Approximate road distance from Harare (km) for common areas */
 const CITY_KM_FROM_HARARE = {
@@ -154,7 +155,6 @@ export function getDeliveryQuote(opts) {
 
   const zone = opts.zone === "outside" ? "outside" : "harare";
   const locationLabel = String(opts.locationLabel || "").trim();
-  const manualKm = Number(opts.distanceKm);
 
   if (zone === "harare") {
     return {
@@ -173,8 +173,9 @@ export function getDeliveryQuote(opts) {
     };
   }
 
+  const geoKm = Number(opts.distanceKm) > 0 ? Math.round(Number(opts.distanceKm)) : 0;
   const estimatedKm = estimateKmFromAddress(locationLabel);
-  const km = manualKm > 0 ? manualKm : estimatedKm || 0;
+  const km = geoKm > 0 ? geoKm : estimatedKm || 0;
 
   if (!km || km <= 0) {
     const place = locationLabel || "your area";
@@ -191,7 +192,7 @@ export function getDeliveryQuote(opts) {
       summary:
         "Outside Harare · " +
         place +
-        ". Enter distance (km) for $" +
+        ". Use the map pin or pick a suggested area for $" +
         OUTSIDE_DELIVERY_PER_KM_USD +
         "/km delivery estimate.",
       dealerAdvisory: OUTSIDE_DEALER_ADVISORY,
@@ -221,6 +222,74 @@ export function getDeliveryQuote(opts) {
     dealerAdvisory: OUTSIDE_DEALER_ADVISORY,
     locationDisplay: locationLabel || km + " km from Harare",
   };
+}
+
+/** Local suburb/city suggestions (no network). */
+export function localPlaceSuggestions(query, { limit = 6 } = {}) {
+  const t = norm(query);
+  if (t.length < 2) return [];
+
+  const seen = new Set();
+  const out = [];
+
+  function push(label, km) {
+    const key = label.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push({ label, distanceKm: km, source: "local" });
+  }
+
+  for (const c of OUTSIDE_CITIES) {
+    if (c.key.includes(t) || c.label.toLowerCase().includes(t)) {
+      push(c.label + ", Zimbabwe", c.km);
+    }
+  }
+  for (const m of HARARE_MARKERS) {
+    if (m.includes(t) && m.length > 3) {
+      const label = m.replace(/\b\w/g, (c) => c.toUpperCase()) + ", Harare";
+      push(label, 0);
+    }
+  }
+  return out.slice(0, limit);
+}
+
+/** Apply typed, GPS, or picked place to delivery opts (zone + auto km). */
+export function applyAddressToDeliveryOpts(address, opts = {}, meta = {}) {
+  const addr = String(address || "").trim();
+  if (!addr) return { enabled: true };
+
+  const detected = isHarareAddress(addr);
+  const cityLabel = getOutsideLocationLabel(addr);
+  const geoKm = Number(meta.distanceKm) > 0 ? Math.round(Number(meta.distanceKm)) : 0;
+  const metaLat = Number(meta.lat);
+  const metaLon = Number(meta.lon);
+  let km = geoKm > 0 ? geoKm : estimateKmFromAddress(addr) || 0;
+  if (!km && Number.isFinite(metaLat) && Number.isFinite(metaLon)) {
+    km = roadKmFromHarare(metaLat, metaLon);
+  }
+
+  if (detected === true) {
+    return {
+      enabled: true,
+      zone: "harare",
+      locationLabel: addr,
+      distanceKm: 0,
+    };
+  }
+  if (detected === false) {
+    return {
+      enabled: true,
+      zone: "outside",
+      locationLabel: cityLabel || addr,
+      distanceKm: km,
+    };
+  }
+  const patch = { enabled: true, locationLabel: cityLabel || addr };
+  if (cityLabel || km > 0) {
+    patch.zone = "outside";
+    if (km > 0) patch.distanceKm = km;
+  }
+  return patch;
 }
 
 export function quoteGrandTotal(productTotal, deliveryQuote) {

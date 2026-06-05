@@ -6,8 +6,6 @@ import {
 } from "./delivery.js";
 import { environmentalImpact } from "./environment.js";
 
-const SUN_HOURS = 5.5;
-
 /** Printed quotations expire after this many calendar days from issue. */
 export const QUOTE_VALIDITY_DAYS = 5;
 
@@ -98,20 +96,11 @@ const QUOTE_STYLES =
   ".fb{font-family:'Cormorant Garamond',Georgia,serif;font-size:15px;font-weight:700;color:#8B6914}" +
   ".fc{font-size:10px;color:#4A5560;margin-top:4px;line-height:1.45;font-weight:500}" +
   ".badge{background:#F5EFC0;color:#5C4A10;border:1px solid #C9A227;font-size:8.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:6px 12px;border-radius:12px;white-space:nowrap}" +
-  ".eco-foot{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:14px;padding:14px 12px;border-radius:10px;background:#F0FAF5;border:1px solid #B8E0C8;position:relative;z-index:1}" +
-  ".eco-foot-lbl{grid-column:1/-1;font-size:8.5px;letter-spacing:1.5px;text-transform:uppercase;color:#1A5C38;text-align:center;margin-bottom:6px;font-weight:700}" +
-  ".eco-cell{text-align:center}" +
-  ".eco-cell strong{display:block;font-size:14px;font-weight:700;color:#1A5C38;line-height:1.2}" +
-  ".eco-cell span{font-size:9px;color:#4A5560;display:block;margin-top:3px;font-weight:500}";
+  ".eco-simple{margin-top:12px;padding:10px 12px;border-radius:10px;background:#F0FAF5;border:1px solid #B8E0C8;font-size:10px;color:#2A4540;line-height:1.5}" +
+  ".eco-simple strong{color:#1A5C38}";
 
 function quotePdfHead() {
   return "<link rel='stylesheet' href='" + PDF_FONTS_URL + "'>";
-}
-
-function buildPdfWatermarkHtml(ref, clientName) {
-  const label = "SolarApp · Energi Tech · " + ref + (clientName ? " · " + clientName : "") + " · Confidential";
-  const tiles = Array.from({ length: 24 }, () => "<span>" + label + "</span>").join("");
-  return "<div class='pdf-wm' aria-hidden='true'><div class='pdf-wm-inner'>" + tiles + "</div></div>";
 }
 
 function wrapQuoteBody(inner) {
@@ -132,19 +121,10 @@ function quoteApplianceTableOpen() {
 
 function buildEcoFootprintHtml(dWh, dailyGenWh) {
   const eco = environmentalImpact(dWh, dailyGenWh || 0);
-  const car =
-    eco.carKm >= 1000 ? Math.round(eco.carKm / 1000) + "k km" : eco.carKm.toLocaleString() + " km";
   return (
-    "<div class='eco-foot'><div class='eco-foot-lbl'>Estimated green impact vs ZESA grid</div>" +
-    "<div class='eco-cell'><strong>" +
-    eco.co2Tonnes +
-    "t</strong>CO₂ saved / yr</div>" +
-    "<div class='eco-cell'><strong>" +
+    "<p class='eco-simple'>Good for the planet — about <strong>" +
     eco.trees +
-    "</strong>Trees equivalent</div>" +
-    "<div class='eco-cell'><strong>" +
-    car +
-    "</strong>Car emissions off</div></div>"
+    " trees</strong> worth of CO₂ saved per year vs grid power.</p>"
   );
 }
 
@@ -263,23 +243,8 @@ export function buildQuoteDocument(client, sz, appList, propLabel, deliveryQuote
         ? "USD · Package + $" + dq.fee + " delivery"
         : "USD · Harare install included"
     : "USD · Package (Harare install incl.)";
-  let rows = "";
-  for (let i = 0; i < appList.length; i++) {
-    const a = appList[i];
-    rows +=
-      "<tr><td class='c-item'>" +
-      a.label +
-      "</td><td class='c-qty'>" +
-      a.h +
-      "h</td><td class='c-qty'>" +
-      a.w +
-      "W</td><td class='c-sub'>" +
-      Math.round(a.w * a.h) +
-      " Wh</td></tr>";
-  }
 
   const body = wrapQuoteBody(
-    buildPdfWatermarkHtml(ref, client.name || "") +
     "<div class='quote-inner'>" +
     quotePdfHead() +
     "<style>" +
@@ -373,49 +338,22 @@ export function buildQuoteDocument(client, sz, appList, propLabel, deliveryQuote
     productRows +
     deliveryRows +
     "</tbody></table></div>" +
-    (rows
-      ? "<div class='sec'><h3>Appliances in This Sizing</h3>" +
-        quoteApplianceTableOpen() +
-        rows +
-        "</tbody></table></div>"
-      : "") +
     "<div class='terms'>" +
-    "• SolarApp sizing and this quotation are 100% free — you only pay if you order hardware.<br/>" +
-    "<strong>• This quotation is valid for " +
+    "<strong>Valid " +
     validity.days +
-    " days only</strong> (issued " +
-    validity.issuedLabel +
-    ", expires " +
+    " days</strong> (until " +
     validity.validUntilLabel +
-    ").<br/>" +
-    "• " +
+    "). 50% deposit confirms your order. Prices in USD from Energi Tech. " +
     PACKAGE_PRICE_NOTE +
-    "<br/>" +
+    " " +
     (dq
       ? dq.feePending
-        ? "• Outside Harare delivery requested" +
-          (dq.locationLabel ? " (" + dq.locationLabel + ")" : "") +
-          " — $" +
-          OUTSIDE_DELIVERY_PER_KM_USD +
-          "/km once distance confirmed.<br/>"
+        ? "Outside Harare delivery — $" + OUTSIDE_DELIVERY_PER_KM_USD + "/km once distance is confirmed."
         : dq.zone === "outside"
-          ? "• Includes $" +
-            dq.fee +
-            " delivery (" +
-            dq.km +
-            " km × $" +
-            OUTSIDE_DELIVERY_PER_KM_USD +
-            "/km). Harare installation is in the package price.<br/>"
-          : "• Harare full installation included in package price.<br/>"
-      : "• Harare full installation included in package price.<br/>") +
-    "• Package prices are USD from Energi Tech.<br/>" +
-    "• Panels sized for ~" +
-    SUN_HOURS +
-    " peak sun hours with margin to cover your daily load.<br/>" +
-    "• 50% deposit confirms supply · 5-year manufacturer warranty.<br/>" +
-    "• Package matched to your peak load, battery backup, and daily solar yield (simultaneous peak assumed).<br/>" +
-    "• Based on appliances and hours you provided; performance may vary with usage.<br/>" +
-    "• Electric kettles, microwaves, irons and similar heating elements are not included in this sizing (surge risk to inverters/batteries) — ask Energi Tech for alternatives." +
+          ? "Includes $" + dq.fee + " delivery (" + dq.km + " km from Harare)."
+          : "Harare installation included."
+      : "Harare installation included.") +
+    " Contact 0773757018 on WhatsApp to pay and book install. Heating appliances (kettles, irons, microwaves) need a separate review — surge risk." +
     "</div>" +
     "<div class='footer'><div><div class='fb'>SolarApp</div><div class='fc'>Energi Tech · 0773757018 · Zimbabwe</div></div>" +
     "<span class='badge'>PDF Quote " +
@@ -473,7 +411,6 @@ function buildCustomQuoteDocument(client, sz, appList, propLabel) {
     .join("");
 
   const body = wrapQuoteBody(
-    buildPdfWatermarkHtml(ref, client.name || "") +
     "<div class='quote-inner'>" +
     quotePdfHead() +
     "<style>" +

@@ -20,6 +20,7 @@ import { initLeadsDatabase, insertLead, listLeads, leadsStorageInfo } from "./se
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT) || 5173;
 const ADMIN_API_KEY = process.env.ADMIN_API_KEY || "";
+const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY || "";
 
 const MIME = {
   ".html": "text/html; charset=utf-8",
@@ -210,6 +211,14 @@ const server = http.createServer((req, res) => {
 
   if (req.method === "GET" && url === "/api/leads/export") {
     handleExportLeads(req, res);
+    return;
+  }
+
+  if (req.method === "GET" && url === "/api/config") {
+    cors(res, 200, {
+      googleMapsApiKey: GOOGLE_MAPS_API_KEY,
+      mapsProvider: GOOGLE_MAPS_API_KEY ? "google" : "openstreetmap",
+    });
     return;
   }
 

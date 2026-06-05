@@ -38,6 +38,8 @@ async function boot() {
   }
 
   try {
+    import("./runtime-config.js").then((m) => m.getRuntimeConfig()).catch(() => {});
+    import("./google-maps.js").then((m) => m.initGoogleMaps()).catch(() => {});
     const { default: App } = await import("./App.js?v=" + BUILD);
     const rootEl = document.getElementById("root");
     if (!rootEl) throw new Error("Missing #root element");

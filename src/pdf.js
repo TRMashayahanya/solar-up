@@ -25,7 +25,7 @@ function ensurePdfFonts() {
   if (!link) {
     link = document.createElement("link");
     link.rel = "stylesheet";
-    link.href = PDF_FONT_URL;
+    link.href = PDF_FONTS_URL;
     link.dataset.solarup = "pdf-fonts";
     document.head.appendChild(link);
   }

@@ -9,6 +9,7 @@ import { newCustomItem, countActiveCustom, customItemsToLoadEntries, isCustomIte
 import { scrollToTop } from "./scroll.js";
 import {
   getDeliveryQuote,
+  applyAddressToDeliveryOpts,
   quoteGrandTotal,
   isHarareAddress,
   getOutsideLocationLabel,
@@ -16,6 +17,7 @@ import {
 } from "./delivery.js";
 import { ZapIco, BatIco, PanIco } from "./icons.js";
 import { useCount, ClientModal, Particles, ErrorBoundary } from "./components.js";
+import { PdfDownloadBanner } from "./PdfDownloadBanner.js";
 import { HomeScreen, BuildingScreen, ResultScreen, ProductsScreen } from "./screens.js";
 import { globalStyles, BottomNav, ThemeToggle, BrandSunMark } from "./ui.js";
 import { getStoredTheme, applyTheme, toggleTheme } from "./theme.js";
@@ -29,7 +31,7 @@ export default function App() {
   const [hrs, setHrs] = useState({});
   const [sizing, setSizing] = useState(null);
   const [showModal, setShowModal] = useState(false);
-  const [pdfBusy, setPdfBusy] = useState(false);
+  const [pdfJob, setPdfJob] = useState(null);
   const [leadError, setLeadError] = useState("");
   const [customItems, setCustomItems] = useState([]);
   const [deliveryOpts, setDeliveryOpts] = useState({
@@ -182,102 +184,123 @@ export default function App() {
     requestAnimationFrame(() => scrollToTop());
   }
 
-  async function handlePrint(client) {
-    if (!sizing) return;
-    setPdfBusy(true);
+  function dismissPdfJob() {
+    setPdfJob(null);
+  }
+
+  function goHomeFromPdfJob() {
+    setShowModal(false);
     setLeadError("");
+    setNav("home");
+    requestAnimationFrame(() => scrollToTop());
+  }
 
+  function handlePrint(client) {
+    if (!sizing) return;
     const custom = !!(sizing.fit && sizing.fit.customQuote);
-    const liveDelivery = custom ? getDeliveryQuote({ enabled: false }) : getDeliveryQuote(deliveryOpts);
-    let pdfDelivery = liveDelivery;
-    if (!custom && liveDelivery.enabled && liveDelivery.zone === "outside") {
-      const addr = (client.address || "").trim();
-      const loc = getOutsideLocationLabel(addr) || deliveryOpts.locationLabel || addr;
-      const km =
-        deliveryOpts.distanceKm > 0
-          ? deliveryOpts.distanceKm
-          : estimateKmFromAddress(addr) || estimateKmFromAddress(loc) || 0;
-      pdfDelivery = getDeliveryQuote({
-        enabled: true,
-        zone: "outside",
-        locationLabel: loc,
-        distanceKm: km,
-      });
-    }
-    const pdfGrand = custom ? null : quoteGrandTotal(sizing.tot, pdfDelivery);
+    setLeadError("");
+    setShowModal(false);
+    setPdfJob({
+      phase: "active",
+      message: custom
+        ? "Preparing your custom quote PDF — you can go home while we finish."
+        : "Downloading your quote in the background — browse freely or tap Back to Home.",
+    });
 
-    try {
-      const leadResult = await submitLead({
-        ...client,
-        propertyType: propType,
-        propertyLabel: propInfo ? propInfo.label : "",
-        customQuote: custom,
-        quoteTotal: custom ? null : sizing.tot,
-        quoteGrandTotal: custom ? null : pdfGrand,
-        deliveryInstall: pdfDelivery.enabled
-          ? {
-              enabled: true,
-              zone: pdfDelivery.zone,
-              fee: pdfDelivery.fee,
-              feePending: !!pdfDelivery.feePending,
-              locationLabel: pdfDelivery.locationLabel || "",
-              km: pdfDelivery.km || 0,
-            }
-          : { enabled: false },
-        peakW: sizing.pW,
-        dailyWh: sizing.dWh,
-        customAccessories: customItems.filter(isCustomItemActive).map((c) => ({
-          label: String(c.label).trim(),
-          watts: c.w,
-          hoursPerDay: c.dh,
-          qty: c.qty,
-        })),
-        submittedAt: new Date().toISOString(),
-      });
-
-      const { downloadQuotePdf } = await import("./pdf.js?v=" + BUILD);
-      const result = await downloadQuotePdf(
-        client,
-        sizing,
-        sizing.appList,
-        propInfo ? propInfo.label : "",
-        pdfDelivery
-      );
-
-      const waUrl = paymentAssistWhatsAppUrl(
-        client,
-        sizing,
-        propInfo ? propInfo.label : "",
-        pdfDelivery,
-        pdfGrand,
-        custom
-      );
-      const waWin = window.open(waUrl, "_blank", "noopener,noreferrer");
-
-      setShowModal(false);
-      if (leadResult?.offline) {
-        setLeadError(
-          waWin
-            ? "Quote saved locally — WhatsApp opened for payment help (server unavailable)."
-            : "Quote saved locally — allow pop-ups or message 0773757018 on WhatsApp for payment help."
-        );
-        setTimeout(() => setLeadError(""), 8000);
-      } else if (result?.mode === "print") {
-        setLeadError(
-          waWin
-            ? "PDF opened for printing — WhatsApp opened for payment assistance."
-            : "PDF opened for printing — allow pop-ups to message Energi Tech on WhatsApp."
-        );
-        setTimeout(() => setLeadError(""), 8000);
-      } else if (!waWin) {
-        setLeadError("Quote saved — allow pop-ups to open WhatsApp for payment assistance.");
-        setTimeout(() => setLeadError(""), 6000);
+    (async () => {
+      const liveDelivery = custom ? getDeliveryQuote({ enabled: false }) : getDeliveryQuote(deliveryOpts);
+      let pdfDelivery = liveDelivery;
+      if (!custom && liveDelivery.enabled && liveDelivery.zone === "outside") {
+        const addr = (client.address || "").trim();
+        const loc = getOutsideLocationLabel(addr) || deliveryOpts.locationLabel || addr;
+        const km =
+          deliveryOpts.distanceKm > 0
+            ? deliveryOpts.distanceKm
+            : estimateKmFromAddress(addr) || estimateKmFromAddress(loc) || 0;
+        pdfDelivery = getDeliveryQuote({
+          enabled: true,
+          zone: "outside",
+          locationLabel: loc,
+          distanceKm: km,
+        });
       }
-    } catch (e) {
-      setLeadError(e.message || "Could not generate your quote. Please try again.");
-    } finally {
-      setPdfBusy(false);
-    }
+      const pdfGrand = custom ? null : quoteGrandTotal(sizing.tot, pdfDelivery);
+
+      try {
+        setPdfJob((j) =>
+          j?.phase === "active" ? { phase: "active", message: "Saving your details…" } : j
+        );
+
+        const leadResult = await submitLead({
+          ...client,
+          propertyType: propType,
+          propertyLabel: propInfo ? propInfo.label : "",
+          customQuote: custom,
+          quoteTotal: custom ? null : sizing.tot,
+          quoteGrandTotal: custom ? null : pdfGrand,
+          deliveryInstall: pdfDelivery.enabled
+            ? {
+                enabled: true,
+                zone: pdfDelivery.zone,
+                fee: pdfDelivery.fee,
+                feePending: !!pdfDelivery.feePending,
+                locationLabel: pdfDelivery.locationLabel || "",
+                km: pdfDelivery.km || 0,
+              }
+            : { enabled: false },
+          peakW: sizing.pW,
+          dailyWh: sizing.dWh,
+          customAccessories: customItems.filter(isCustomItemActive).map((c) => ({
+            label: String(c.label).trim(),
+            watts: c.w,
+            hoursPerDay: c.dh,
+            qty: c.qty,
+          })),
+          submittedAt: new Date().toISOString(),
+        });
+
+        setPdfJob((j) =>
+          j?.phase === "active" ? { phase: "active", message: "Generating PDF — check Downloads when ready…" } : j
+        );
+
+        const { downloadQuotePdf } = await import("./pdf.js?v=" + BUILD);
+        const result = await downloadQuotePdf(
+          client,
+          sizing,
+          sizing.appList,
+          propInfo ? propInfo.label : "",
+          pdfDelivery
+        );
+
+        const waUrl = paymentAssistWhatsAppUrl(
+          client,
+          sizing,
+          propInfo ? propInfo.label : "",
+          pdfDelivery,
+          pdfGrand,
+          custom
+        );
+        const waWin = window.open(waUrl, "_blank", "noopener,noreferrer");
+
+        let msg =
+          result?.mode === "print"
+            ? "Print window opened — choose Save as PDF if your device did not download automatically."
+            : "Quote saved — check your Downloads folder.";
+        if (leadResult?.offline) msg += " Details saved on this device (server busy).";
+        if (waWin) msg += " WhatsApp opened for payment help.";
+        else msg += " Allow pop-ups to open WhatsApp, or message 0773757018.";
+
+        setPdfJob({ phase: "done", message: msg });
+        setTimeout(() => {
+          setPdfJob((j) => (j?.phase === "done" ? null : j));
+        }, 14000);
+      } catch (e) {
+        setPdfJob({
+          phase: "error",
+          message: e.message || "Could not finish your quote. Try again from the quote screen.",
+        });
+      }
+    })();
   }
 
   function selectNav(id) {
@@ -370,17 +393,23 @@ export default function App() {
   } else if (nav === "quote" && sizing) {
     main = React.createElement(ResultScreen, {
       sizing,
-      propInfo,
-      specs,
       isCustomQuote,
-      countTotal,
       productTotal: isCustomQuote ? 0 : sizing.tot,
       deliveryOpts,
       onDeliveryChange: setDeliveryOpts,
+      onLocationResolved: (address, meta) => {
+        setDeliveryOpts((o) => ({ ...o, ...applyAddressToDeliveryOpts(address, o, meta || {}) }));
+      },
       deliveryQuote,
       grandTotal,
       setShowModal,
       reset,
+      themeToggle: React.createElement(ThemeToggle, {
+        theme,
+        onToggle: () => setTheme((t) => toggleTheme(t)),
+        compact: true,
+        inline: true,
+      }),
     });
   }
 
@@ -391,7 +420,8 @@ export default function App() {
         "app-shell" +
         (nav === "home" ? " app-shell--home" : "") +
         (nav === "size" ? " app-shell--sizer" : "") +
-        (nav === "products" ? " app-shell--products" : ""),
+        (nav === "products" ? " app-shell--products" : "") +
+        (nav === "quote" ? " app-shell--quote" : ""),
       style: {
         background: BG,
         backgroundImage: GRAD_HERO,
@@ -406,13 +436,14 @@ export default function App() {
           (nav === "home" ? "home-main-card" : "") +
           (nav === "size" ? " main-card--sizer" : "") +
           (nav === "products" ? " main-card--products" : "") +
-          (nav !== "home" && nav !== "size" && nav !== "products" ? " app-main-card" : ""),
+          (nav === "quote" ? " main-card--quote" : "") +
+          (nav !== "home" && nav !== "size" && nav !== "products" && nav !== "quote" ? " app-main-card" : ""),
         style: {
           ...CARD,
           width: "100%",
           maxWidth: "min(560px, 100%)",
           zIndex: 1,
-          overflow: nav === "size" ? "hidden" : "visible",
+          overflow: nav === "size" || nav === "quote" ? "hidden" : "visible",
         },
       },
       nav !== "home" &&
@@ -421,9 +452,14 @@ export default function App() {
         "div",
         {
           className:
-            (nav === "home" ? "home-main-inner" : "") + (nav === "size" ? " main-inner--sizer" : ""),
+            (nav === "home" ? "home-main-inner" : "") +
+            (nav === "size" ? " main-inner--sizer" : "") +
+            (nav === "quote" ? " main-inner--quote" : ""),
           style: {
-            padding: nav === "home" ? undefined : nav === "size" ? undefined : "clamp(20px, 5vw, 28px)",
+            padding:
+              nav === "home" || nav === "size" || nav === "quote"
+                ? undefined
+                : "clamp(20px, 5vw, 28px)",
           },
         },
         nav === "home" &&
@@ -471,6 +507,7 @@ export default function App() {
         nav !== "home" &&
           nav !== "size" &&
           nav !== "products" &&
+          nav !== "quote" &&
           React.createElement(
             "div",
             { className: "screen-header" },
@@ -504,41 +541,21 @@ export default function App() {
           setLeadError("");
         },
         onDone: handlePrint,
-        busy: pdfBusy,
         error: leadError,
         deliveryOpts,
         onDeliveryChange: setDeliveryOpts,
         productTotal: sizing ? (isCustomQuote ? 0 : sizing.tot) : 0,
         customQuote: isCustomQuote,
-        onAddressBlur: (address) => {
-          const detected = isHarareAddress(address);
-          const locationLabel = getOutsideLocationLabel(address);
-          const km = estimateKmFromAddress(address);
-          if (detected === true) {
-            setDeliveryOpts((o) => ({
-              ...o,
-              enabled: true,
-              zone: "harare",
-              locationLabel: "",
-              distanceKm: 0,
-            }));
-          } else if (detected === false) {
-            setDeliveryOpts((o) => ({
-              ...o,
-              enabled: true,
-              zone: "outside",
-              locationLabel: locationLabel || o.locationLabel || address.trim(),
-              distanceKm: km > 0 ? km : o.distanceKm || 0,
-            }));
-          } else if (locationLabel) {
-            setDeliveryOpts((o) => ({
-              ...o,
-              locationLabel,
-              distanceKm: km > 0 ? km : o.distanceKm || 0,
-            }));
-          }
+        initialAddress: deliveryOpts.locationLabel || "",
+        onAddressBlur: (address, meta) => {
+          setDeliveryOpts((o) => ({ ...o, ...applyAddressToDeliveryOpts(address, o, meta || {}) }));
         },
       }),
+    React.createElement(PdfDownloadBanner, {
+      job: pdfJob,
+      onHome: goHomeFromPdfJob,
+      onDismiss: dismissPdfJob,
+    }),
     React.createElement(BottomNav, {
       active: nav,
       onSelect: selectNav,

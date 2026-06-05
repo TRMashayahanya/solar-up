@@ -10,10 +10,8 @@ import { getOtherAccessoriesCopy } from "./copy.js";
 import {
   StepIndicator,
   PowerQuestMeter,
-  EcoQuoteFootprint,
   ApplianceRow,
   BtnPrimary,
-  BtnGhost,
   EmptyHint,
   ProductCard,
   HomeBrand,
@@ -25,13 +23,7 @@ import { ZapIco, PrtIco, RetIco, ArrRIco } from "./icons.js";
 import { CustomAccessoriesPanel } from "./custom-accessories-panel.js";
 import { DeliveryInstallOption } from "./DeliveryInstallOption.js";
 import { HomeInstallCta } from "./home-install-cta.js";
-import {
-  QuoteBrandBar,
-  QuoteWatermarkShield,
-  QuoteHeroCard,
-  QuoteSpecTable,
-  useQuotePreviewRef,
-} from "./quote-page.js";
+import { QuotePageHeader, QuotePackageCard, useQuotePreviewRef } from "./quote-page.js";
 
 export function HomeScreen({ onPickProp, onViewProducts }) {
   return React.createElement(
@@ -287,69 +279,73 @@ export function BuildingScreen({
 
 export function ResultScreen({
   sizing,
-  propInfo,
-  specs,
   isCustomQuote,
-  countTotal,
   productTotal,
   deliveryOpts,
   onDeliveryChange,
+  onLocationResolved,
   deliveryQuote,
   grandTotal,
   setShowModal,
   reset,
+  themeToggle,
 }) {
   const custom = !!isCustomQuote;
   const pkg = sizing?.pkg;
   const previewRef = useQuotePreviewRef();
   const heroTitle = custom ? "Custom quote" : pkg?.name || sizing.kva + " kVA";
-  const heroSub = custom ? "Sized to your load — pricing on request" : pkg ? sizing.kva + " kVA package" : null;
-  const priceLabel = custom ? "On request" : "$" + countTotal.toLocaleString();
+  const includesLine = custom
+    ? "Sized to your load"
+    : pkg
+      ? sizing.kva + " kVA · Harare install included"
+      : null;
+  const displayTotal = grandTotal != null ? grandTotal : sizing.tot;
+  const priceLabel = custom ? "On request" : "$" + displayTotal.toLocaleString();
   const priceSub =
     !custom &&
-    (deliveryQuote?.enabled && !deliveryQuote.feePending ? "USD incl. delivery" : "USD · Harare install incl.");
+    (deliveryQuote?.enabled && !deliveryQuote.feePending ? "incl. delivery" : "Harare install incl.");
 
   return React.createElement(
     "div",
-    { className: "animate-rise quote-page", style: { paddingBottom: 8, position: "relative" } },
-    React.createElement(QuoteWatermarkShield, { previewRef }),
+    { className: "animate-rise quote-page quote-page--compact", style: { flex: 1, minHeight: 0, width: "100%" } },
     React.createElement(
       "div",
       { className: "quote-page__content" },
-      React.createElement(QuoteBrandBar, { previewRef, custom }),
-      React.createElement(QuoteHeroCard, {
+      React.createElement(QuotePageHeader, { previewRef, custom, themeToggle }),
+      React.createElement(QuotePackageCard, {
         custom,
         title: heroTitle,
-        subtitle: heroSub,
+        includesLine,
         peakW: sizing.pW,
         dailyWh: sizing.dWh,
         priceLabel,
         priceSub,
+        dWh: sizing.dWh,
+        dailyGenWh: sizing.dailyGenWh,
       }),
       !custom &&
         React.createElement(DeliveryInstallOption, {
           variant: "quote",
           opts: deliveryOpts || { enabled: true, zone: "harare" },
           onChange: onDeliveryChange,
+          onLocationResolved,
           productTotal: productTotal || sizing.tot,
         }),
-      React.createElement(EcoQuoteFootprint, { dWh: sizing.dWh, dailyGenWh: sizing.dailyGenWh }),
-      React.createElement(QuoteSpecTable, { specs, custom }),
       React.createElement(
-        "div",
-        { className: "sticky-actions" },
+        "footer",
+        { className: "quote-page-footer" },
         React.createElement(BtnPrimary, {
           onClick: () => setShowModal(true),
           full: true,
           icon: React.createElement(PrtIco, { s: 16, c: "#0a0800" }),
-          children: custom ? "Request custom PDF quote" : "Get PDF quote",
+          children: custom ? "Request PDF quote" : "Get PDF quote",
         }),
-        React.createElement(BtnGhost, {
-          onClick: reset,
-          full: true,
-          icon: React.createElement(RetIco, { s: 14, c: W4 }),
-          children: "Start over",
-        })
+        React.createElement(
+          "button",
+          { type: "button", className: "quote-page-reset", onClick: reset },
+          React.createElement(RetIco, { s: 12, c: "currentColor" }),
+          "Start over"
+        )
       )
     )
   );
