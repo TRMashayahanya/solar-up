@@ -131,10 +131,21 @@ export const globalStyles =
   "background:linear-gradient(135deg,#C9A227,#E8C547);border:1px solid rgba(232,197,71,.5);box-shadow:0 4px 20px rgba(232,197,71,.2);transition:transform .15s,box-shadow .15s}" +
   ".home-install-cta:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 6px 24px rgba(232,197,71,.28)}" +
   ".home-install-cta:active:not(:disabled){transform:translateY(0)}" +
-  ".home-install-cta:disabled{opacity:.88;cursor:wait}" +
+  ".home-install-cta:disabled{opacity:.92;cursor:wait}" +
   ".home-install-cta--busy .home-install-spinner{width:15px;height:15px;border:2px solid rgba(10,8,0,.2);border-top-color:#0a0800;border-radius:50%;animation:homeInstallSpin .7s linear infinite}" +
   "@keyframes homeInstallSpin{to{transform:rotate(360deg)}}" +
-  ".home-install-hint{margin-top:10px;padding:12px 14px;border-radius:14px;text-align:left;background:var(--surface);border:1px solid var(--border)}" +
+  ".home-install-status{margin-top:10px;padding:13px 14px;border-radius:14px;text-align:left;background:var(--surface);border:1px solid var(--border)}" +
+  ".home-install-status--done{border-color:rgba(61,214,140,.35);background:rgba(61,214,140,.08)}" +
+  ".home-install-status--error{border-color:rgba(248,113,113,.3);background:rgba(248,113,113,.06)}" +
+  ".home-install-progress-row{display:flex;align-items:center;gap:10px;margin-bottom:8px}" +
+  ".home-install-progress{flex:1;height:6px;border-radius:999px;background:var(--surface-inset);overflow:hidden}" +
+  ".home-install-pct{flex-shrink:0;font-size:10px;font-weight:700;color:var(--quote-gold,#E8C547);min-width:34px;text-align:right;font-variant-numeric:tabular-nums}" +
+  ".home-install-progress-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,#C9A227,#3DD68C);transition:width .35s ease}" +
+  ".home-install-progress-fill--pulse{width:48%!important;animation:homeInstallPulse 1.1s ease-in-out infinite}" +
+  "@keyframes homeInstallPulse{0%,100%{transform:translateX(-10%);opacity:.7}50%{transform:translateX(140%);opacity:1}}" +
+  ".home-install-status-msg{margin:0 0 8px;font-size:11px;line-height:1.45;color:var(--text-body);font-weight:500}" +
+  ".home-install-status--done .home-install-status-msg{color:#3DD68C;font-weight:600}" +
+  ".home-install-hint{margin-top:4px;padding-top:8px;border-top:1px solid var(--border)}" +
   ".home-install-hint-title{margin:0 0 4px;font-size:12px;font-weight:700;color:var(--text-primary)}" +
   ".home-install-hint-body{margin:0;font-size:11px;line-height:1.45;color:var(--text-body)}" +
   ".home-install-hint-copy{margin-top:10px;padding:8px 12px;border-radius:10px;border:1px solid rgba(232,197,71,.35);background:rgba(232,197,71,.1);color:var(--quote-gold,#E8C547);font-size:11px;font-weight:600;font-family:inherit;cursor:pointer;width:100%}" +
