@@ -2,6 +2,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 
 import { BUILD } from "./build.js";
+import { registerServiceWorker } from "./pwa.js";
 
 function showBootError(message, detail) {
   const root = document.getElementById("root");
@@ -44,9 +45,7 @@ async function boot() {
     const rootEl = document.getElementById("root");
     if (!rootEl) throw new Error("Missing #root element");
     createRoot(rootEl).render(React.createElement(App));
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("/sw.js?v=" + BUILD).catch(() => {});
-    }
+    registerServiceWorker();
   } catch (err) {
     console.error(err);
     const msg = err.message || String(err);

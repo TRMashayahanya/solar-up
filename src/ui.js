@@ -149,6 +149,16 @@ export const globalStyles =
   ".home-install-hint-title{margin:0 0 4px;font-size:12px;font-weight:700;color:var(--text-primary)}" +
   ".home-install-hint-body{margin:0;font-size:11px;line-height:1.45;color:var(--text-body)}" +
   ".home-install-hint-copy{margin-top:10px;padding:8px 12px;border-radius:10px;border:1px solid rgba(232,197,71,.35);background:rgba(232,197,71,.1);color:var(--quote-gold,#E8C547);font-size:11px;font-weight:600;font-family:inherit;cursor:pointer;width:100%}" +
+  ".ios-install-guide{margin-top:10px;padding:14px;border-radius:16px;background:var(--surface);border:1px solid var(--border)}" +
+  ".ios-install-preview{display:flex;align-items:center;gap:12px;margin-bottom:14px;padding:12px;border-radius:14px;background:var(--surface-inset);border:1px solid var(--border)}" +
+  ".ios-install-preview-icon{border-radius:14px;flex-shrink:0}" +
+  ".ios-install-preview-name{margin:0;font-size:14px;font-weight:700;color:var(--text-primary)}" +
+  ".ios-install-preview-sub{margin:2px 0 0;font-size:11px;color:var(--text-muted)}" +
+  ".ios-install-safari-note{margin:0 0 12px;font-size:11px;line-height:1.45;color:var(--text-body)}" +
+  ".ios-install-steps{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:10px}" +
+  ".ios-install-steps li{display:grid;grid-template-columns:28px 1fr;gap:10px;align-items:start;font-size:12px;line-height:1.45;color:var(--text-body)}" +
+  ".ios-install-step-num{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:12px;font-weight:700;color:#E8C547;background:rgba(232,197,71,.12);border:1px solid rgba(232,197,71,.35)}" +
+  ".ios-install-open-safari{margin-top:12px;width:100%;padding:11px 14px;border:none;border-radius:12px;background:linear-gradient(135deg,#C9A227,#E8C547);color:#0a0800;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer}" +
   ".home-steps{display:flex;justify-content:center;gap:clamp(6px,2vw,10px);flex-wrap:wrap;margin-top:clamp(14px,3.5vw,18px)}" +
   ".home-step-pill{padding:6px 12px;border-radius:999px;font-size:11px;font-weight:500;color:var(--text-body);background:var(--surface);border:1px solid var(--border);letter-spacing:-0.01em}" +
   ".home-step-pill span{color:rgba(232,197,71,.85);font-weight:600;margin-right:4px}" +

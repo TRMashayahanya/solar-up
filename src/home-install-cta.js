@@ -1,38 +1,19 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { G } from "./tokens.js";
-import { BUILD } from "./build.js";
-
-const ICON_VER = "sun4";
-
-function installAssetList() {
-  return [
-    "/",
-    "/manifest.webmanifest?v=" + ICON_VER,
-    "/icons/icon-192.png?v=" + ICON_VER,
-    "/icons/icon-512.png?v=" + ICON_VER,
-    "/icons/icon.svg?v=" + ICON_VER,
-    "/icons/apple-touch-icon.png?v=" + ICON_VER,
-    "/sw.js?v=" + BUILD,
-  ];
-}
-
-export function isAppInstalled() {
-  try {
-    if (window.matchMedia("(display-mode: standalone)").matches) return true;
-  } catch (_) {
-    /* ignore */
-  }
-  return !!window.navigator.standalone;
-}
-
-function detectPlatform() {
-  const ua = navigator.userAgent || "";
-  return {
-    isIos: /iPhone|iPad|iPod/i.test(ua),
-    isAndroid: /Android/i.test(ua),
-    inApp: /WhatsApp|WAWeb|Instagram|FBAN|FBAV|Twitter|Line\/|MicroMessenger|Telegram/i.test(ua),
-  };
-}
+import {
+  detectInstallPlatform,
+  isSecureForInstall,
+  isStandaloneApp,
+  warmInstallShell,
+  verifyInstallAssets,
+  markInstallResume,
+  consumeInstallResume,
+  markInstallRetried,
+  hasInstallRetried,
+  clearInstallRetryFlags,
+  registerServiceWorker,
+} from "./pwa.js";
+import { IosInstallGuide } from "./ios-install-guide.js";
 
 function stepLabel(step, total, text, pct) {
   const base = "Step " + step + " of " + total + " · " + text;
@@ -61,17 +42,25 @@ function DwnIco({ s = 16, c = G }) {
 
 function HomeInstallStatus({ phase, message, progress, hint, onCopy }) {
   const hints = {
+    https: {
+      title: "Secure link required",
+      body: "Install only works on https:// links. Deploy SolarApp with HTTPS, then share that URL with clients.",
+    },
     inapp: {
       title: "Open in your browser",
       body: "In-app browsers cannot install apps. Tap ⋮ → Open in Safari or Chrome, then tap Download again.",
     },
     ios: {
-      title: "Add to Home Screen",
-      body: "In Safari: tap Share (↑) → Add to Home Screen → Add. SolarApp appears as the gold sun icon.",
+      title: "Almost done — 3 taps in Safari",
+      body: "App files are on your device. Complete install with the steps below.",
+    },
+    "ios-open-safari": {
+      title: "Use Safari on iPhone or iPad",
+      body: "Apple only allows home-screen install from Safari — not Chrome or WhatsApp.",
     },
     android: {
-      title: "Finish install in Chrome",
-      body: "Tap ⋮ in Chrome → Install app. SolarApp will appear on your home screen.",
+      title: "Install from Chrome menu",
+      body: "Tap ⋮ (top right) → Install app or Add to Home screen. SolarApp will appear on your device.",
     },
     desktop: {
       title: "Install on your phone",
@@ -127,50 +116,11 @@ function HomeInstallStatus({ phase, message, progress, hint, onCopy }) {
   );
 }
 
-async function registerServiceWorker() {
-  if (!("serviceWorker" in navigator)) return null;
-  try {
-    const reg = await navigator.serviceWorker.register("/sw.js?v=" + BUILD);
-    await Promise.race([
-      navigator.serviceWorker.ready,
-      new Promise((r) => setTimeout(r, 5000)),
-    ]);
-    if (reg.waiting) reg.waiting.postMessage({ type: "SKIP_WAITING" });
-    if (reg.active && !navigator.serviceWorker.controller) {
-      await new Promise((r) => setTimeout(r, 400));
-    }
-    return reg;
-  } catch (_) {
-    return null;
-  }
+export function isAppInstalled() {
+  return isStandaloneApp();
 }
 
-async function warmInstallAssets(onProgress) {
-  const assets = installAssetList();
-  const total = assets.length + 1;
-  let done = 0;
-
-  function tick() {
-    done += 1;
-    const pct = Math.round((done / total) * 58);
-    if (onProgress) onProgress(pct);
-  }
-
-  await registerServiceWorker();
-  tick();
-
-  await Promise.all(
-    assets.map((url) =>
-      fetch(url, { cache: "force-cache" })
-        .then(() => tick())
-        .catch(() => tick())
-    )
-  );
-
-  if (onProgress) onProgress(62);
-}
-
-/** One-tap download/install on home — visible progress, no separate page. */
+/** One-tap download/install on home — visible progress, native install when supported. */
 export function HomeInstallCta() {
   const [installed, setInstalled] = useState(() => isAppInstalled());
   const [phase, setPhase] = useState("idle");
@@ -184,10 +134,11 @@ export function HomeInstallCta() {
   const promptingRef = useRef(false);
   const waitTimer = useRef(null);
   const pollRef = useRef(null);
-  const prewarmedRef = useRef(false);
-  const platform = detectPlatform();
+  const resumeHandled = useRef(false);
+  const platform = detectInstallPlatform();
 
   const busy = phase !== "idle" && phase !== "done" && phase !== "error";
+  const canNativeInstall = platform.isAndroid || platform.isChromium;
 
   const setStep = useCallback((nextPhase, msg, pct) => {
     setPhase(nextPhase);
@@ -202,7 +153,7 @@ export function HomeInstallCta() {
       installQueued.current = false;
       if (waitTimer.current) clearTimeout(waitTimer.current);
       if (pollRef.current) clearInterval(pollRef.current);
-      setStep("prompting", stepLabel(3, 3, "Confirm install on your screen", 88), 88);
+      setStep("prompting", stepLabel(3, 3, "Confirm install on your screen", 90), 90);
       setButtonLabel("Confirm install…");
       setHint(null);
       try {
@@ -210,41 +161,42 @@ export function HomeInstallCta() {
         const choice = await promptEvent.userChoice;
         deferredRef.current = null;
         if (choice?.outcome === "accepted") {
-          setStep("done", "Download complete — SolarApp is on your home screen.", 100);
+          clearInstallRetryFlags();
+          setStep("done", "Installed — open SolarApp from your home screen or app list.", 100);
           setButtonLabel("Installed");
           setInstalled(isAppInstalled());
           return true;
         }
         setStep("error", "Install cancelled — tap Download to try again.", 0);
         setButtonLabel("Download SolarApp");
-        setHint(platform.isAndroid ? "android" : null);
+        setHint(canNativeInstall ? "android" : null);
         return false;
-      } catch (_) {
-        setStep("error", "Could not start install — see steps below.", 0);
+      } catch (err) {
+        console.warn("Install prompt failed:", err);
+        setStep("error", "Could not open install — use the menu steps below.", 0);
         setButtonLabel("Download SolarApp");
-        setHint(platform.isAndroid ? "android" : null);
+        setHint(canNativeInstall ? "android" : null);
         return false;
       } finally {
         promptingRef.current = false;
       }
     },
-    [platform.isAndroid, setStep]
+    [canNativeInstall, setStep]
   );
 
   const beginWaitingForPrompt = useCallback(() => {
     installQueued.current = true;
-    setStep("waiting", stepLabel(3, 3, "Starting install", -1), -1);
+    setStep("waiting", stepLabel(3, 3, "Waiting for install prompt", -1), -1);
     setButtonLabel("Starting install…");
-    setHint(null);
 
     if (waitTimer.current) clearTimeout(waitTimer.current);
     waitTimer.current = setTimeout(() => {
       if (!installQueued.current) return;
       installQueued.current = false;
-      setStep("error", "Install did not start — use Chrome steps below.", 0);
+      setStep("error", "Install prompt did not appear — use Chrome menu steps below.", 0);
       setButtonLabel("Download SolarApp");
-      setHint("android");
-    }, 12000);
+      setHint(canNativeInstall ? "android" : "desktop");
+    }, 15000);
 
     if (pollRef.current) clearInterval(pollRef.current);
     const pollStart = Date.now();
@@ -255,26 +207,102 @@ export function HomeInstallCta() {
         runInstallPrompt(deferredRef.current);
         return;
       }
-      if (Date.now() - pollStart > 12000) {
+      if (Date.now() - pollStart > 15000) {
         clearInterval(pollRef.current);
         pollRef.current = null;
       }
     }, 200);
-  }, [runInstallPrompt, setStep]);
+  }, [canNativeInstall, runInstallPrompt, setStep]);
+
+  const runDownloadFlow = useCallback(async () => {
+    setHint(null);
+    setStep("preparing", stepLabel(1, 3, "Preparing download", 5), 5);
+    setButtonLabel("Preparing…");
+
+    if (!isSecureForInstall()) {
+      const local =
+        location.hostname === "localhost" || location.hostname === "127.0.0.1";
+      if (!local) {
+        setStep("error", "Install needs a secure https:// link.", 0);
+        setButtonLabel("Download SolarApp");
+        setHint("https");
+        return;
+      }
+    }
+
+    if (platform.inApp) {
+      setStep("error", "Open in Safari or Chrome first.", 0);
+      setButtonLabel("Download SolarApp");
+      setHint("inapp");
+      return;
+    }
+
+    if (platform.isIos) {
+      if (!platform.isSafari) {
+        setStep("error", "Open in Safari to install on iPhone or iPad.", 0);
+        setButtonLabel("Download SolarApp");
+        setHint("ios-open-safari");
+        return;
+      }
+      setStep("caching", stepLabel(2, 3, "Downloading app files", 15), 15);
+      setButtonLabel("Downloading…");
+      await warmInstallShell((pct) => {
+        setStep("caching", stepLabel(2, 3, "Downloading app files", pct), pct);
+      });
+      setStep("done", "Download complete — add SolarApp to your home screen (3 taps).", 100);
+      setButtonLabel("Added? Refresh page");
+      setHint("ios");
+      return;
+    }
+
+    setStep("caching", stepLabel(2, 3, "Downloading app files", 12), 12);
+    setButtonLabel("Downloading…");
+
+    const assetsOk = await verifyInstallAssets();
+    if (!assetsOk) {
+      setStep("error", "App icons could not load — check your server deploy.", 0);
+      setButtonLabel("Download SolarApp");
+      return;
+    }
+
+    const controlled = await warmInstallShell((pct) => {
+      setStep("caching", stepLabel(2, 3, "Downloading app files", pct), pct);
+    });
+
+    if (!controlled && canNativeInstall && !hasInstallRetried()) {
+      markInstallRetried();
+      markInstallResume();
+      setStep("caching", stepLabel(2, 3, "Activating offline mode", 62), 62);
+      setButtonLabel("Almost ready…");
+      window.location.reload();
+      return;
+    }
+
+    if (deferredRef.current) {
+      await runInstallPrompt(deferredRef.current);
+      return;
+    }
+
+    if (canNativeInstall) {
+      await registerServiceWorker();
+      beginWaitingForPrompt();
+      return;
+    }
+
+    setStep("done", "Ready — copy the link and open on your phone.", 100);
+    setButtonLabel("Download SolarApp");
+    setHint("desktop");
+  }, [beginWaitingForPrompt, canNativeInstall, platform.inApp, platform.isIos, runInstallPrompt, setStep]);
 
   useEffect(() => {
     setInstalled(isAppInstalled());
-
-    if (!prewarmedRef.current) {
-      prewarmedRef.current = true;
-      warmInstallAssets(null).catch(() => {});
-    }
+    registerServiceWorker();
 
     function onBeforeInstall(e) {
       e.preventDefault();
       deferredRef.current = e;
       if (installQueued.current) {
-        setStep("waiting", stepLabel(3, 3, "Install ready — opening", 82), 82);
+        setStep("waiting", stepLabel(3, 3, "Install ready — opening", 85), 85);
         runInstallPrompt(e);
       }
     }
@@ -283,7 +311,8 @@ export function HomeInstallCta() {
       if (waitTimer.current) clearTimeout(waitTimer.current);
       if (pollRef.current) clearInterval(pollRef.current);
       installQueued.current = false;
-      setStep("done", "Download complete — SolarApp is on your home screen.", 100);
+      clearInstallRetryFlags();
+      setStep("done", "Installed — open SolarApp from your home screen or app list.", 100);
       setButtonLabel("Installed");
       setHint(null);
       setInstalled(true);
@@ -299,69 +328,20 @@ export function HomeInstallCta() {
     };
   }, [runInstallPrompt, setStep]);
 
+  useEffect(() => {
+    if (resumeHandled.current) return;
+    if (consumeInstallResume()) {
+      resumeHandled.current = true;
+      runDownloadFlow();
+    }
+  }, [runDownloadFlow]);
+
   if (installed) return null;
 
-  async function onDownload(e) {
+  function onDownload(e) {
     e.preventDefault();
     if (busy) return;
-
-    setHint(null);
-    setStep("preparing", stepLabel(1, 3, "Preparing download", 5), 5);
-    setButtonLabel("Preparing…");
-
-    if (platform.inApp) {
-      setStep("error", "Open in Safari or Chrome first.", 0);
-      setButtonLabel("Download SolarApp");
-      setHint("inapp");
-      return;
-    }
-
-    if (platform.isIos) {
-      setStep("caching", stepLabel(2, 3, "Downloading app files", 15), 15);
-      setButtonLabel("Downloading…");
-      await warmInstallAssets((pct) => {
-        setStep("caching", stepLabel(2, 3, "Downloading app files", pct), pct);
-      });
-      setStep("done", "Files downloaded — follow the steps below to add SolarApp.", 100);
-      setButtonLabel("Download SolarApp");
-      setHint("ios");
-      return;
-    }
-
-    if (!platform.isAndroid) {
-      setStep("caching", stepLabel(2, 3, "Preparing app link", 20), 20);
-      setButtonLabel("Downloading…");
-      await warmInstallAssets((pct) => {
-        setStep("caching", stepLabel(2, 3, "Preparing app link", pct), pct);
-      });
-      setStep("done", "Ready — copy the link and open on your phone.", 100);
-      setButtonLabel("Download SolarApp");
-      setHint("desktop");
-      return;
-    }
-
-    if (deferredRef.current) {
-      setStep("caching", stepLabel(2, 3, "Finalising download", 70), 70);
-      setButtonLabel("Downloading…");
-      await warmInstallAssets((pct) => {
-        setStep("caching", stepLabel(2, 3, "Downloading app files", Math.max(15, pct)), pct);
-      });
-      await runInstallPrompt(deferredRef.current);
-      return;
-    }
-
-    setStep("caching", stepLabel(2, 3, "Downloading app files", 12), 12);
-    setButtonLabel("Downloading…");
-    await warmInstallAssets((pct) => {
-      setStep("caching", stepLabel(2, 3, "Downloading app files", pct), pct);
-    });
-
-    if (deferredRef.current) {
-      await runInstallPrompt(deferredRef.current);
-      return;
-    }
-
-    beginWaitingForPrompt();
+    runDownloadFlow();
   }
 
   function copyLink() {
@@ -372,6 +352,16 @@ export function HomeInstallCta() {
       alert("Copy this link:\n" + url);
     }
   }
+
+  function openInSafari() {
+    const url = window.location.href;
+    if (navigator.clipboard?.writeText) {
+      navigator.clipboard.writeText(url).catch(() => {});
+    }
+    setMessage("Link copied — open Safari, paste in the address bar, then tap Download again.");
+  }
+
+  const showIosGuide = hint === "ios" || hint === "ios-open-safari";
 
   return React.createElement(
     "div",
@@ -396,6 +386,11 @@ export function HomeInstallCta() {
       progress,
       hint,
       onCopy: copyLink,
-    })
+    }),
+    showIosGuide &&
+      React.createElement(IosInstallGuide, {
+        variant: hint === "ios-open-safari" ? "open-safari" : "safari",
+        onOpenSafari: openInSafari,
+      })
   );
 }

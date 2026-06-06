@@ -9,7 +9,9 @@
     "icons": "node scripts/generate-icons-node.mjs",
     "test:power-quest": "node scripts/test-power-quest.mjs",
     "test:budget": "node scripts/test-budget-search.mjs",
-    "test:responsive": "node scripts/test-responsive.mjs"
+    "test:responsive": "node scripts/test-responsive.mjs",
+    "test:pwa": "node scripts/test-pwa.mjs",
+    "test": "node scripts/test-power-quest.mjs && node scripts/test-budget-search.mjs && node scripts/test-pwa.mjs"
   },
   "engines": {
     "node": "22.x"

@@ -1,5 +1,5 @@
 /** SolarApp — service worker (installable PWA; network-first for app code) */
-const CACHE = "solarapp-shell-v31";
+const CACHE = "solarapp-shell-v32";
 const ICON_VER = "sun4";
 
 const SHELL = [
@@ -31,6 +31,12 @@ self.addEventListener("activate", (event) => {
       .then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
       .then(() => self.clients.claim())
   );
+});
+
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
 });
 
 function networkFirst(request) {

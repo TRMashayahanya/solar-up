@@ -94,6 +94,11 @@ function serveStatic(req, res) {
     }
     const ext = path.extname(filePath);
     const headers = { "Content-Type": MIME[ext] || "application/octet-stream" };
+    if (urlPath === "/sw.js") {
+      headers["Content-Type"] = "application/javascript; charset=utf-8";
+      headers["Cache-Control"] = "no-cache";
+      headers["Service-Worker-Allowed"] = "/";
+    }
     const isVendor = urlPath.startsWith("/vendor/");
     const isIconOrManifest =
       urlPath.startsWith("/icons/") || ext === ".webmanifest" || ext === ".png" || ext === ".svg";
