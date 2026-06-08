@@ -35,7 +35,7 @@ const AFFINITY = [
   { ids: ["wp_1", "wp_2"], lib: ["borehole_starter", "solar_pump_inverter"], reason: "Pairs with your borehole" },
   { ids: ["out_pool"], lib: ["electric_mower"], reason: "Common with pool homes" },
   { ids: ["out_gate"], lib: ["garage_door", "electric_fence"], reason: "Matches gate / outdoor security" },
-  { ids: ["out_cctv", "out_alarm"], lib: ["electric_fence", "router_extra"], reason: "Extra security & connectivity" },
+  { ids: ["out_cctv", "out_alarm"], lib: ["electric_fence", "router_extra"], reason: "Extra security and connectivity" },
   { ids: ["kit_freeze"], lib: ["deep_freezer", "second_fridge"], reason: "More cold storage" },
   { ids: ["kit_fridge"], lib: ["second_fridge", "deep_freezer"], reason: "Backup or drinks fridge" },
   { ids: ["kit_fridge", "kit_freeze"], lib: ["blender", "second_fridge"], reason: "Kitchen extras" },
@@ -44,7 +44,7 @@ const AFFINITY = [
   { ids: ["lng_tv", "bed_tv"], lib: ["sound_system", "projector"], reason: "Entertainment add-ons" },
   { ids: ["bed_ac", "lng_ac"], lib: ["vacuum", "router_extra"], reason: "High-use home appliances" },
   { ids: ["lnd_wash", "lnd_dryer"], lib: ["sewing_machine", "vacuum"], reason: "Laundry area extras" },
-  { ids: ["ess_wifi"], lib: ["router_extra", "inverter_trolley"], reason: "Backup power & WiFi" },
+  { ids: ["ess_wifi"], lib: ["router_extra", "inverter_trolley"], reason: "Backup power and Wi-Fi" },
 ];
 
 const PROP_AFFINITY = {

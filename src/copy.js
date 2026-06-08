@@ -3,7 +3,7 @@
 const DEFAULT = {
   buildingTitle: "Your load",
   buildingSubtitle: "Only items that match your property — adjust counts, then Calculate.",
-  homeTagline: "SolarApp by Energi Tech — free sizing for Zimbabwe homes & businesses.",
+  homeTagline: "SolarApp by Energi Tech — free sizing for Zimbabwe homes and businesses.",
   homeSteps: "Pick property → add only what you use → Calculate → PDF quote.",
 };
 
@@ -17,25 +17,25 @@ export const PROP_COPY = {
   apartment: {
     ...DEFAULT,
     buildingTitle: "Apartment — your items",
-    buildingSubtitle: "Flat essentials: kitchen, lounge & security — no garden or laundry extras.",
-    homeTagline: "Flats & townhouses — lean appliance set.",
+    buildingSubtitle: "Flat essentials: kitchen, lounge and security — no garden or laundry extras.",
+    homeTagline: "Flats and townhouses — lean appliance set.",
   },
   family_home: {
     ...DEFAULT,
     buildingTitle: "Family home — your items",
-    buildingSubtitle: "Accessories include laptops & PCs. Bedrooms = TVs & AC only.",
+    buildingSubtitle: "Accessories include laptops and PCs. Bedrooms: TVs and AC only.",
     homeTagline: "3–5 beds — lounge, kitchen, security, optional borehole.",
   },
   office: {
     ...DEFAULT,
     buildingTitle: "Office — your items",
-    buildingSubtitle: "Workstations, comms, fridge & security — no home living areas.",
+    buildingSubtitle: "Workstations, comms, fridge and security — no home living areas.",
     homeTagline: "Desks, printers, CCTV — sized for business hours.",
   },
   shop: {
     ...DEFAULT,
     buildingTitle: "Shop — your items",
-    buildingSubtitle: "Retail lighting, display fridge, gates & CCTV — no home sections.",
+    buildingSubtitle: "Retail lighting, display fridge, gates and CCTV — no home sections.",
     homeTagline: "Retail load — bright lighting and security first.",
   },
   farm: {
@@ -47,8 +47,8 @@ export const PROP_COPY = {
   school: {
     ...DEFAULT,
     buildingTitle: "School / clinic — your items",
-    buildingSubtitle: "Class & admin lighting, perimeter security — no bedrooms.",
-    homeTagline: "Classrooms, borehole & CCTV.",
+    buildingSubtitle: "Class and admin lighting, perimeter security — no bedrooms.",
+    homeTagline: "Classrooms, borehole and CCTV.",
   },
   large_home: {
     ...DEFAULT,
@@ -62,67 +62,67 @@ export const PROP_COPY = {
 export const CAT_COPY = {
   family_home: {
     essentials: { label: "Whole-home basics", hint: "LEDs, fans, WiFi — count once for the house" },
-    accessories: { label: "Accessories & gadgets", hint: "Laptops, desktop, printer — homework & home office" },
-    bedroom: { label: "Bedrooms", hint: "TV & AC per room — not lights" },
-    lounge: { label: "Lounge & TV", hint: "Main living entertainment" },
+    accessories: { label: "Accessories and gadgets", hint: "Laptops, desktop, printer — homework and home office" },
+    bedroom: { label: "Bedrooms", hint: "TV and AC per room — not lights" },
+    lounge: { label: "Lounge and TV", hint: "Main living entertainment" },
     kitchen: { label: "Kitchen", hint: "Fridge runs 24/7 — no kettles/microwaves in app" },
-    outdoor: { label: "Security & outdoor", hint: "Lights, CCTV, alarm" },
+    outdoor: { label: "Security and outdoor", hint: "Lights, CCTV, alarm" },
     water: { label: "Borehole", hint: "Add if you pump water" },
     laundry: { label: "Laundry", hint: "Washer cycles — dryer if you have one" },
   },
   small_home: {
     essentials: { label: "Home basics", hint: "All room lights counted here" },
     accessories: { label: "Accessories", hint: "Laptop, PC, printer if you use them" },
-    lounge: { label: "Living room", hint: "TV & decoder" },
-    kitchen: { label: "Kitchen", hint: "Fridge & freezer" },
-    outdoor: { label: "Security", hint: "Flood lights & alarm" },
+    lounge: { label: "Living room", hint: "TV and decoder" },
+    kitchen: { label: "Kitchen", hint: "Fridge and freezer" },
+    outdoor: { label: "Security", hint: "Flood lights and alarm" },
     laundry: { label: "Laundry", hint: "Washing machine" },
   },
   apartment: {
     essentials: { label: "Flat basics", hint: "Lights, fan, WiFi, chargers" },
-    accessories: { label: "Accessories", hint: "Laptop & gadgets for work or study" },
+    accessories: { label: "Accessories", hint: "Laptop and gadgets for work or study" },
     lounge: { label: "Lounge", hint: "TV" },
-    kitchen: { label: "Kitchen", hint: "Fridge & freezer" },
+    kitchen: { label: "Kitchen", hint: "Fridge and freezer" },
     outdoor: { label: "Security", hint: "Alarm system" },
   },
   office: {
-    essentials: { label: "Office lighting & comms", hint: "LEDs and WiFi for the whole space" },
+    essentials: { label: "Office lighting and comms", hint: "LEDs and WiFi for the whole space" },
     accessories: { label: "Workstations", hint: "Laptops, desktops, printers" },
     kitchen: { label: "Staff kitchen", hint: "Office fridge" },
-    outdoor: { label: "Security", hint: "CCTV & perimeter lights" },
+    outdoor: { label: "Security", hint: "CCTV and perimeter lights" },
   },
   shop: {
     essentials: { label: "Shop lighting", hint: "Bright LEDs across sales floor" },
     accessories: { label: "Accessories", hint: "POS laptop or office PC" },
     kitchen: { label: "Display cold", hint: "Fridge or freezer for stock" },
-    outdoor: { label: "Security & access", hint: "CCTV, alarm, gate motor" },
+    outdoor: { label: "Security and access", hint: "CCTV, alarm, gate motor" },
   },
   farm: {
     essentials: { label: "Homestead basics", hint: "Lights, fans, comms" },
-    accessories: { label: "Accessories", hint: "Homestead laptop & office gear" },
+    accessories: { label: "Accessories", hint: "Homestead laptop and office gear" },
     bedroom: { label: "Bedrooms", hint: "TV where used" },
     lounge: { label: "Lounge", hint: "" },
-    kitchen: { label: "Kitchen & cold storage", hint: "Fridge + deep freezer" },
-    outdoor: { label: "Farm security", hint: "Many outdoor lights & cameras" },
+    kitchen: { label: "Kitchen and cold storage", hint: "Fridge + deep freezer" },
+    outdoor: { label: "Farm security", hint: "Many outdoor lights and cameras" },
     water: { label: "Borehole pump", hint: "Often essential on farms" },
     laundry: { label: "Laundry", hint: "" },
   },
   school: {
     essentials: { label: "Building lighting", hint: "Classrooms, corridors, admin" },
-    accessories: { label: "IT & admin", hint: "Laptops, desktops, printers for staff & lab" },
+    accessories: { label: "IT and admin", hint: "Laptops, desktops, printers for staff and lab" },
     kitchen: { label: "Kitchen / tuck shop", hint: "Fridges for meals" },
-    outdoor: { label: "Perimeter security", hint: "CCTV & flood lighting" },
+    outdoor: { label: "Perimeter security", hint: "CCTV and flood lighting" },
     water: { label: "Water pump", hint: "Borehole or booster" },
   },
   large_home: {
     essentials: { label: "Estate basics", hint: "Whole-home LEDs, fans, WiFi" },
-    accessories: { label: "Accessories & gadgets", hint: "Multiple laptops, home office, printers" },
-    bedroom: { label: "Bedrooms", hint: "TV & AC per room" },
-    lounge: { label: "Living areas", hint: "Multiple TVs & lounge AC" },
+    accessories: { label: "Accessories and gadgets", hint: "Multiple laptops, home office, printers" },
+    bedroom: { label: "Bedrooms", hint: "TV and AC per room" },
+    lounge: { label: "Living areas", hint: "Multiple TVs and lounge AC" },
     kitchen: { label: "Kitchen", hint: "Fridge + freezer" },
-    outdoor: { label: "Security & pool", hint: "CCTV, lights, pool pump" },
+    outdoor: { label: "Security and pool", hint: "CCTV, lights, pool pump" },
     water: { label: "Borehole", hint: "" },
-    laundry: { label: "Laundry", hint: "Washer & dryer" },
+    laundry: { label: "Laundry", hint: "Washer and dryer" },
   },
 };
 
@@ -173,7 +173,7 @@ export function advisorPrompt(propType, propLabel, sz) {
     (propLabel || propType) +
     ". " +
     sz.kva +
-    "kVA, $" +
+    " kVA, $" +
     sz.tot +
     ". " +
     "Free sizing via SolarApp."

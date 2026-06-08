@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { BG, GRAD_HERO, CARD, W4 } from "./tokens.js";
 import { PROPS, paymentAssistWhatsAppUrl } from "./data.js";
-import { size } from "./sizing.js";
+import { size, sizeFromPackage } from "./sizing.js";
 import { submitLead } from "./api.js";
 import { applyPreset } from "./prefills.js";
 import { getItemsForProperty } from "./items.js";
 import { newCustomItem, countActiveCustom, customItemsToLoadEntries, isCustomItemActive } from "./custom-items.js";
 import { scrollToTop } from "./scroll.js";
+import { useMobileKeyboard } from "./use-mobile-keyboard.js";
 import {
   getDeliveryQuote,
   applyAddressToDeliveryOpts,
@@ -22,6 +23,8 @@ import { HomeScreen, BuildingScreen, ResultScreen, ProductsScreen } from "./scre
 import { globalStyles, BottomNav, ThemeToggle, BrandSunMark } from "./ui.js";
 import { getStoredTheme, applyTheme, toggleTheme } from "./theme.js";
 import { BUILD } from "./build.js";
+import { SUPPORT_PHONE } from "./strings.js";
+import { PACKAGES } from "./packages.js";
 import { isRestrictedCustomLabel } from "./restricted-appliances.js";
 
 export default function App() {
@@ -34,17 +37,21 @@ export default function App() {
   const [pdfJob, setPdfJob] = useState(null);
   const [leadError, setLeadError] = useState("");
   const [customItems, setCustomItems] = useState([]);
+  const [selectedPackageId, setSelectedPackageId] = useState(() => PACKAGES[0]?.id || null);
   const [deliveryOpts, setDeliveryOpts] = useState({
     enabled: true,
     zone: "harare",
     locationLabel: "",
     distanceKm: 0,
   });
+  const [marketingOptIn, setMarketingOptIn] = useState(false);
   const [theme, setTheme] = useState(() => getStoredTheme());
 
   useEffect(() => {
     applyTheme(theme);
   }, [theme]);
+
+  useMobileKeyboard();
 
   const propInfo = PROPS.find((p) => p.value === propType) || null;
 
@@ -155,6 +162,10 @@ export default function App() {
   const liveSizing = useMemo(() => (totalActive > 0 ? size(appList) : null), [totalActive, liveKey]);
 
   const isCustomQuote = !!(sizing && sizing.fit && sizing.fit.customQuote);
+  const selectedPackage = PACKAGES.find((p) => p.id === selectedPackageId) || null;
+  const productsProductTotal = selectedPackage?.price || 0;
+  const productsDeliveryQuote = getDeliveryQuote(deliveryOpts);
+  const productsGrandTotal = quoteGrandTotal(productsProductTotal, productsDeliveryQuote);
   const deliveryQuote = sizing && !isCustomQuote ? getDeliveryQuote(deliveryOpts) : getDeliveryQuote({ enabled: false });
   const grandTotal = sizing && !isCustomQuote ? quoteGrandTotal(sizing.tot, deliveryQuote) : 0;
   const countTotal = useCount(grandTotal);
@@ -168,6 +179,7 @@ export default function App() {
     if (totalActive === 0) return;
     const sz2 = size(list);
     sz2.appList = list;
+    if (sz2.pkg?.id) setSelectedPackageId(sz2.pkg.id);
     setSizing(sz2);
     setNav("quote");
     requestAnimationFrame(() => scrollToTop());
@@ -178,9 +190,21 @@ export default function App() {
     setQtys({});
     setHrs({});
     setCustomItems([]);
+    setSelectedPackageId(PACKAGES[0]?.id || null);
+    setMarketingOptIn(false);
     setDeliveryOpts({ enabled: true, zone: "harare", locationLabel: "", distanceKm: 0 });
     setSizing(null);
     setNav("home");
+    requestAnimationFrame(() => scrollToTop());
+  }
+
+  function goPackageQuote() {
+    const pkgId = selectedPackageId || PACKAGES[0]?.id;
+    if (!pkgId) return;
+    const sz = sizeFromPackage(pkgId);
+    if (!sz) return;
+    setSizing(sz);
+    setNav("quote");
     requestAnimationFrame(() => scrollToTop());
   }
 
@@ -210,7 +234,7 @@ export default function App() {
     (async () => {
       const liveDelivery = custom ? getDeliveryQuote({ enabled: false }) : getDeliveryQuote(deliveryOpts);
       let pdfDelivery = liveDelivery;
-      if (!custom && liveDelivery.enabled && liveDelivery.zone === "outside") {
+      if (!custom && liveDelivery.enabled) {
         const addr = (client.address || "").trim();
         const loc = getOutsideLocationLabel(addr) || deliveryOpts.locationLabel || addr;
         const km =
@@ -218,10 +242,10 @@ export default function App() {
             ? deliveryOpts.distanceKm
             : estimateKmFromAddress(addr) || estimateKmFromAddress(loc) || 0;
         pdfDelivery = getDeliveryQuote({
+          ...deliveryOpts,
           enabled: true,
-          zone: "outside",
-          locationLabel: loc,
-          distanceKm: km,
+          locationLabel: loc || deliveryOpts.locationLabel || addr,
+          distanceKm: km || deliveryOpts.distanceKm,
         });
       }
       const pdfGrand = custom ? null : quoteGrandTotal(sizing.tot, pdfDelivery);
@@ -256,6 +280,7 @@ export default function App() {
             hoursPerDay: c.dh,
             qty: c.qty,
           })),
+          marketingOptIn: !!marketingOptIn,
           submittedAt: new Date().toISOString(),
         });
 
@@ -288,7 +313,7 @@ export default function App() {
             : "Quote saved — check your Downloads folder.";
         if (leadResult?.offline) msg += " Details saved on this device (server busy).";
         if (waWin) msg += " WhatsApp opened for payment help.";
-        else msg += " Allow pop-ups to open WhatsApp, or message 0773757018.";
+        else msg += " Allow pop-ups to open WhatsApp, or message " + SUPPORT_PHONE + ".";
 
         setPdfJob({ phase: "done", message: msg });
         setTimeout(() => {
@@ -356,6 +381,16 @@ export default function App() {
     });
   } else if (nav === "products") {
     main = React.createElement(ProductsScreen, {
+      selectedId: selectedPackageId,
+      onSelectPackage: setSelectedPackageId,
+      deliveryOpts,
+      onDeliveryChange: setDeliveryOpts,
+      onLocationResolved: (address, meta) => {
+        setDeliveryOpts((o) => ({ ...o, ...applyAddressToDeliveryOpts(address, o, meta || {}) }));
+      },
+      productTotal: productsProductTotal,
+      grandTotal: productsGrandTotal,
+      onContinueToQuote: goPackageQuote,
       onStartSizing: () => {
         setNav(propType ? "size" : "home");
         scrollToTop();
@@ -404,6 +439,8 @@ export default function App() {
       grandTotal,
       setShowModal,
       reset,
+      marketingOptIn,
+      onMarketingOptInChange: setMarketingOptIn,
       themeToggle: React.createElement(ThemeToggle, {
         theme,
         onToggle: () => setTheme((t) => toggleTheme(t)),
@@ -494,7 +531,7 @@ export default function App() {
               React.createElement(
                 "p",
                 { className: "products-page-sub" },
-                "Affordable tiers · USD · Harare install included"
+                "Choose a package, set delivery, and open your quote"
               )
             ),
             React.createElement(ThemeToggle, {

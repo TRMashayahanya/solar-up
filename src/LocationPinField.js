@@ -1,15 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { MapPinIco } from "./icons.js";
 import { locateAddress, searchPlaces, reverseGeocode, geocodePlace, isWithinZimbabwe } from "./geo.js";
-import { localPlaceSuggestions } from "./delivery.js";
+import { localPlaceSuggestions, formatLocationDistanceHint, formatSuggestionKmLabel } from "./delivery.js";
 import { ZIMBABWE_MAP_CENTER, roadKmFromHarare } from "./geo-distance.js";
 import {
   initGoogleMaps,
-  isGoogleMapsReady,
   createGoogleMap,
-  attachPlaceAutocomplete,
   osmEmbedUrl,
 } from "./google-maps.js";
+import { scrollFieldIntoView } from "./scroll.js";
 
 function useMapPreview(coords, useGoogle, enabled, onPinDrop) {
   const mapElRef = useRef(null);
@@ -63,13 +62,26 @@ function useMapPreview(coords, useGoogle, enabled, onPinDrop) {
   return { mapElRef, mapMode, lat, lon, hasPin };
 }
 
-/** Address + GPS pin + Google search + map (Zimbabwe). */
+function locationHint(item, extra) {
+  if (extra) return extra;
+  if (item?.precision === "locality") {
+    return (
+      "Area found (~" +
+      (item.distanceKm || 0) +
+      " km from Harare). Exact street may not be on the map — drag the pin on the map to refine."
+    );
+  }
+  if (item?.distanceKm > 0) return "~" + item.distanceKm + " km from Harare";
+  return "Address set";
+}
+
+/** Address + GPS pin + search + map (Zimbabwe). */
 export function LocationPinField({
   value,
   onChange,
   onBlur,
   onLocated,
-  placeholder = "Type street or suburb…",
+  placeholder = "e.g. 288 Chimoyo Crescent, Ruwa",
   id,
   required,
   smart = true,
@@ -85,10 +97,8 @@ export function LocationPinField({
   const [activeIdx, setActiveIdx] = useState(-1);
   const [coords, setCoords] = useState(null);
   const [googleReady, setGoogleReady] = useState(false);
-  const [useNativeAutocomplete, setUseNativeAutocomplete] = useState(false);
   const inputRef = useRef(null);
   const debounceRef = useRef(null);
-  const skipValueSync = useRef(false);
   const listId = id ? id + "-suggestions" : "location-suggestions";
   const hintId = id ? id + "-hint" : undefined;
 
@@ -106,7 +116,7 @@ export function LocationPinField({
         if (onLocated) {
           onLocated(address, { lat, lon, distanceKm: roadKmFromHarare(lat, lon) });
         }
-        setHint("Pin set — drag map or edit address if needed.");
+        setHint("Pin set — drag the map or edit the address if needed.");
       } catch (e) {
         setHint(e.message || "Could not read address for this pin.");
       } finally {
@@ -128,17 +138,8 @@ export function LocationPinField({
     initGoogleMaps().then((ok) => setGoogleReady(ok));
   }, [smart]);
 
-  useEffect(() => {
-    if (useNativeAutocomplete && inputRef.current && !skipValueSync.current) {
-      if (inputRef.current.value !== (value || "")) {
-        inputRef.current.value = value || "";
-      }
-    }
-    skipValueSync.current = false;
-  }, [value, useNativeAutocomplete]);
-
   const applyPick = useCallback(
-    (item) => {
+    (item, hintExtra) => {
       if (!item) return;
       setOpen(false);
       setSuggestions([]);
@@ -146,8 +147,6 @@ export function LocationPinField({
         setCoords({ lat: item.lat, lon: item.lon });
       }
       const label = item.label || "";
-      skipValueSync.current = true;
-      if (inputRef.current) inputRef.current.value = label;
       onChange({ target: { value: label } });
       if (onLocated) {
         onLocated(label, {
@@ -156,29 +155,14 @@ export function LocationPinField({
           lon: item.lon,
         });
       }
-      setHint(
-        item.distanceKm > 0
-          ? "~" + item.distanceKm + " km from Harare"
-          : "Address set"
-      );
+      setHint(locationHint(item, hintExtra));
     },
     [onChange, onLocated]
   );
 
-  useEffect(() => {
-    const input = inputRef.current;
-    if (!smart || !googleReady || !input) {
-      setUseNativeAutocomplete(false);
-      return;
-    }
-    const detach = attachPlaceAutocomplete(input, applyPick);
-    setUseNativeAutocomplete(true);
-    return detach;
-  }, [smart, googleReady, applyPick]);
-
   const runSearch = useCallback(
     async (q) => {
-      if (!smart || useNativeAutocomplete || q.trim().length < 2) {
+      if (!smart || q.trim().length < 2) {
         setSuggestions([]);
         setSearching(false);
         setOpen(false);
@@ -188,7 +172,7 @@ export function LocationPinField({
       const local = localPlaceSuggestions(q, { limit: 4 });
       let remote = [];
       try {
-        remote = await searchPlaces(q, { limit: 8, localFirst: local });
+        remote = await searchPlaces(q, { limit: 10, localFirst: local });
       } catch {
         remote = local;
       }
@@ -197,7 +181,7 @@ export function LocationPinField({
       setOpen(remote.length > 0);
       setActiveIdx(-1);
     },
-    [smart, useNativeAutocomplete]
+    [smart]
   );
 
   useEffect(() => {
@@ -208,29 +192,39 @@ export function LocationPinField({
 
   function handleChange(e) {
     setHint("");
-    skipValueSync.current = true;
     onChange(e);
-    if (!smart || useNativeAutocomplete) return;
+    if (!smart) return;
     const q = e.target.value;
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => runSearch(q), 220);
+    debounceRef.current = setTimeout(() => runSearch(q), 180);
   }
 
   function handleFocus() {
-    if (useNativeAutocomplete) return;
-    if (smart && suggestions.length > 0) setOpen(true);
-    else if (smart && (value || "").trim().length >= 2) runSearch(value);
+    scrollFieldIntoView(inputRef.current);
+    if (!smart) return;
+    if (suggestions.length > 0) setOpen(true);
+    else if ((value || "").trim().length >= 2) runSearch(value);
   }
 
   async function resolveTypedAddress(address) {
     const trimmed = String(address || "").trim();
-    if (!trimmed || !onLocated) return;
-    const hit = await geocodePlace(trimmed);
-    if (hit) {
-      applyPick(hit);
-      return;
+    if (!trimmed) return;
+    setBusy(true);
+    setHint("Finding exact location…");
+    setOpen(false);
+    try {
+      const hit = await geocodePlace(trimmed);
+      if (hit) {
+        applyPick(hit);
+        return;
+      }
+      if (onLocated) onLocated(trimmed);
+      setHint("Address saved — tap the pin or map to set a precise delivery distance.");
+    } catch (e) {
+      setHint(e.message || "Could not find that address. Try suburb + town, or use the map pin.");
+    } finally {
+      setBusy(false);
     }
-    onLocated(trimmed);
   }
 
   async function handleBlur(e) {
@@ -241,7 +235,7 @@ export function LocationPinField({
 
   function handleKeyDown(e) {
     if (e.key === "Enter") {
-      const addr = (value || "").trim();
+      const addr = (inputRef.current?.value || value || "").trim();
       if (open && activeIdx >= 0 && suggestions[activeIdx]) {
         e.preventDefault();
         applyPick(suggestions[activeIdx]);
@@ -249,7 +243,6 @@ export function LocationPinField({
       }
       if (addr.length >= 3) {
         e.preventDefault();
-        setOpen(false);
         resolveTypedAddress(addr);
       }
       return;
@@ -276,7 +269,7 @@ export function LocationPinField({
       setCoords({ lat, lon });
       onChange({ target: { value: address } });
       if (onLocated) onLocated(address, { distanceKm, lat, lon });
-      setHint(distanceKm > 0 ? "~" + distanceKm + " km from Harare" : "GPS location set");
+      setHint(distanceKm > 0 ? formatLocationDistanceHint(distanceKm) : "GPS location set.");
     } catch (e) {
       setHint(e.message || "Could not use location.");
     } finally {
@@ -284,7 +277,7 @@ export function LocationPinField({
     }
   }
 
-  const showFallbackList = smart && open && !useNativeAutocomplete && suggestions.length > 0;
+  const showList = smart && open && suggestions.length > 0;
 
   return React.createElement(
     "div",
@@ -296,18 +289,17 @@ export function LocationPinField({
         ref: inputRef,
         id,
         className: inputClassName,
-        ...(useNativeAutocomplete ? {} : { value: value || "" }),
-        defaultValue: useNativeAutocomplete ? value || "" : undefined,
+        value: value || "",
         onChange: handleChange,
         onFocus: handleFocus,
         onBlur: handleBlur,
         onKeyDown: handleKeyDown,
         required,
         placeholder,
-        autoComplete: useNativeAutocomplete ? "off" : "off",
-        role: smart && !useNativeAutocomplete ? "combobox" : undefined,
-        "aria-expanded": showFallbackList,
-        "aria-controls": showFallbackList ? listId : undefined,
+        autoComplete: "street-address",
+        role: smart ? "combobox" : undefined,
+        "aria-expanded": showList,
+        "aria-controls": showList ? listId : undefined,
         "aria-describedby": hint && hintId ? hintId : undefined,
       }),
       React.createElement(
@@ -325,11 +317,12 @@ export function LocationPinField({
           : React.createElement(MapPinIco, { s: 18, c: "currentColor" })
       ),
       searching &&
-        !useNativeAutocomplete &&
-        React.createElement("ul", { className: "location-suggest-list location-suggest-list--busy", role: "status" },
-          React.createElement("li", { className: "location-suggest-item location-suggest-item--muted" }, "Searching…")
+        React.createElement(
+          "ul",
+          { className: "location-suggest-list location-suggest-list--busy", role: "status" },
+          React.createElement("li", { className: "location-suggest-item location-suggest-item--muted" }, "Searching Zimbabwe…")
         ),
-      showFallbackList &&
+      showList &&
         React.createElement(
           "ul",
           { id: listId, className: "location-suggest-list", role: "listbox" },
@@ -351,7 +344,13 @@ export function LocationPinField({
                 },
                 React.createElement("span", { className: "location-suggest-label" }, item.label),
                 item.distanceKm > 0 &&
-                  React.createElement("span", { className: "location-suggest-km" }, "~" + item.distanceKm + " km")
+                  React.createElement(
+                    "span",
+                    { className: "location-suggest-km" },
+                    formatSuggestionKmLabel(item.distanceKm)
+                  ),
+                item.precision === "locality" &&
+                  React.createElement("span", { className: "location-suggest-tag" }, "area")
               )
             )
           )
@@ -374,8 +373,8 @@ export function LocationPinField({
           "p",
           { className: "location-map-caption" },
           googleReady
-            ? "Tap map to move pin · or search above"
-            : "Search address above · add Google key for live map"
+            ? "Tap the map to move the pin, or search for an exact address above."
+            : "Search for an address above. Add a Google API key for the live map."
         )
       )
   );

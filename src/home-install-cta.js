@@ -250,7 +250,7 @@ export function HomeInstallCta() {
         setStep("caching", stepLabel(2, 3, "Downloading app files", pct), pct);
       });
       setStep("done", "Download complete — add SolarApp to your home screen (3 taps).", 100);
-      setButtonLabel("Added? Refresh page");
+      setButtonLabel("Added to home screen? Refresh the page.");
       setHint("ios");
       return;
     }
@@ -358,7 +358,7 @@ export function HomeInstallCta() {
     if (navigator.clipboard?.writeText) {
       navigator.clipboard.writeText(url).catch(() => {});
     }
-    setMessage("Link copied — open Safari, paste in the address bar, then tap Download again.");
+    setMessage("Link copied — open Safari, paste it in the address bar, then tap Download again.");
   }
 
   const showIosGuide = hint === "ios" || hint === "ios-open-safari";

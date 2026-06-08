@@ -23,6 +23,7 @@ import { ZapIco, PrtIco, RetIco, ArrRIco } from "./icons.js";
 import { CustomAccessoriesPanel } from "./custom-accessories-panel.js";
 import { DeliveryInstallOption } from "./DeliveryInstallOption.js";
 import { HomeInstallCta } from "./home-install-cta.js";
+import { SUPPORT_PHONE } from "./strings.js";
 import { QuotePageHeader, QuotePackageCard, useQuotePreviewRef } from "./quote-page.js";
 
 export function HomeScreen({ onPickProp, onViewProducts }) {
@@ -84,51 +85,110 @@ export function HomeScreen({ onPickProp, onViewProducts }) {
           )
       )
     ),
-    React.createElement("p", { className: "home-footer-note" }, "Energi Tech · 0773757018")
+    React.createElement("p", { className: "home-footer-note" }, "Energi Tech · " + SUPPORT_PHONE)
   );
 }
 
-export function ProductsScreen({ onStartSizing }) {
-  const items = PACKAGES.map((pkg) => ({
-    brand: "Energi Tech",
-    name: pkg.name,
-    spec: pkg.kva + " kVA · " + pkg.panelCount + "×" + pkg.panelW + "W",
-    price: pkg.price,
-    tag: "5–7 yr warranty",
-    Ico: ZapIco,
-    category: "package",
-  }));
+export function ProductsScreen({
+  selectedId,
+  onSelectPackage,
+  deliveryOpts,
+  onDeliveryChange,
+  onLocationResolved,
+  productTotal,
+  grandTotal,
+  onContinueToQuote,
+  onStartSizing,
+}) {
+  const selected = PACKAGES.find((p) => p.id === selectedId) || PACKAGES[0] || null;
 
   return React.createElement(
     "div",
     { className: "animate-rise products-screen" },
     React.createElement(
       "div",
+      { className: "products-hero-strip" },
+      React.createElement("span", { className: "products-hero-pill" }, "USD pricing"),
+      React.createElement("span", { className: "products-hero-pill products-hero-pill--gold" }, "5–7 yr warranty"),
+      React.createElement("span", { className: "products-hero-pill" }, "Harare install")
+    ),
+    React.createElement(
+      "p",
+      { className: "products-intro" },
+      "Choose a package, set delivery if you like, then open your quote for a PDF."
+    ),
+    React.createElement(
+      "div",
       { className: "products-list" },
-      items.map((p) =>
+      PACKAGES.map((pkg) =>
         React.createElement(ProductCard, {
-          key: p.name + p.price,
-          ...p,
-          waMessage: productWhatsAppMessage(p.brand, p.name, p.price, p.category, "packages"),
+          key: pkg.id,
+          brand: "Energi Tech",
+          name: pkg.name,
+          spec: pkg.kva + " kVA · " + pkg.panelCount + "×" + pkg.panelW + "W",
+          price: pkg.price,
+          tag: "5–7 year warranty",
+          Ico: ZapIco,
+          powers: pkg.powers,
+          selected: selectedId === pkg.id,
+          onSelect: () => onSelectPackage && onSelectPackage(pkg.id),
+          waMessage: productWhatsAppMessage("Energi Tech", pkg.name, pkg.price, "package", "packages"),
         })
       )
     ),
+    selected &&
+      React.createElement(
+        "section",
+        { className: "products-selected-panel" },
+        React.createElement("p", { className: "products-selected-eyebrow" }, "Selected package"),
+        React.createElement("h2", { className: "products-selected-name" }, selected.name),
+        React.createElement(
+          "p",
+          { className: "products-selected-spec" },
+          selected.kva + " kVA · " + selected.panelCount + " panels · $" + selected.price.toLocaleString()
+        ),
+        selected.powers?.length > 0 &&
+          React.createElement(
+            "ul",
+            { className: "products-powers-list" },
+            selected.powers.slice(0, 6).map((power) =>
+              React.createElement("li", { key: power, className: "products-powers-item" }, power)
+            )
+          )
+      ),
+    React.createElement(DeliveryInstallOption, {
+      variant: "products",
+      opts: deliveryOpts || { enabled: true, zone: "harare" },
+      onChange: onDeliveryChange,
+      onLocationResolved,
+      productTotal: productTotal || selected?.price || 0,
+    }),
     React.createElement(
       "p",
       { className: "products-footnote" },
       PACKAGE_PRICE_NOTE.split(".")[0] + "."
     ),
-    onStartSizing &&
-      React.createElement(
-        "div",
-        { className: "products-cta" },
+    React.createElement(
+      "div",
+      { className: "products-cta" },
+      onContinueToQuote &&
         React.createElement(BtnPrimary, {
-          onClick: onStartSizing,
+          onClick: onContinueToQuote,
           full: true,
-          icon: React.createElement(ZapIco, { s: 16, c: "#0a0800" }),
-          children: "Size my system",
-        })
-      )
+          icon: React.createElement(PrtIco, { s: 16, c: "#0a0800" }),
+          children:
+            grandTotal != null && deliveryOpts?.enabled
+              ? "View quote · $" + grandTotal.toLocaleString()
+              : "View quote · $" + (productTotal || selected?.price || 0).toLocaleString(),
+        }),
+      onStartSizing &&
+        React.createElement(
+          "button",
+          { type: "button", className: "products-secondary-link", onClick: onStartSizing },
+          React.createElement(ZapIco, { s: 12, c: "currentColor" }),
+          "Not sure? Size my system first"
+        )
+    )
   );
 }
 
@@ -287,6 +347,8 @@ export function ResultScreen({
   deliveryQuote,
   grandTotal,
   setShowModal,
+  marketingOptIn,
+  onMarketingOptInChange,
   reset,
   themeToggle,
 }) {
@@ -297,13 +359,14 @@ export function ResultScreen({
   const includesLine = custom
     ? "Sized to your load"
     : pkg
-      ? sizing.kva + " kVA · Harare install included"
+      ? sizing.kva + " kVA · " + sizing.pc + " panels"
       : null;
   const displayTotal = grandTotal != null ? grandTotal : sizing.tot;
   const priceLabel = custom ? "On request" : "$" + displayTotal.toLocaleString();
   const priceSub =
-    !custom &&
-    (deliveryQuote?.enabled && !deliveryQuote.feePending ? "incl. delivery" : "Harare install incl.");
+    !custom && deliveryQuote?.enabled && deliveryQuote.zone === "outside" && !deliveryQuote.feePending
+      ? "includes delivery"
+      : null;
 
   return React.createElement(
     "div",
@@ -312,28 +375,46 @@ export function ResultScreen({
       "div",
       { className: "quote-page__content" },
       React.createElement(QuotePageHeader, { previewRef, custom, themeToggle }),
-      React.createElement(QuotePackageCard, {
-        custom,
-        title: heroTitle,
-        includesLine,
-        peakW: sizing.pW,
-        dailyWh: sizing.dWh,
-        priceLabel,
-        priceSub,
-        dWh: sizing.dWh,
-        dailyGenWh: sizing.dailyGenWh,
-      }),
-      !custom &&
-        React.createElement(DeliveryInstallOption, {
-          variant: "quote",
-          opts: deliveryOpts || { enabled: true, zone: "harare" },
-          onChange: onDeliveryChange,
-          onLocationResolved,
-          productTotal: productTotal || sizing.tot,
+      React.createElement(
+        "div",
+        { className: "quote-page__scroll" },
+        React.createElement(QuotePackageCard, {
+          custom,
+          title: heroTitle,
+          includesLine,
+          peakW: sizing.pW,
+          dailyWh: sizing.dWh,
+          priceLabel,
+          priceSub,
+          dWh: sizing.dWh,
+          dailyGenWh: sizing.dailyGenWh,
         }),
+        !custom &&
+          React.createElement(DeliveryInstallOption, {
+            variant: "quote",
+            opts: deliveryOpts || { enabled: true, zone: "harare" },
+            onChange: onDeliveryChange,
+            onLocationResolved,
+            productTotal: productTotal || sizing.tot,
+          })
+      ),
       React.createElement(
         "footer",
         { className: "quote-page-footer" },
+        React.createElement(
+          "label",
+          { className: "quote-marketing-opt-in" },
+          React.createElement("input", {
+            type: "checkbox",
+            checked: !!marketingOptIn,
+            onChange: (e) => onMarketingOptInChange && onMarketingOptInChange(e.target.checked),
+          }),
+          React.createElement(
+            "span",
+            { className: "quote-marketing-opt-in-label" },
+            "Keep me updated with offers, promotions, and announcements"
+          )
+        ),
         React.createElement(BtnPrimary, {
           onClick: () => setShowModal(true),
           full: true,

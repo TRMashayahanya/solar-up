@@ -7,6 +7,7 @@ import {
   SchIco,
   EstIco,
 } from "./icons.js";
+import { OUTSIDE_DELIVERY_PER_KM_USD, OUTSIDE_DELIVERY_FREE_KM } from "./packages.js";
 
 export const PROPS = [
   { value: "small_home", label: "Small Home", sub: "1–3 beds", Icon: HomeIco, color: "#4ADE80" },
@@ -38,7 +39,7 @@ export const CATS = [
     iconKey: "accessories",
     color: "#A78BFA",
     q: "Accessories",
-    hint: "Laptops, PCs & gadgets — count what you use.",
+    hint: "Laptops, PCs, and gadgets — count what you use.",
     items: [
       { id: "off_laptop", label: "Laptop", sub: "60W", w: 60, iconKey: "laptop", dh: 8 },
       { id: "off_desk", label: "Desktop PC", sub: "150W", w: 150, iconKey: "monitor", dh: 8 },
@@ -50,7 +51,7 @@ export const CATS = [
     iconKey: "bedroom",
     color: "#C4B5FD",
     q: "Bedrooms",
-    hint: "TVs & AC only.",
+    hint: "TVs and AC only.",
     items: [
       { id: "bed_tv", label: "TV", sub: "80W", w: 80, iconKey: "tv", dh: 4 },
       { id: "bed_ac", label: "AC", sub: "900W", w: 900, iconKey: "ac", dh: 7 },
@@ -84,7 +85,7 @@ export const CATS = [
     iconKey: "outdoor",
     color: "#34D399",
     q: "Security",
-    hint: "Outdoor & gates.",
+    hint: "Outdoor and gates.",
     items: [
       { id: "out_seclight", label: "Flood lights", sub: "30W", w: 30, iconKey: "led", dh: 12 },
       { id: "out_cctv", label: "CCTV", sub: "15W", w: 15, iconKey: "camera", dh: 24 },
@@ -109,7 +110,7 @@ export const CATS = [
     iconKey: "laundry",
     color: "#FCA5A5",
     q: "Laundry",
-    hint: "Wash & dry.",
+    hint: "Wash and dry.",
     items: [
       { id: "lnd_wash", label: "Washing machine", sub: "500W", w: 500, iconKey: "washer", dh: 1 },
       { id: "lnd_dryer", label: "Tumble dryer", sub: "2200W", w: 2200, iconKey: "dryer", dh: 1 },
@@ -165,7 +166,7 @@ const CATALOG_TAB_LABEL = {
 
 /** Home — short general enquiry. */
 export function homeWhatsAppMessage() {
-  return "Hi Energi Tech — I used SolarApp and need help with solar. My name & area:";
+  return "Hi Energi Tech — I used SolarApp and need help with solar. My name and area:";
 }
 
 export function homeWhatsAppUrl() {
@@ -259,9 +260,20 @@ export function quoteWhatsAppMessage(sizing, propLabel, deliveryQuote) {
     msg +=
       "Outside Harare" +
       (dq.locationLabel ? " (" + dq.locationLabel + ")" : "") +
-      " — please confirm delivery at $0.50/km. ";
-  } else {
-    msg += "Outside Harare: " + dq.km + " km delivery $" + dq.fee + " ($0.50/km). ";
+      " — please confirm delivery ($" +
+      OUTSIDE_DELIVERY_PER_KM_USD +
+      "/km after " +
+      OUTSIDE_DELIVERY_FREE_KM +
+      " km free). ";
+  } else if (dq.fee > 0) {
+    msg +=
+      "Delivery: " +
+      dq.km +
+      " km from Harare, $" +
+      dq.fee +
+      " (" +
+      (dq.billableKm || dq.km) +
+      " km billable). ";
   }
   msg += "Load sized: " + sizing.pW + "W peak, ~" + sizing.bk + "h backup. Please confirm.";
   return msg;
@@ -310,9 +322,25 @@ export function paymentAssistWhatsAppMessage(client, sizing, propLabel, delivery
   const dq = deliveryQuote && deliveryQuote.enabled ? deliveryQuote : null;
   if (dq?.zone === "outside") {
     if (dq.feePending) {
-      lines.push("Delivery: outside Harare — fee to confirm ($0.50/km)");
+      lines.push(
+        "Delivery: outside Harare — fee to confirm ($" +
+          OUTSIDE_DELIVERY_PER_KM_USD +
+          "/km after " +
+          OUTSIDE_DELIVERY_FREE_KM +
+          " km free)"
+      );
+    } else if (dq.fee > 0) {
+      lines.push(
+        "Delivery: " +
+          dq.km +
+          " km from Harare — $" +
+          dq.fee +
+          " (" +
+          (dq.billableKm || 0) +
+          " km billable)"
+      );
     } else {
-      lines.push("Delivery: " + dq.km + " km — $" + dq.fee);
+      lines.push("Within " + OUTSIDE_DELIVERY_FREE_KM + " km — install included.");
     }
   } else if (!customQuote) {
     lines.push("Harare install included on package.");

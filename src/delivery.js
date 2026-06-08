@@ -1,9 +1,82 @@
 /** Delivery pricing — Energi Tech Zimbabwe */
 
-import { OUTSIDE_DELIVERY_PER_KM_USD, PACKAGE_PRICE_NOTE } from "./packages.js";
+import { OUTSIDE_DELIVERY_PER_KM_USD, PACKAGE_PRICE_NOTE, OUTSIDE_DELIVERY_FREE_KM } from "./packages.js";
 import { roadKmFromHarare } from "./geo-distance.js";
+import { matchLocality, parseZimbabweAddress } from "./address-parse.js";
 
-export { OUTSIDE_DELIVERY_PER_KM_USD, PACKAGE_PRICE_NOTE };
+export { OUTSIDE_DELIVERY_PER_KM_USD, PACKAGE_PRICE_NOTE, OUTSIDE_DELIVERY_FREE_KM };
+
+/** Road-km from Harare that are included (no delivery fee). */
+export function isWithinFreeDeliveryRadius(totalKm) {
+  const km = Math.round(Number(totalKm) || 0);
+  return km > 0 && km <= OUTSIDE_DELIVERY_FREE_KM;
+}
+
+/** Chargeable km after the free Harare radius. */
+export function billableDeliveryKm(totalKm) {
+  const km = Math.round(Number(totalKm) || 0);
+  if (km <= OUTSIDE_DELIVERY_FREE_KM) return 0;
+  return km - OUTSIDE_DELIVERY_FREE_KM;
+}
+
+export function deliveryFeeFromDistanceKm(totalKm) {
+  return Math.round(billableDeliveryKm(totalKm) * OUTSIDE_DELIVERY_PER_KM_USD);
+}
+
+export function deliveryPricingLabel(totalKm) {
+  const km = Math.round(Number(totalKm) || 0);
+  const billable = billableDeliveryKm(km);
+  if (billable <= 0) {
+    return km > 0 ? "Within " + OUTSIDE_DELIVERY_FREE_KM + " km — no delivery charge" : "Install included in price";
+  }
+  return (
+    billable +
+    " km × $" +
+    OUTSIDE_DELIVERY_PER_KM_USD +
+    "/km (first " +
+    OUTSIDE_DELIVERY_FREE_KM +
+    " km free)"
+  );
+}
+
+/** User-facing hint after Google Maps / GPS distance (30 km free radius). */
+export function formatLocationDistanceHint(totalKm) {
+  const km = Math.round(Number(totalKm) || 0);
+  if (km <= 0) return "Address set";
+  if (isWithinFreeDeliveryRadius(km)) {
+    return (
+      "~" +
+      km +
+      " km from Harare — within " +
+      OUTSIDE_DELIVERY_FREE_KM +
+      " km (install included, no delivery charge)"
+    );
+  }
+  const billable = billableDeliveryKm(km);
+  const fee = deliveryFeeFromDistanceKm(km);
+  return (
+    "~" +
+    km +
+    " km from Harare — $" +
+    fee +
+    " delivery (" +
+    billable +
+    " km × $" +
+    OUTSIDE_DELIVERY_PER_KM_USD +
+    "/km after " +
+    OUTSIDE_DELIVERY_FREE_KM +
+    " km free)"
+  );
+}
+
+/** Short badge for search suggestions. */
+export function formatSuggestionKmLabel(totalKm) {
+  const km = Math.round(Number(totalKm) || 0);
+  if (km <= 0) return "";
+  if (isWithinFreeDeliveryRadius(km)) return "~" + km + " km · free";
+  const fee = deliveryFeeFromDistanceKm(km);
+  return "~" + km + " km · +$" + fee;
+}
 
 /** @deprecated Install is included in package price for Harare */
 export const DELIVERY_INSTALL_HARARE_USD = 0;
@@ -12,7 +85,13 @@ export const HARARE_INSTALL_INCLUDED_NOTE =
   "Full installation in Harare is included in your package price.";
 
 export const OUTSIDE_DEALER_ADVISORY =
-  "Outside Harare: delivery at $0.50/km from Harare. Use the map pin or type your suburb or city — distance is estimated automatically.";
+  "Beyond " +
+  OUTSIDE_DELIVERY_FREE_KM +
+  " km from Harare: delivery at $" +
+  OUTSIDE_DELIVERY_PER_KM_USD +
+  "/km (first " +
+  OUTSIDE_DELIVERY_FREE_KM +
+  " km free). Use the map pin or type your suburb or city — distance is estimated automatically.";
 
 /** Approximate road distance from Harare (km) for common areas */
 const CITY_KM_FROM_HARARE = {
@@ -69,10 +148,6 @@ const HARARE_MARKERS = [
   "westgate",
   "hatfield",
   "waterfalls",
-  "chitungwiza",
-  "epworth",
-  "ruwa",
-  "norton",
   "crowborough",
   "mabvuku",
   "tafara",
@@ -164,7 +239,9 @@ export function getDeliveryQuote(opts) {
       feePending: false,
       installIncluded: true,
       perKm: OUTSIDE_DELIVERY_PER_KM_USD,
+      freeKm: OUTSIDE_DELIVERY_FREE_KM,
       km: 0,
+      billableKm: 0,
       locationLabel: "",
       label: "Installation (Harare)",
       summary: HARARE_INSTALL_INCLUDED_NOTE,
@@ -186,21 +263,50 @@ export function getDeliveryQuote(opts) {
       feePending: true,
       installIncluded: true,
       perKm: OUTSIDE_DELIVERY_PER_KM_USD,
+      freeKm: OUTSIDE_DELIVERY_FREE_KM,
       km: 0,
+      billableKm: 0,
       locationLabel,
       label: "Delivery (outside Harare)",
       summary:
         "Outside Harare · " +
         place +
-        ". Use the map pin or pick a suggested area for $" +
+        ". Enter your area for a delivery estimate ($" +
         OUTSIDE_DELIVERY_PER_KM_USD +
-        "/km delivery estimate.",
+        "/km after " +
+        OUTSIDE_DELIVERY_FREE_KM +
+        " km free).",
       dealerAdvisory: OUTSIDE_DEALER_ADVISORY,
       locationDisplay: place,
     };
   }
 
-  const fee = Math.round(km * OUTSIDE_DELIVERY_PER_KM_USD);
+  const billableKm = billableDeliveryKm(km);
+  if (billableKm <= 0) {
+    return {
+      enabled: true,
+      zone: "harare",
+      fee: 0,
+      feePending: false,
+      installIncluded: true,
+      perKm: OUTSIDE_DELIVERY_PER_KM_USD,
+      freeKm: OUTSIDE_DELIVERY_FREE_KM,
+      km,
+      billableKm: 0,
+      locationLabel,
+      label: "Installation (within " + OUTSIDE_DELIVERY_FREE_KM + " km)",
+      summary:
+        "Within " +
+        OUTSIDE_DELIVERY_FREE_KM +
+        " km of Harare (~" +
+        km +
+        " km) — full install included, no delivery charge.",
+      dealerAdvisory: "",
+      locationDisplay: locationLabel || km + " km from Harare",
+    };
+  }
+
+  const fee = deliveryFeeFromDistanceKm(km);
   return {
     enabled: true,
     zone: "outside",
@@ -208,17 +314,26 @@ export function getDeliveryQuote(opts) {
     feePending: false,
     installIncluded: true,
     perKm: OUTSIDE_DELIVERY_PER_KM_USD,
+    freeKm: OUTSIDE_DELIVERY_FREE_KM,
     km,
+    billableKm,
     locationLabel,
-    label: "Delivery (" + km + " km × $" + OUTSIDE_DELIVERY_PER_KM_USD + "/km)",
+    label:
+      "Delivery (" +
+      billableKm +
+      " km × $" +
+      OUTSIDE_DELIVERY_PER_KM_USD +
+      "/km)",
     summary:
       "$" +
       fee +
       " delivery (" +
-      km +
+      billableKm +
       " km × $" +
       OUTSIDE_DELIVERY_PER_KM_USD +
-      "/km). Package install is for Harare; outside travel charged separately.",
+      "/km after " +
+      OUTSIDE_DELIVERY_FREE_KM +
+      " km free). Package install covers Harare metro.",
     dealerAdvisory: OUTSIDE_DEALER_ADVISORY,
     locationDisplay: locationLabel || km + " km from Harare",
   };
@@ -250,6 +365,13 @@ export function localPlaceSuggestions(query, { limit = 6 } = {}) {
       push(label, 0);
     }
   }
+
+  const parsed = parseZimbabweAddress(query);
+  const loc = matchLocality(query) || (parsed.locality ? matchLocality(parsed.locality) : null);
+  if (loc && (parsed.street || parsed.streetNumber || t.includes(loc.key))) {
+    push(parsed.formatted || loc.label + ", Zimbabwe", loc.km || 0);
+  }
+
   return out.slice(0, limit);
 }
 
@@ -266,6 +388,15 @@ export function applyAddressToDeliveryOpts(address, opts = {}, meta = {}) {
   let km = geoKm > 0 ? geoKm : estimateKmFromAddress(addr) || 0;
   if (!km && Number.isFinite(metaLat) && Number.isFinite(metaLon)) {
     km = roadKmFromHarare(metaLat, metaLon);
+  }
+
+  if (km > 0 && isWithinFreeDeliveryRadius(km)) {
+    return {
+      enabled: true,
+      zone: "harare",
+      locationLabel: addr,
+      distanceKm: km,
+    };
   }
 
   if (detected === true) {

@@ -188,13 +188,13 @@ export const globalStyles =
   ".app-shell--sizer>main,.main-card--sizer{flex:1;min-height:0;display:flex;flex-direction:column;width:100%;max-width:min(560px,100%)}" +
   ".app-shell--quote{padding:max(8px,env(safe-area-inset-top)) max(10px,env(safe-area-inset-left)) calc(80px + env(safe-area-inset-bottom,0px)) max(10px,env(safe-area-inset-right));min-height:100dvh;box-sizing:border-box}" +
   ".app-shell--quote{display:flex;flex-direction:column;min-height:0;flex:1}" +
-  ".app-shell--quote>main.main-card--quote{flex:1;min-height:0;display:flex;flex-direction:column;padding:clamp(12px,3vw,18px) clamp(14px,3.5vw,20px) 8px!important;max-height:calc(100dvh - 56px - env(safe-area-inset-top) - env(safe-area-inset-bottom));overflow:hidden}" +
+  ".app-shell--quote>main.main-card--quote{flex:1;min-height:0;display:flex;flex-direction:column;padding:clamp(12px,3vw,18px) clamp(14px,3.5vw,20px) 8px!important;max-height:calc(var(--vvh,100dvh) - 56px - env(safe-area-inset-top) - env(safe-area-inset-bottom));overflow:hidden}" +
   ".main-card--quote .main-inner--quote,.main-card--quote>div:last-child{flex:1;min-height:0;display:flex;flex-direction:column}" +
   ".app-main-card{width:100%;max-width:min(560px,100%);min-width:0;padding:clamp(16px,4vw,28px)}" +
   ".main-inner--sizer{flex:1;min-height:0;display:flex;flex-direction:column;padding:12px 14px 10px!important;overflow:hidden}" +
   ".app-shell--sizer .sizer-screen{flex:1;min-height:0;display:flex;flex-direction:column}" +
   ".app-shell--sizer .sizer-scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch}" +
-  ".bottom-nav{position:fixed;left:50%;transform:translateX(-50%);bottom:max(12px,env(safe-area-inset-bottom));width:min(560px,calc(100% - 20px));z-index:9990;display:flex;justify-content:space-around;align-items:center;padding:10px 6px;background:var(--nav-bg);border:var(--nav-border);border-radius:20px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:var(--nav-shadow)}" +
+  ".bottom-nav{position:fixed;left:50%;transform:translateX(-50%);bottom:max(12px,env(safe-area-inset-bottom));width:min(560px,calc(100% - 20px));z-index:9990;display:flex;justify-content:space-around;align-items:center;padding:10px 6px;background:var(--nav-bg);border:var(--nav-border);border-radius:20px;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);box-shadow:var(--nav-shadow);transition:transform .22s ease,opacity .22s ease}" +
   ".bottom-nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 4px;border:none;border-radius:14px;background:transparent;cursor:pointer;font-family:inherit;min-width:0}" +
   ".bottom-nav-btn[aria-current=\"page\"]{background:var(--nav-active-bg)}" +
   ".bottom-nav-btn:disabled{cursor:not-allowed;opacity:0.35}" +
@@ -232,19 +232,43 @@ export const globalStyles =
   ".products-page-title-block{text-align:center;min-width:0}" +
   ".products-page-title{font-family:" + FONT_DISPLAY + ";font-size:clamp(1.25rem,4.5vw,1.5rem);font-weight:700;line-height:1.15;margin:0;letter-spacing:0.02em;color:var(--text-primary)}" +
   ".products-page-sub{font-size:11px;color:var(--text-muted);margin:4px 0 0;line-height:1.35;letter-spacing:-0.01em}" +
-  ".products-screen{display:flex;flex-direction:column;min-width:0}" +
-  ".products-list{display:flex;flex-direction:column;gap:8px;margin-bottom:10px}" +
-  ".products-footnote{font-size:10px;line-height:1.45;color:var(--text-muted);margin:0 0 12px;text-align:center;padding:0 4px}" +
-  ".products-cta{margin-top:2px;padding-top:10px;border-top:1px solid var(--border)}" +
-  ".main-card--products{padding:0 14px 12px!important;max-height:calc(100dvh - 96px - env(safe-area-inset-top) - env(safe-area-inset-bottom));overflow-y:auto;-webkit-overflow-scrolling:touch}" +
+  ".products-screen{display:flex;flex-direction:column;min-width:0;gap:10px}" +
+  ".products-hero-strip{display:flex;flex-wrap:wrap;justify-content:center;gap:6px;margin-bottom:2px}" +
+  ".products-hero-pill{font-size:9px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:var(--surface);border:1px solid var(--border);color:var(--text-muted)}" +
+  ".products-hero-pill--gold{color:var(--quote-gold,#C9A227);border-color:rgba(232,197,71,.28);background:var(--gold-dim)}" +
+  ".products-intro{font-size:11px;line-height:1.45;color:var(--text-muted);margin:0;text-align:center;padding:0 6px}" +
+  ".products-list{display:flex;flex-direction:column;gap:8px;margin-bottom:2px}" +
+  ".products-selected-panel{padding:12px 14px;border-radius:14px;background:linear-gradient(165deg,rgba(232,197,71,.1) 0%,var(--card-bg) 55%);border:1px solid rgba(232,197,71,.22);box-shadow:var(--card-shadow)}" +
+  ".products-selected-eyebrow{font-size:9px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--quote-gold,#C9A227);margin:0 0 4px}" +
+  ".products-selected-name{font-family:" + FONT_DISPLAY + ";font-size:1.05rem;font-weight:700;margin:0;line-height:1.15;color:var(--text-primary)}" +
+  ".products-selected-spec{font-size:11px;color:var(--text-muted);margin:4px 0 8px;line-height:1.35}" +
+  ".products-powers-list{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;margin:0;padding:0;list-style:none}" +
+  ".products-powers-item{font-size:10px;color:var(--text-secondary);line-height:1.3;padding-left:12px;position:relative}" +
+  ".products-powers-item::before{content:'';position:absolute;left:0;top:.45em;width:5px;height:5px;border-radius:50%;background:var(--green-accent,#3DD68C);opacity:.85}" +
+  ".products-footnote{font-size:10px;line-height:1.45;color:var(--text-muted);margin:0;text-align:center;padding:0 4px}" +
+  ".products-cta{margin-top:2px;padding-top:10px;padding-bottom:calc(64px + env(safe-area-inset-bottom,0px));border-top:1px solid var(--border);display:flex;flex-direction:column;gap:8px}" +
+  ".products-secondary-link{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:6px 8px;border:none;background:transparent;color:var(--text-muted);font-size:12px;cursor:pointer;font-family:inherit;margin:0 auto}" +
+  ".products-secondary-link:hover{color:var(--text-secondary)}" +
+  ".main-card--products{padding:0 14px 12px!important;max-height:calc(var(--vvh,100dvh) - 96px - env(safe-area-inset-top) - env(safe-area-inset-bottom));overflow-y:auto;-webkit-overflow-scrolling:touch}" +
   ".app-shell--products{padding-bottom:calc(92px + env(safe-area-inset-bottom,0px))}" +
-  ".product-card{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;background:var(--card-bg);border:1px solid var(--border);transition:border-color .2s,transform .2s,box-shadow .2s;min-width:0}" +
+  ".delivery-mode-picker{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:8px}" +
+  ".delivery-mode-picker--compact{gap:5px;margin-bottom:6px}" +
+  ".delivery-mode-btn{display:flex;flex-direction:column;align-items:center;gap:1px;padding:8px 6px;border-radius:10px;border:1px solid var(--border);background:var(--surface);cursor:pointer;font-family:inherit;transition:border-color .2s,background .2s}" +
+  ".delivery-mode-btn:hover{border-color:var(--border-focus)}" +
+  ".delivery-mode-btn--active{border-color:rgba(232,197,71,.45);background:var(--gold-dim);box-shadow:0 0 0 1px rgba(232,197,71,.12)}" +
+  ".delivery-mode-btn-label{font-size:11px;font-weight:700;color:var(--text-primary);line-height:1.2}" +
+  ".delivery-mode-btn-sub{font-size:8px;font-weight:600;color:var(--text-muted);letter-spacing:.02em;line-height:1.2}" +
+  ".quote-delivery-help--muted{font-style:italic}" +
+  ".quote-delivery-card--products{margin-bottom:0!important}" +
+  ".product-card{display:grid;grid-template-columns:auto 1fr auto auto;align-items:center;gap:10px;padding:12px 14px;border-radius:14px;background:var(--card-bg);border:1px solid var(--border);transition:border-color .2s,transform .2s,box-shadow .2s;min-width:0;cursor:pointer;text-align:left;width:100%;font-family:inherit}" +
   ".product-card:hover{border-color:var(--border-focus)}" +
+  ".product-card--selected{border-color:rgba(232,197,71,.45);background:linear-gradient(165deg,rgba(232,197,71,.08) 0%,var(--card-bg) 60%);box-shadow:0 4px 20px rgba(0,0,0,.06),0 0 0 1px rgba(232,197,71,.12)}" +
   ".product-card-icon{width:44px;height:44px;border-radius:12px;background:var(--gold-dim);border:1px solid rgba(232,197,71,.25);display:flex;align-items:center;justify-content:center;flex-shrink:0}" +
   ".product-card-body{min-width:0}" +
   ".product-card-brand{color:var(--text-muted);font-size:9px;text-transform:uppercase;letter-spacing:0.1em;margin:0 0 2px;line-height:1.2}" +
   ".product-card-name{color:var(--text-primary);font-size:13px;font-weight:600;margin:0 0 3px;line-height:1.25;letter-spacing:-0.02em}" +
   ".product-card-spec{color:var(--text-muted);font-size:11px;margin:0;line-height:1.3}" +
+  ".product-card-spec--powers{margin-top:3px;font-size:10px;color:var(--text-secondary);line-height:1.35}" +
   ".product-card-price{text-align:right;min-width:52px;flex-shrink:0}" +
   ".product-card-price-val{color:var(--quote-gold,#C9A227);font-size:16px;font-weight:700;margin:0;line-height:1}" +
   ".product-card-tag{font-size:9px;color:var(--text-muted);background:var(--surface);padding:2px 8px;border-radius:10px;margin-top:4px;display:inline-block;border:1px solid var(--border)}" +
@@ -474,8 +498,8 @@ export function EcoQuoteFootprint({ dWh, dailyGenWh }) {
   if (!dWh && !dailyGenWh) return null;
   const eco = environmentalImpact(dWh, dailyGenWh || 0);
   const items = [
-    { v: eco.co2Tonnes + "t", l: "CO₂ vs grid/yr" },
-    { v: String(eco.trees), l: "Trees eq." },
+    { v: eco.co2Tonnes + "t", l: "CO₂ vs grid per year" },
+    { v: String(eco.trees), l: "Tree equivalent" },
     { v: eco.carKm >= 1000 ? Math.round(eco.carKm / 1000) + "k km" : eco.carKm + " km", l: "Car off-road" },
   ];
   return React.createElement(
@@ -937,12 +961,32 @@ export function AreaContextBanner({ text }) {
   );
 }
 
-export function ProductCard({ brand, name, spec, price, tag, Ico, waMessage }) {
+export function ProductCard({ brand, name, spec, price, tag, Ico, waMessage, selected, onSelect, powers }) {
   const msg = waMessage || productWhatsAppMessage(brand, name, price);
   const waHref = whatsAppChatUrl(msg);
+
+  function onCardClick(e) {
+    if (e.target.closest("a")) return;
+    onSelect && onSelect();
+  }
+
   return React.createElement(
     "div",
-    { className: "product-card card-hover" },
+    {
+      className: "product-card card-hover" + (selected ? " product-card--selected" : ""),
+      onClick: onCardClick,
+      role: onSelect ? "button" : undefined,
+      tabIndex: onSelect ? 0 : undefined,
+      onKeyDown: onSelect
+        ? (e) => {
+            if (e.key === "Enter" || e.key === " ") {
+              e.preventDefault();
+              onSelect();
+            }
+          }
+        : undefined,
+      "aria-pressed": onSelect ? !!selected : undefined,
+    },
     React.createElement(
       "div",
       { className: "product-card-icon" },
@@ -953,13 +997,19 @@ export function ProductCard({ brand, name, spec, price, tag, Ico, waMessage }) {
       { className: "product-card-body" },
       React.createElement("p", { className: "product-card-brand" }, brand),
       React.createElement("p", { className: "product-card-name" }, name),
-      React.createElement("p", { className: "product-card-spec" }, spec)
+      React.createElement("p", { className: "product-card-spec" }, spec),
+      selected && powers?.length > 0 &&
+        React.createElement(
+          "p",
+          { className: "product-card-spec product-card-spec--powers" },
+          powers.slice(0, 3).join(" · ")
+        )
     ),
     React.createElement(
       "div",
       { className: "product-card-price" },
       React.createElement("p", { className: "product-card-price-val" }, "$" + price),
-      tag && React.createElement("span", { className: "product-card-tag" }, tag)
+      tag && React.createElement("span", { className: "product-card-tag" }, selected ? "Selected" : tag)
     ),
     React.createElement(
       "a",
@@ -970,6 +1020,7 @@ export function ProductCard({ brand, name, spec, price, tag, Ico, waMessage }) {
         className: "product-card-wa",
         "aria-label": "WhatsApp Energi Tech about " + name,
         title: "Chat on WhatsApp",
+        onClick: (e) => e.stopPropagation(),
       },
       React.createElement(ChatIco, { s: 18, c: "#fff" })
     )

@@ -428,7 +428,7 @@ export function CustomAccessoriesPanel({
           React.createElement(
             "span",
             { style: { color: W4, fontSize: 10, marginTop: 2, display: "block" } },
-            "Heating elements excluded · other items tap to add"
+            "Heating elements are excluded. Tap other items to add them."
           )
         ),
         loadBased.length > 0 &&
@@ -522,7 +522,7 @@ export function CustomAccessoriesPanel({
           ref: inputRef,
           type: "text",
           value: query,
-          placeholder: "Add item (no kettles, microwaves, irons…)",
+          placeholder: "Add an item (no kettles, microwaves, or irons…)",
           onChange: (e) => {
             setQuery(e.target.value);
             setOpen(true);

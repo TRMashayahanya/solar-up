@@ -233,7 +233,7 @@ function buildCustomQuoteNotes(load, req, largest, peakW) {
   const gaps = [];
   if (largest.usableInverterW < req.requiredInverterW) {
     gaps.push(
-      "Inverter need ~" +
+      "Inverter needs ~" +
         Math.ceil(req.requiredInverterW / 100) / 10 +
         " kW+ (largest package " +
         largest.kva +
@@ -242,16 +242,16 @@ function buildCustomQuoteNotes(load, req, largest, peakW) {
   }
   if (largest.usableBatteryWh < req.requiredBatteryWh) {
     gaps.push(
-      "Battery need ~" +
+      "Battery needs ~" +
         Math.round(req.requiredBatteryWh / 1000) +
-        " kWh+ (10.2Kva package ~" +
+        " kWh+ (10.2 kVA package ~" +
         Math.round(largest.usableBatteryWh / 1000) +
         " kWh usable)"
     );
   }
   if (largest.dailyGenWh < req.requiredSolarWh) {
     gaps.push(
-      "Solar need ~" +
+      "Solar needs ~" +
         Math.round(req.requiredSolarWh / 1000) +
         " kWh/day yield (largest ~" +
         Math.round(largest.dailyGenWh / 1000) +
@@ -264,7 +264,7 @@ function buildCustomQuoteNotes(load, req, largest, peakW) {
       peakW.toLocaleString() +
       "W peak · " +
       Math.round(req.dailyWh).toLocaleString() +
-      " Wh/day) exceeds our largest standard package (10.2Kva).",
+      " Wh/day) exceeds our largest standard package (10.2 kVA).",
     "Request a custom quote — Energi Tech will design to your appliances and site.",
   ];
   if (gaps.length) notes.push("Sizing gaps: " + gaps.join(" · ") + ".");

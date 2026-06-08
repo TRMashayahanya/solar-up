@@ -9,7 +9,7 @@ import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "..");
-const BASE = process.env.SOLARAPP_URL || "http://localhost:5173/?v=44";
+const BASE = process.env.SOLARAPP_URL || "http://localhost:5173/?v=66";
 
 const VIEWPORTS = [
   { name: "iPhone SE", width: 375, height: 667 },
@@ -49,6 +49,7 @@ function fetchStatus(url) {
 function staticAudit() {
   const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
   const ui = fs.readFileSync(path.join(ROOT, "src/ui.js"), "utf8");
+  const theme = fs.readFileSync(path.join(ROOT, "src/theme.js"), "utf8");
 
   if (!html.includes('name="viewport"') || !html.includes("width=device-width")) {
     fail("index.html missing viewport meta");
@@ -67,9 +68,13 @@ function staticAudit() {
     ".bottom-nav",
     "100dvh",
     "safe-area-inset",
+    "quote-page__scroll",
+    "--vvh",
+    "data-keyboard-open",
   ];
   for (const token of required) {
-    if (!ui.includes(token)) fail(`ui.js missing responsive token: ${token}`);
+    const hay = ui.includes(token) || theme.includes(token);
+    if (!hay) fail(`css missing responsive token: ${token}`);
     else ok(`css includes ${token}`);
   }
 }
@@ -92,6 +97,22 @@ async function playwrightChecks() {
   }
 
   const context = await browser.newContext({ locale: "en-US" });
+
+  async function openQuotePage(page) {
+    await page.goto(BASE, { waitUntil: "networkidle", timeout: 20000 });
+    const products = page.getByRole("button", { name: /^Products$/i });
+    if (await products.isVisible().catch(() => false)) {
+      await products.click();
+      await page.waitForTimeout(400);
+    }
+    const viewQuote = page.getByRole("button", { name: /View quote/i });
+    if (await viewQuote.isVisible().catch(() => false)) {
+      await viewQuote.click();
+      await page.waitForTimeout(500);
+      return true;
+    }
+    return false;
+  }
 
   for (const vp of VIEWPORTS) {
     const page = await context.newPage();
@@ -129,6 +150,60 @@ async function playwrightChecks() {
         });
         if (sizer.overflowX) fail(`${vp.name} sizer: horizontal overflow`);
         else ok(`${vp.name} sizer (${sizer.acc} sections, scroll:${sizer.hasScroll})`);
+      }
+
+      if (await openQuotePage(page)) {
+        const quote = await page.evaluate(() => {
+          const doc = document.documentElement;
+          const scroll = document.querySelector(".quote-page__scroll");
+          const input = document.querySelector("#quote-delivery-location");
+          const footer = document.querySelector(".quote-page-footer");
+          const nav = document.querySelector(".bottom-nav");
+          const delivery = document.querySelector(".quote-delivery-card--compact");
+          return {
+            overflowX: doc.scrollWidth > doc.clientWidth + 2,
+            hasScroll: !!scroll,
+            hasInput: !!input,
+            hasFooter: !!footer,
+            hasDelivery: !!delivery,
+            navBottom: nav ? nav.getBoundingClientRect().bottom : 0,
+            vh: window.innerHeight,
+          };
+        });
+        if (quote.overflowX) fail(`${vp.name} quote: horizontal overflow`);
+        else ok(`${vp.name} quote layout (scroll:${quote.hasScroll}, delivery:${quote.hasDelivery})`);
+
+        if (quote.hasInput) {
+          await page.locator("#quote-delivery-location").focus();
+          await page.evaluate(() => {
+            document.documentElement.dataset.keyboardOpen = "1";
+            document.documentElement.style.setProperty("--vvh", Math.round(window.innerHeight * 0.52) + "px");
+          });
+          await page.waitForTimeout(200);
+          const kb = await page.evaluate(() => {
+            const input = document.querySelector("#quote-delivery-location");
+            const footer = document.querySelector(".quote-page-footer");
+            const nav = document.querySelector(".bottom-nav");
+            const ir = input?.getBoundingClientRect();
+            const vvh = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--vvh"), 10);
+            const footerHidden =
+              !footer || footer.offsetParent === null || getComputedStyle(footer).display === "none";
+            const navHidden = nav && getComputedStyle(nav).opacity === "0";
+            return {
+              inputVisible: ir ? ir.top >= 0 && ir.bottom <= (vvh || window.innerHeight) + 2 : false,
+              footerHidden,
+              navHidden,
+            };
+          });
+          if (!kb.inputVisible) fail(`${vp.name} quote keyboard: delivery input not in visible area`);
+          else ok(`${vp.name} quote keyboard input visible`);
+          if (!kb.footerHidden) fail(`${vp.name} quote keyboard: footer should hide`);
+          else ok(`${vp.name} quote keyboard footer hidden`);
+          await page.evaluate(() => {
+            delete document.documentElement.dataset.keyboardOpen;
+            document.documentElement.style.removeProperty("--vvh");
+          });
+        }
       }
     } catch (e) {
       fail(`${vp.name}: ${e.message}`);

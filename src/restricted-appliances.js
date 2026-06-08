@@ -7,7 +7,7 @@ export const RESTRICTED_USER_MESSAGE =
   "Not allowed — electric kettles, microwaves, irons and similar heating elements can overload inverters and batteries. WhatsApp Energi Tech (077 375 7018) for safe alternatives.";
 
 export const RESTRICTED_SHORT_NOTE =
-  "Kettles, microwaves & irons are excluded (high surge risk to inverters).";
+  "Kettles, microwaves, and irons are excluded (high surge risk to inverters).";
 
 /** Built-in catalog item ids — removed from lists & presets. */
 export const RESTRICTED_CATALOG_IDS = new Set(["kit_kettle", "kit_micro"]);

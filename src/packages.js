@@ -4,9 +4,12 @@
  */
 
 export const PACKAGE_PRICE_NOTE =
-  "Package prices include full installation in Harare. Outside Harare: $0.50 per km delivery (enter your area).";
+  "Package prices include full installation in Harare and within 30 km. Beyond 30 km: $0.50 per km delivery (first 30 km free).";
 
 export const OUTSIDE_DELIVERY_PER_KM_USD = 0.5;
+
+/** No delivery charge within this road-km radius of Harare (install area). */
+export const OUTSIDE_DELIVERY_FREE_KM = 30;
 
 export const PACKAGES = [
   {
@@ -25,8 +28,8 @@ export const PACKAGES = [
       "Accessories",
       "Automatic ChangeOver Switch",
       "Adjustable Voltage Switcher",
-      "Labour | Installation",
-      "5-7 Years Warranty | maintenance",
+      "Labour and installation",
+      "5–7 year warranty and maintenance",
     ],
     powers: [
       "Upright Fridge",
@@ -53,8 +56,8 @@ export const PACKAGES = [
       "Accessories",
       "Automatic ChangeOver Switch",
       "Adjustable Voltage Switcher",
-      "Labour | Installation",
-      "5-7 Years Warranty | maintenance",
+      "Labour and installation",
+      "5–7 year warranty and maintenance",
     ],
     powers: [
       "Upright Fridge",
@@ -83,8 +86,8 @@ export const PACKAGES = [
       "Accessories",
       "Automatic ChangeOver Switch",
       "Adjustable Voltage Switcher",
-      "Labour | Installation",
-      "5-7 Years Warranty | maintenance",
+      "Labour and installation",
+      "5–7 year warranty and maintenance",
     ],
     powers: [
       "Upright Fridge",
@@ -113,8 +116,8 @@ export const PACKAGES = [
       "Accessories",
       "Automatic ChangeOver Switch",
       "Adjustable Voltage Switcher",
-      "Labour | Installation",
-      "5-7 Years Warranty | maintenance",
+      "Labour and installation",
+      "5–7 year warranty and maintenance",
     ],
     powers: [
       "Upright Fridge",
@@ -142,8 +145,8 @@ export const PACKAGES = [
       "Accessories",
       "Automatic ChangeOver Switch",
       "Adjustable Voltage Switcher",
-      "Labour | Installation",
-      "5-7 Years Warranty | maintenance",
+      "Labour and installation",
+      "5–7 year warranty and maintenance",
     ],
     powers: [
       "Upright Fridge",
@@ -172,8 +175,8 @@ export const PACKAGES = [
       "Accessories",
       "Automatic ChangeOver Switch",
       "Adjustable Voltage Switcher",
-      "Labour | Installation",
-      "5-7 Years Warranty | maintenance",
+      "Labour and installation",
+      "5–7 year warranty and maintenance",
     ],
     powers: [
       "Upright Fridge",
@@ -202,8 +205,8 @@ export const PACKAGES = [
       "Accessories",
       "Automatic ChangeOver Switch",
       "Adjustable Voltage Switcher",
-      "Labour | Installation",
-      "5-7 Years Warranty | maintenance",
+      "Labour and installation",
+      "5–7 year warranty and maintenance",
     ],
     powers: [
       "Upright Fridge",
@@ -232,8 +235,8 @@ export const PACKAGES = [
       "Accessories",
       "Automatic ChangeOver Switch",
       "Adjustable Voltage Switcher",
-      "Labour | Installation",
-      "5-7 Years Warranty | maintenance",
+      "Labour and installation",
+      "5–7 year warranty and maintenance",
     ],
     powers: [
       "Full household / office back-up",

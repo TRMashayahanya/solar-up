@@ -207,8 +207,10 @@ export const themeCss =
   "[data-theme=\"light\"] .home-prop-arrow{opacity:.45}" +
   "[data-theme=\"light\"] .home-prop-tile:hover .home-prop-arrow{opacity:.75}" +
   ".quote-page{position:relative;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}" +
+  ".quote-page input,.quote-page textarea,.quote-page .location-suggest-item,.quote-page .delivery-mode-btn{-webkit-user-select:text;user-select:text;-webkit-touch-callout:default}" +
   ".quote-page--compact{flex:1;min-height:0;display:flex;flex-direction:column;padding:0}" +
-  ".quote-page--compact .quote-page__content{position:relative;z-index:2;flex:1;min-height:0;display:grid;grid-template-rows:auto minmax(0,auto) minmax(0,1fr) auto;gap:clamp(6px,1.2vh,10px);padding:0 2px;overflow:hidden;align-content:start}" +
+  ".quote-page--compact .quote-page__content{position:relative;z-index:2;flex:1;min-height:0;display:flex;flex-direction:column;gap:clamp(6px,1.2vh,10px);padding:0 2px;overflow:hidden}" +
+  ".quote-page__scroll{flex:1;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;display:flex;flex-direction:column;gap:clamp(6px,1.2vh,10px);padding-bottom:2px;scrollbar-gutter:stable}" +
   ".quote-page-header{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 2px 4px;flex-shrink:0}" +
   ".quote-page-header-brand{display:flex;align-items:center;gap:8px}" +
   ".quote-page-header-title{font-family:" + "'Cormorant Garamond',Georgia,serif" + ";font-size:1.2rem;font-weight:700;margin:0;line-height:1;color:var(--quote-title)}" +
@@ -232,6 +234,22 @@ export const themeCss =
   ".quote-eco-ribbon-title{font-size:11px;font-weight:700;color:var(--green-accent);letter-spacing:.02em}" +
   ".quote-eco-ribbon-text{font-size:clamp(10px,2.3vw,11px);line-height:1.45;color:var(--text-body);margin:0}" +
   "[data-theme=\"light\"] .quote-eco-ribbon{background:rgba(45,160,100,.07);border-color:rgba(26,122,74,.14)}" +
+  ".quote-install-section{padding:12px 14px;border-radius:14px;background:var(--quote-delivery-bg);border:1px solid var(--quote-delivery-border);box-shadow:var(--card-shadow);display:flex;flex-direction:column;gap:10px}" +
+  ".quote-install-benefit{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:12px;background:rgba(61,214,140,.08);border:1px solid rgba(61,214,140,.2)}" +
+  ".quote-install-benefit-icon{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:10px;flex-shrink:0;background:rgba(61,214,140,.12);color:var(--green-accent)}" +
+  ".quote-install-benefit-body{min-width:0}" +
+  ".quote-install-benefit-title{font-size:13px;font-weight:700;color:var(--text-primary);margin:0 0 3px;line-height:1.25}" +
+  ".quote-install-benefit-text{font-size:11px;color:var(--text-secondary);margin:0;line-height:1.4}" +
+  ".quote-install-zone-toggle{display:grid;grid-template-columns:1fr 1fr;gap:6px}" +
+  ".quote-install-zone-btn{padding:8px 10px;border-radius:10px;border:1px solid var(--border);background:var(--surface);color:var(--text-muted);font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;transition:border-color .15s,background .15s,color .15s}" +
+  ".quote-install-zone-btn--active{border-color:rgba(232,197,71,.45);background:var(--gold-dim);color:var(--text-primary);box-shadow:0 0 0 1px rgba(232,197,71,.1)}" +
+  ".quote-install-outside-hint{font-size:10px;color:var(--text-muted);margin:0;line-height:1.4}" +
+  ".quote-install-area-label{font-size:10px;font-weight:600;color:var(--text-muted);letter-spacing:.04em;margin:0}" +
+  ".quote-install-area-optional{font-weight:500;color:var(--text-faint)}" +
+  ".quote-install-section .location-pin-wrap{margin:0}" +
+  ".quote-install-section .quote-total-bar{margin-top:2px;padding-top:10px;border-top:1px solid var(--border)}" +
+  "[data-theme=\"light\"] .quote-install-benefit{background:rgba(45,160,100,.07);border-color:rgba(26,122,74,.16)}" +
+  "[data-theme=\"light\"] .quote-install-section{box-shadow:0 6px 28px rgba(15,20,18,.06),0 0 0 1px rgba(160,128,32,.1)}" +
   ".quote-delivery-card--compact{padding:clamp(10px,2vw,12px) clamp(12px,2.5vw,14px)!important;margin:0!important;border-radius:14px!important;min-height:0;display:flex;flex-direction:column;overflow:hidden}" +
   ".quote-delivery-head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:4px;flex-shrink:0;flex-wrap:wrap}" +
   ".quote-delivery-compact-title{font-size:11px;font-weight:700;color:var(--text-primary);margin:0;letter-spacing:.02em}" +
@@ -262,7 +280,10 @@ export const themeCss =
   ".location-map-iframe{width:100%;flex:1;min-height:clamp(72px,14vh,120px);max-height:22vh;border:0;display:block}" +
   ".location-map-caption{flex-shrink:0;margin:0;padding:5px 8px;font-size:9px;color:var(--text-faint);text-align:center;line-height:1.3}" +
   ".quote-delivery-card--compact .location-field-stack{flex:1;min-height:0}" +
-  ".quote-page-footer{grid-row:-1;flex-shrink:0;margin-top:0;padding-bottom:calc(68px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:clamp(5px,1vh,8px);align-items:stretch}" +
+  ".quote-page-footer{flex-shrink:0;margin-top:0;padding-bottom:calc(68px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:clamp(5px,1vh,8px);align-items:stretch;transition:opacity .2s ease,transform .2s ease}" +
+  ".quote-marketing-opt-in{display:flex;align-items:flex-start;gap:10px;padding:10px 12px;border-radius:12px;border:1px solid var(--border);background:var(--surface-inset);cursor:pointer;text-align:left;-webkit-user-select:none;user-select:none}" +
+  ".quote-marketing-opt-in input[type=checkbox]{margin:2px 0 0;flex-shrink:0;width:18px;height:18px;accent-color:var(--quote-gold,#C9A227);cursor:pointer}" +
+  ".quote-marketing-opt-in-label{font-size:12px;line-height:1.45;color:var(--text-body);-webkit-user-select:none;user-select:none}" +
   ".quote-page-reset{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:6px 8px;border:none;background:transparent;color:var(--text-muted);font-size:12px;cursor:pointer;font-family:inherit;margin:0 auto}" +
   ".quote-page-reset:hover{color:var(--text-body)}" +
   ".quote-page__content{position:relative;z-index:2;display:flex;flex-direction:column;gap:0}" +
@@ -332,6 +353,7 @@ export const themeCss =
   ".location-suggest-item--muted{cursor:default;color:var(--text-muted);font-size:12px}" +
   ".location-suggest-label{flex:1;min-width:0;line-height:1.35}" +
   ".location-suggest-km{flex-shrink:0;font-size:10px;font-weight:600;color:var(--quote-gold);letter-spacing:.02em}" +
+  ".location-suggest-tag{flex-shrink:0;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;padding:2px 6px;border-radius:6px;background:rgba(232,197,71,.12);color:var(--quote-gold)}" +
   ".eco-quote-strip{margin-bottom:12px;padding:12px 14px;border-radius:14px;background:var(--green-dim);border:1px solid rgba(61,214,140,.22);display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center;user-select:none;-webkit-user-select:none;box-shadow:var(--card-shadow)}" +
   ".eco-quote-strip-head{grid-column:1/-1;display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:2px}" +
   ".eco-quote-strip-title{font-size:10px;font-weight:600;color:var(--green-accent)}" +
@@ -390,4 +412,21 @@ export const themeCss =
   ".pdf-download-btn-home{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 14px;border:none;border-radius:12px;background:linear-gradient(135deg,#C9A227,#E8C547);color:#0a0800;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap}" +
   "[data-theme=\"light\"] .pdf-download-btn-home{color:#1D1D1F}" +
   ".pdf-download-btn-dismiss{padding:6px 10px;border:none;border-radius:8px;background:transparent;color:var(--text-muted);font-size:10px;font-family:inherit;cursor:pointer;text-decoration:underline}" +
-  "@media (max-width:420px){.pdf-download-banner{width:calc(100% - 12px);bottom:calc(70px + env(safe-area-inset-bottom))}.pdf-download-banner-inner{flex-wrap:wrap}.pdf-download-banner-actions{flex-direction:row;width:100%;justify-content:stretch}.pdf-download-btn-home{flex:1}}";
+  "@media (max-width:420px){.pdf-download-banner{width:calc(100% - 12px);bottom:calc(70px + env(safe-area-inset-bottom))}.pdf-download-banner-inner{flex-wrap:wrap}.pdf-download-banner-actions{flex-direction:row;width:100%;justify-content:stretch}.pdf-download-btn-home{flex:1}}" +
+  "html[data-keyboard-open=\"1\"]{scroll-behavior:auto}" +
+  "html[data-keyboard-open=\"1\"] .bottom-nav{transform:translate(-50%,calc(100% + 28px));opacity:0;pointer-events:none;transition:transform .22s ease,opacity .22s ease}" +
+  "html[data-keyboard-open=\"1\"] .app-shell--quote{padding-bottom:max(6px,env(safe-area-inset-bottom))}" +
+  "html[data-keyboard-open=\"1\"] .app-shell--products{padding-bottom:max(6px,env(safe-area-inset-bottom))}" +
+  "html[data-keyboard-open=\"1\"] .main-card--quote{max-height:calc(var(--vvh,100dvh) - env(safe-area-inset-top) - 8px)!important}" +
+  "html[data-keyboard-open=\"1\"] .main-card--products{max-height:calc(var(--vvh,100dvh) - env(safe-area-inset-top) - 8px)!important}" +
+  "html[data-keyboard-open=\"1\"] .quote-page-footer{display:none}" +
+  "html[data-keyboard-open=\"1\"] .quote-package-card{padding:10px 12px}" +
+  "html[data-keyboard-open=\"1\"] .quote-package-load,html[data-keyboard-open=\"1\"] .quote-eco-ribbon{display:none}" +
+  "html[data-keyboard-open=\"1\"] .quote-install-benefit-text,html[data-keyboard-open=\"1\"] .quote-install-outside-hint{display:none}" +
+  "html[data-keyboard-open=\"1\"] .quote-install-benefit{padding:8px 10px}" +
+  "html[data-keyboard-open=\"1\"] .quote-delivery-card--compact .location-map-panel{display:none}" +
+  "html[data-keyboard-open=\"1\"] .quote-delivery-card--compact .quote-total-bar{margin-top:8px;padding-top:8px}" +
+  "html[data-keyboard-open=\"1\"] .client-modal-overlay{align-items:flex-start;padding-top:max(8px,env(safe-area-inset-top))}" +
+  "html[data-keyboard-open=\"1\"] .client-modal-panel{max-height:calc(var(--vvh,100dvh) - max(16px,env(safe-area-inset-top)) - 8px)}" +
+  "html[data-keyboard-open=\"1\"] .pdf-download-banner{display:none}" +
+  "@media (max-width:380px){.quote-page-header-title{font-size:1.05rem}.quote-package-name{font-size:1.05rem}.quote-package-price{font-size:1.35rem}.quote-delivery-card--compact{padding:9px 10px!important}.delivery-mode-btn{padding:7px 4px}.delivery-mode-btn-label{font-size:10px}.quote-zone-input{font-size:16px!important}}";

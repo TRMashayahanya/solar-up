@@ -4,6 +4,7 @@ import { PrtIco, UsrIco, PhIco, LocIco, NoteIco } from "./icons.js";
 import { getQuoteValidity } from "./quote.js";
 import { getDeliveryQuote } from "./delivery.js";
 import { LocationPinField } from "./LocationPinField.js";
+import { scrollFieldIntoView } from "./scroll.js";
 
 export class ErrorBoundary extends React.Component {
   constructor(props) {
@@ -106,7 +107,7 @@ function ModalDeliverySnippet({ deliveryOpts, productTotal }) {
   return React.createElement(
     "div",
     { className: "client-modal-delivery-snippet", role: "status" },
-    React.createElement("p", { className: "client-modal-delivery-snippet-label" }, "Delivery & total"),
+    React.createElement("p", { className: "client-modal-delivery-snippet-label" }, "Delivery and total"),
     React.createElement("p", { className: "client-modal-delivery-snippet-zone" }, zone),
     React.createElement("p", { className: "client-modal-delivery-snippet-total" }, total),
     React.createElement(
@@ -138,6 +139,10 @@ export function ClientModal(p) {
 
   function upd(k) {
     return (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  }
+
+  function focusScroll(e) {
+    scrollFieldIntoView(e.target);
   }
 
   const icon = (Ico, s) =>
@@ -177,20 +182,22 @@ export function ClientModal(p) {
         { className: "client-modal-sub" },
         customQuote
           ? "PDF downloads in the background — you can return home right away."
-          : "PDF downloads in the background · WhatsApp for payment · valid " + validity.days + " days"
+          : "PDF downloads in the background. WhatsApp for payment. Valid " + validity.days + " days."
       ),
       React.createElement("div", { className: "client-modal-label" }, icon(UsrIco), "Name *"),
       React.createElement("input", {
         className: "client-modal-input",
         value: form.name,
         onChange: upd("name"),
+        onFocus: focusScroll,
         required: true,
       }),
-      React.createElement("div", { className: "client-modal-label" }, icon(PhIco), "Phone / WhatsApp *"),
+      React.createElement("div", { className: "client-modal-label" }, icon(PhIco), "Phone or WhatsApp *"),
       React.createElement("input", {
         className: "client-modal-input",
         value: form.phone,
         onChange: upd("phone"),
+        onFocus: focusScroll,
         required: true,
       }),
       React.createElement("div", { className: "client-modal-label" }, icon(NoteIco), "Email *"),
@@ -199,9 +206,10 @@ export function ClientModal(p) {
         type: "email",
         value: form.email,
         onChange: upd("email"),
+        onFocus: focusScroll,
         required: true,
       }),
-      React.createElement("div", { className: "client-modal-label" }, icon(LocIco), "Area / address *"),
+      React.createElement("div", { className: "client-modal-label" }, icon(LocIco), "Area or address *"),
       React.createElement(LocationPinField, {
         id: "client-modal-address",
         value: form.address,
@@ -217,6 +225,7 @@ export function ClientModal(p) {
         className: "client-modal-input",
         value: form.notes,
         onChange: upd("notes"),
+        onFocus: focusScroll,
         rows: 2,
         style: { resize: "vertical", marginBottom: 12 },
       }),
@@ -253,7 +262,7 @@ export function ClientModal(p) {
               ? "Starting download…"
               : "Starting download…"
             : customQuote
-              ? "Download PDF & WhatsApp"
+              ? "Download PDF and open WhatsApp"
               : "Download PDF quote"
         )
       )

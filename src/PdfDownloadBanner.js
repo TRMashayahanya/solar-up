@@ -23,7 +23,7 @@ export function PdfDownloadBanner({ job, onHome, onDismiss }) {
       React.createElement(
         "div",
         { className: "pdf-download-banner-text" },
-        React.createElement("p", { className: "pdf-download-banner-title" }, error ? "Could not finish quote" : done ? "Quote ready" : "Your quote"),
+        React.createElement("p", { className: "pdf-download-banner-title" }, error ? "Could not finish your quote" : done ? "Quote ready" : "Your quote"),
         React.createElement("p", { className: "pdf-download-banner-msg" }, job.message)
       ),
       React.createElement(

@@ -1,8 +1,10 @@
 import {
   OUTSIDE_DEALER_ADVISORY,
   OUTSIDE_DELIVERY_PER_KM_USD,
+  OUTSIDE_DELIVERY_FREE_KM,
   HARARE_INSTALL_INCLUDED_NOTE,
   PACKAGE_PRICE_NOTE,
+  deliveryPricingLabel,
 } from "./delivery.js";
 import { environmentalImpact } from "./environment.js";
 
@@ -158,7 +160,7 @@ export function buildQuoteDocument(client, sz, appList, propLabel, deliveryQuote
       "</td><td class='c-sub'>$" +
       pkg.price.toLocaleString() +
       "</td></tr>" +
-      "<tr class='tr-tot'><td class='c-item' colspan='4'>Package total (Harare install incl.)</td><td class='c-sub'>$" +
+      "<tr class='tr-tot'><td class='c-item' colspan='4'>Package total (Harare install included)</td><td class='c-sub'>$" +
       sz.tot.toLocaleString() +
       "</td></tr>"
     : "<tr><td class='c-item'>Inverter</td><td class='c-spec'>" +
@@ -203,21 +205,22 @@ export function buildQuoteDocument(client, sz, appList, propLabel, deliveryQuote
     : dq.feePending
       ? "<tr><td class='c-item'>Delivery</td><td class='c-spec'>" +
         (dq.locationLabel || "Outside Harare") +
-        " — enter distance for $" +
+        " — enter area for $" +
         OUTSIDE_DELIVERY_PER_KM_USD +
-        "/km estimate.</td><td class='c-qty'>—</td><td class='c-unit'>TBD</td><td class='c-sub tbd'>TBD</td></tr>" +
+        "/km estimate (after " +
+        OUTSIDE_DELIVERY_FREE_KM +
+        " km free).</td><td class='c-qty'>—</td><td class='c-unit'>TBD</td><td class='c-sub tbd'>TBD</td></tr>" +
         "<tr class='tbl-advisory'><td class='c-spec' colspan='5'>" + OUTSIDE_DEALER_ADVISORY + "</td></tr>" +
         "<tr class='tr-tot'><td class='c-item' colspan='4'>Quotation total (package)</td><td class='c-sub'>$" +
         sz.tot.toLocaleString() +
         "</td></tr>"
       : dq.zone === "outside"
         ? "<tr><td class='c-item'>Delivery</td><td class='c-spec'>" +
-          dq.km +
-          " km × $" +
-          OUTSIDE_DELIVERY_PER_KM_USD +
-          "/km" +
+          deliveryPricingLabel(dq.km) +
           (dq.locationLabel ? " — " + dq.locationLabel : "") +
-          "</td><td class='c-qty'>1</td><td class='c-unit'>$" +
+          " (~" +
+          dq.km +
+          " km from Harare)</td><td class='c-qty'>1</td><td class='c-unit'>$" +
           dq.fee +
           "</td><td class='c-sub'>$" +
           dq.fee +
@@ -227,7 +230,7 @@ export function buildQuoteDocument(client, sz, appList, propLabel, deliveryQuote
           "</td></tr>"
         : "<tr><td class='c-item'>Installation</td><td class='c-spec'>Harare — " +
           HARARE_INSTALL_INCLUDED_NOTE +
-          "</td><td class='c-qty'>1</td><td class='c-unit'>Incl.</td><td class='c-sub'>$0</td></tr>" +
+          "</td><td class='c-qty'>1</td><td class='c-unit'>Included</td><td class='c-sub'>$0</td></tr>" +
           "<tr class='tr-tot'><td class='c-item' colspan='4'>Grand total (Harare)</td><td class='c-sub'>$" +
           grandTotal.toLocaleString() +
           "</td></tr>";
@@ -238,11 +241,11 @@ export function buildQuoteDocument(client, sz, appList, propLabel, deliveryQuote
     : "Free sizing · Hardware supply · Installation quoted on site";
   const priceSub = dq
     ? dq.feePending
-      ? "USD · Package · outside delivery TBD"
+      ? "USD · Package · outside delivery to be confirmed"
       : dq.zone === "outside"
         ? "USD · Package + $" + dq.fee + " delivery"
         : "USD · Harare install included"
-    : "USD · Package (Harare install incl.)";
+    : "USD · Package (Harare install included)";
 
   const body = wrapQuoteBody(
     "<div class='quote-inner'>" +
@@ -263,7 +266,7 @@ export function buildQuoteDocument(client, sz, appList, propLabel, deliveryQuote
     "</div><p class='conf'>Confidential — for " +
     (client.name || "named client") +
     " only. Official PDF from SolarApp; screenshots are not valid quotes.</p><div class='mv'>Free sizing service · Energi Tech</div></div></div>" +
-    "<div class='sec'><h3>Prepared For</h3><div class='cbox'>" +
+    "<div class='sec'><h3>Prepared for</h3><div class='cbox'>" +
     "<div class='cn'>" +
     (client.name || "Valued Customer") +
     "</div>" +
@@ -329,11 +332,11 @@ export function buildQuoteDocument(client, sz, appList, propLabel, deliveryQuote
     "W</strong><span>Panels</span></div>" +
     "<div class='hs'><strong>~" +
     sz.bk +
-    "h</strong><span>Backup est.</span></div>" +
+    "h</strong><span>Backup (est.)</span></div>" +
     "</div>" +
     buildEcoFootprintHtml(sz.dWh, sz.dailyGenWh) +
     "</div></div>" +
-    "<div class='sec'><h3>Package & pricing</h3>" +
+    "<div class='sec'><h3>Package and pricing</h3>" +
     quoteTableOpen() +
     productRows +
     deliveryRows +
@@ -348,14 +351,20 @@ export function buildQuoteDocument(client, sz, appList, propLabel, deliveryQuote
     " " +
     (dq
       ? dq.feePending
-        ? "Outside Harare delivery — $" + OUTSIDE_DELIVERY_PER_KM_USD + "/km once distance is confirmed."
-        : dq.zone === "outside"
-          ? "Includes $" + dq.fee + " delivery (" + dq.km + " km from Harare)."
-          : "Harare installation included."
+        ? "Outside delivery — $" +
+          OUTSIDE_DELIVERY_PER_KM_USD +
+          "/km after " +
+          OUTSIDE_DELIVERY_FREE_KM +
+          " km free."
+        : dq.zone === "outside" && dq.fee > 0
+          ? "Includes $" + dq.fee + " delivery (" + deliveryPricingLabel(dq.km) + ")."
+          : dq.km > 0
+            ? "Within " + OUTSIDE_DELIVERY_FREE_KM + " km (~" + dq.km + " km) — install included."
+            : "Harare installation included."
       : "Harare installation included.") +
-    " Contact 0773757018 on WhatsApp to pay and book install. Heating appliances (kettles, irons, microwaves) need a separate review — surge risk." +
+    " Contact 077 375 7018 on WhatsApp to pay and book install. Heating appliances (kettles, irons, microwaves) need a separate review because of surge risk." +
     "</div>" +
-    "<div class='footer'><div><div class='fb'>SolarApp</div><div class='fc'>Energi Tech · 0773757018 · Zimbabwe</div></div>" +
+    "<div class='footer'><div><div class='fb'>SolarApp</div><div class='fc'>Energi Tech · 077 375 7018 · Zimbabwe</div></div>" +
     "<span class='badge'>PDF Quote " +
     ref +
     "</span></div></div></div>"
@@ -402,7 +411,11 @@ function buildCustomQuoteDocument(client, sz, appList, propLabel) {
         refPkg.name +
         " ($" +
         refPkg.price.toLocaleString() +
-        ") — your load exceeds this design. Energi Tech will quote supply + Harare install (or $0.50/km outside Harare) after review.</td></tr>"
+        ") — your load exceeds this design. Energi Tech will quote supply + Harare install (or $" +
+        OUTSIDE_DELIVERY_PER_KM_USD +
+        "/km delivery after " +
+        OUTSIDE_DELIVERY_FREE_KM +
+        " km) after review.</td></tr>"
       : "") +
     "<tr class='tr-tot'><td class='c-item' colspan='4'>Custom quotation total</td><td class='c-sub' style='font-style:italic'>On request</td></tr>";
 
@@ -429,7 +442,7 @@ function buildCustomQuoteDocument(client, sz, appList, propLabel) {
     "</div><p class='conf'>Confidential — for " +
     (client.name || "named client") +
     " only. Official PDF from SolarApp; screenshots are not valid quotes.</p></div></div>" +
-    "<div class='sec'><h3>Prepared For</h3><div class='cbox'>" +
+    "<div class='sec'><h3>Prepared for</h3><div class='cbox'>" +
     "<div class='cn'>" +
     (client.name || "Valued Customer") +
     "</div>" +
@@ -461,7 +474,7 @@ function buildCustomQuoteDocument(client, sz, appList, propLabel) {
       : "") +
     "</div></div>" +
     "<div class='sec'><h3>Your load — custom system required</h3><div class='hero hero--custom'>" +
-    "<div class='hr'><div><div class='ht'>Exceeds largest standard package</div><div class='hn'>Custom solar system</div><div class='hn2'>10.2Kva is our largest off-the-shelf package — Energi Tech will size to your request.</div></div>" +
+    "<div class='hr'><div><div class='ht'>Exceeds largest standard package</div><div class='hn'>Custom solar system</div><div class='hn2'>10.2 kVA is our largest off-the-shelf package — Energi Tech will size to your request.</div></div>" +
     "<div><div class='hp hp--sm'>Custom quote</div><div class='hu'>USD · Priced after review</div></div></div>" +
     "<div class='hstats'>" +
     "<div class='hs'><strong>" +
@@ -493,7 +506,11 @@ function buildCustomQuoteDocument(client, sz, appList, propLabel) {
       : "") +
     "<div class='terms'>" +
     "• This is a <strong>custom quotation request</strong> — not a fixed package price.<br/>" +
-    "• Energi Tech will contact you with a tailored design, USD pricing, and installation (Harare included in package-style quotes; outside Harare at $0.50/km).<br/>" +
+    "• Energi Tech will contact you with a tailored design, USD pricing, and installation (Harare and within " +
+    OUTSIDE_DELIVERY_FREE_KM +
+    " km included; $" +
+    OUTSIDE_DELIVERY_PER_KM_USD +
+    "/km delivery beyond).<br/>" +
     "<strong>• Valid " +
     validity.days +
     " days</strong> (issued " +
@@ -504,7 +521,7 @@ function buildCustomQuoteDocument(client, sz, appList, propLabel) {
     "• Use the notes field for any special requests (phased install, existing panels, etc.).<br/>" +
     "• Based on appliances and hours you provided; site visit may be required for final quote." +
     "</div>" +
-    "<div class='footer'><div><div class='fb'>SolarApp</div><div class='fc'>Energi Tech · 0773757018 · Zimbabwe</div></div>" +
+    "<div class='footer'><div><div class='fb'>SolarApp</div><div class='fc'>Energi Tech · 077 375 7018 · Zimbabwe</div></div>" +
     "<span class='badge'>Custom " +
     ref +
     "</span></div></div></div>"
