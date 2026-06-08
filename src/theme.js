@@ -413,19 +413,40 @@ export const themeCss =
   "[data-theme=\"light\"] .pdf-download-btn-home{color:#1D1D1F}" +
   ".pdf-download-btn-dismiss{padding:6px 10px;border:none;border-radius:8px;background:transparent;color:var(--text-muted);font-size:10px;font-family:inherit;cursor:pointer;text-decoration:underline}" +
   "@media (max-width:420px){.pdf-download-banner{width:calc(100% - 12px);bottom:calc(70px + env(safe-area-inset-bottom))}.pdf-download-banner-inner{flex-wrap:wrap}.pdf-download-banner-actions{flex-direction:row;width:100%;justify-content:stretch}.pdf-download-btn-home{flex:1}}" +
+  ".quote-page .location-pin-wrap--fixed-suggest .location-suggest-list{position:fixed;top:var(--loc-suggest-top,auto);left:var(--loc-suggest-left,12px);width:var(--loc-suggest-width,calc(100% - 24px));max-width:calc(100vw - 24px);z-index:10060;border-radius:0 0 12px 12px;border-top:none;max-height:var(--loc-suggest-max-h,min(168px,calc(var(--vvh,100dvh) * 0.34)));overflow-y:auto;box-shadow:0 14px 36px rgba(0,0,0,.24);-webkit-overflow-scrolling:touch}" +
+  "html[data-loc-suggest-open=\"1\"] .quote-install-section .quote-total-bar{opacity:0;visibility:hidden;height:0;margin:0;padding:0;border:none;overflow:hidden;pointer-events:none}" +
+  "html[data-loc-suggest-open=\"1\"] .quote-page__scroll{scroll-padding-bottom:12px}" +
+  ".quote-page .location-pin-wrap--fixed-suggest .location-suggest-list--busy{position:fixed;top:var(--loc-suggest-top,auto);left:var(--loc-suggest-left,12px);width:var(--loc-suggest-width,calc(100% - 24px));z-index:10060}" +
+  ".quote-page .location-pin-hint{font-size:10px;line-height:1.4;color:var(--text-muted);margin:4px 0 0;padding:0 2px}" +
+  "html[data-quote-location-focus=\"1\"] .quote-page--compact .quote-package-card{display:none}" +
+  "html[data-quote-location-focus=\"1\"] .quote-page-header-ref{display:none}" +
+  "html[data-quote-location-focus=\"1\"] .quote-install-benefit{display:none}" +
+  "html[data-quote-location-focus=\"1\"] .quote-install-outside-hint{display:none}" +
+  "html[data-quote-location-focus=\"1\"] .quote-install-zone-toggle{display:none}" +
+  "html[data-quote-location-focus=\"1\"] .quote-install-section{flex:1;min-height:0;gap:8px;padding:10px 12px}" +
+  "html[data-quote-location-focus=\"1\"] .quote-page__scroll{scroll-padding-bottom:calc(52px + env(safe-area-inset-bottom,0px))}" +
+  "html[data-quote-location-focus=\"1\"] .quote-page .location-pin-hint{display:none}" +
   "html[data-keyboard-open=\"1\"]{scroll-behavior:auto}" +
   "html[data-keyboard-open=\"1\"] .bottom-nav{transform:translate(-50%,calc(100% + 28px));opacity:0;pointer-events:none;transition:transform .22s ease,opacity .22s ease}" +
-  "html[data-keyboard-open=\"1\"] .app-shell--quote{padding-bottom:max(6px,env(safe-area-inset-bottom))}" +
+  "html[data-keyboard-open=\"1\"] .app-shell--quote{padding-bottom:max(4px,env(safe-area-inset-bottom))}" +
   "html[data-keyboard-open=\"1\"] .app-shell--products{padding-bottom:max(6px,env(safe-area-inset-bottom))}" +
-  "html[data-keyboard-open=\"1\"] .main-card--quote{max-height:calc(var(--vvh,100dvh) - env(safe-area-inset-top) - 8px)!important}" +
+  "html[data-keyboard-open=\"1\"] .main-card--quote{max-height:calc(var(--vvh,100dvh) - env(safe-area-inset-top) - 4px)!important}" +
   "html[data-keyboard-open=\"1\"] .main-card--products{max-height:calc(var(--vvh,100dvh) - env(safe-area-inset-top) - 8px)!important}" +
   "html[data-keyboard-open=\"1\"] .quote-page-footer{display:none}" +
-  "html[data-keyboard-open=\"1\"] .quote-package-card{padding:10px 12px}" +
-  "html[data-keyboard-open=\"1\"] .quote-package-load,html[data-keyboard-open=\"1\"] .quote-eco-ribbon{display:none}" +
-  "html[data-keyboard-open=\"1\"] .quote-install-benefit-text,html[data-keyboard-open=\"1\"] .quote-install-outside-hint{display:none}" +
-  "html[data-keyboard-open=\"1\"] .quote-install-benefit{padding:8px 10px}" +
+  "html[data-keyboard-open=\"1\"] .quote-page-header{margin-bottom:0}" +
+  "html[data-keyboard-open=\"1\"] .quote-package-card{display:none}" +
+  "html[data-keyboard-open=\"1\"] .quote-install-benefit{display:none}" +
+  "html[data-keyboard-open=\"1\"] .quote-install-outside-hint{display:none}" +
+  "html[data-keyboard-open=\"1\"] .quote-install-zone-toggle{display:none}" +
+  "html[data-keyboard-open=\"1\"] .quote-page-header-ref{display:none}" +
+  "html[data-keyboard-open=\"1\"] .quote-page .location-pin-hint{display:none}" +
+  "html[data-keyboard-open=\"1\"] .quote-install-section{flex:1 1 auto;min-height:max(148px,calc(var(--vvh,100dvh) - 88px));justify-content:space-between}" +
+  "html[data-quote-location-focus=\"1\"] .quote-install-section{min-height:max(148px,calc(var(--vvh,100dvh) - 88px))}" +
+  "html[data-keyboard-open=\"1\"] .quote-install-section .location-field-stack{flex:0 0 auto}" +
+  "html[data-keyboard-open=\"1\"] .quote-install-section .quote-install-area-label{flex-shrink:0}" +
+  "html[data-keyboard-open=\"1\"] .quote-install-section .quote-total-bar{position:sticky;bottom:0;z-index:12;flex-shrink:0;margin-top:auto;padding:10px 0 2px;background:linear-gradient(180deg,transparent 0%,var(--card-bg) 32%);border-top:1px solid var(--border);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}" +
+  "html[data-quote-location-focus=\"1\"] .quote-install-section{justify-content:space-between}" +
   "html[data-keyboard-open=\"1\"] .quote-delivery-card--compact .location-map-panel{display:none}" +
-  "html[data-keyboard-open=\"1\"] .quote-delivery-card--compact .quote-total-bar{margin-top:8px;padding-top:8px}" +
   "html[data-keyboard-open=\"1\"] .client-modal-overlay{align-items:flex-start;padding-top:max(8px,env(safe-area-inset-top))}" +
   "html[data-keyboard-open=\"1\"] .client-modal-panel{max-height:calc(var(--vvh,100dvh) - max(16px,env(safe-area-inset-top)) - 8px)}" +
   "html[data-keyboard-open=\"1\"] .pdf-download-banner{display:none}" +

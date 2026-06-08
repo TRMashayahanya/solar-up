@@ -71,7 +71,7 @@ function locationHint(item, extra) {
       " km from Harare). Exact street may not be on the map — drag the pin on the map to refine."
     );
   }
-  if (item?.distanceKm > 0) return "~" + item.distanceKm + " km from Harare";
+  if (item?.distanceKm > 0) return formatLocationDistanceHint(item.distanceKm);
   return "Address set";
 }
 
@@ -86,6 +86,8 @@ export function LocationPinField({
   required,
   smart = true,
   showMap = false,
+  fixedSuggestions = false,
+  onFocusChange,
   inputClassName = "location-pin-input",
   wrapClassName = "location-pin-wrap",
 }) {
@@ -101,6 +103,56 @@ export function LocationPinField({
   const debounceRef = useRef(null);
   const listId = id ? id + "-suggestions" : "location-suggestions";
   const hintId = id ? id + "-hint" : undefined;
+
+  const syncSuggestDropdown = useCallback(() => {
+    if (!fixedSuggestions || !inputRef.current) return;
+    const rect = inputRef.current.getBoundingClientRect();
+    const root = document.documentElement;
+    const vv = window.visualViewport;
+    const visBottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
+    const totalBar = document.querySelector(".quote-install-section .quote-total-bar");
+    let ceiling = visBottom - 12;
+    if (totalBar) {
+      const tr = totalBar.getBoundingClientRect();
+      const ts = getComputedStyle(totalBar);
+      if (tr.height > 0 && ts.display !== "none" && ts.visibility !== "hidden" && ts.opacity !== "0") {
+        ceiling = Math.min(ceiling, tr.top - 6);
+      }
+    }
+    const maxH = Math.max(56, Math.min(168, ceiling - rect.bottom - 4));
+    root.style.setProperty("--loc-suggest-top", Math.round(rect.bottom) + "px");
+    root.style.setProperty("--loc-suggest-left", Math.round(rect.left) + "px");
+    root.style.setProperty("--loc-suggest-width", Math.round(rect.width) + "px");
+    root.style.setProperty("--loc-suggest-max-h", Math.round(maxH) + "px");
+  }, [fixedSuggestions]);
+
+  useEffect(() => {
+    if (!fixedSuggestions) return;
+    syncSuggestDropdown();
+    const vv = window.visualViewport;
+    if (!vv) return;
+    vv.addEventListener("resize", syncSuggestDropdown);
+    vv.addEventListener("scroll", syncSuggestDropdown);
+    window.addEventListener("resize", syncSuggestDropdown);
+    return () => {
+      vv.removeEventListener("resize", syncSuggestDropdown);
+      vv.removeEventListener("scroll", syncSuggestDropdown);
+      window.removeEventListener("resize", syncSuggestDropdown);
+      document.documentElement.style.removeProperty("--loc-suggest-top");
+      document.documentElement.style.removeProperty("--loc-suggest-left");
+      document.documentElement.style.removeProperty("--loc-suggest-width");
+      document.documentElement.style.removeProperty("--loc-suggest-max-h");
+      delete document.documentElement.dataset.locSuggestOpen;
+    };
+  }, [fixedSuggestions, syncSuggestDropdown, open, searching, value]);
+
+  useEffect(() => {
+    if (!fixedSuggestions) return;
+    const root = document.documentElement;
+    if (open || searching) root.dataset.locSuggestOpen = "1";
+    else delete root.dataset.locSuggestOpen;
+    return () => delete root.dataset.locSuggestOpen;
+  }, [fixedSuggestions, open, searching]);
 
   const handlePinDrop = useCallback(
     async (lat, lon) => {
@@ -180,8 +232,9 @@ export function LocationPinField({
       setSearching(false);
       setOpen(remote.length > 0);
       setActiveIdx(-1);
+      if (remote.length > 0) requestAnimationFrame(syncSuggestDropdown);
     },
-    [smart]
+    [smart, syncSuggestDropdown]
   );
 
   useEffect(() => {
@@ -200,7 +253,9 @@ export function LocationPinField({
   }
 
   function handleFocus() {
-    scrollFieldIntoView(inputRef.current);
+    onFocusChange?.(true);
+    syncSuggestDropdown();
+    scrollFieldIntoView(inputRef.current, { padding: 10, reserveBelow: fixedSuggestions ? 112 : 48 });
     if (!smart) return;
     if (suggestions.length > 0) setOpen(true);
     else if ((value || "").trim().length >= 2) runSearch(value);
@@ -228,7 +283,10 @@ export function LocationPinField({
   }
 
   async function handleBlur(e) {
-    setTimeout(() => setOpen(false), 200);
+    setTimeout(() => {
+      setOpen(false);
+      onFocusChange?.(false);
+    }, 200);
     if (onBlur) onBlur(e);
     await resolveTypedAddress(e.target.value);
   }
@@ -278,13 +336,27 @@ export function LocationPinField({
   }
 
   const showList = smart && open && suggestions.length > 0;
+  const showHint = hint && !(showList || searching);
+
+  useEffect(() => {
+    if (!showList && !searching) return;
+    syncSuggestDropdown();
+    requestAnimationFrame(() =>
+      scrollFieldIntoView(inputRef.current, { padding: 10, reserveBelow: fixedSuggestions ? 112 : 48 })
+    );
+  }, [showList, searching, fixedSuggestions, syncSuggestDropdown]);
 
   return React.createElement(
     "div",
     { className: "location-field-stack" },
     React.createElement(
       "div",
-      { className: wrapClassName + (smart ? " location-pin-wrap--smart" : "") },
+      {
+        className:
+          wrapClassName +
+          (smart ? " location-pin-wrap--smart" : "") +
+          (fixedSuggestions ? " location-pin-wrap--fixed-suggest" : ""),
+      },
       React.createElement("input", {
         ref: inputRef,
         id,
@@ -356,7 +428,7 @@ export function LocationPinField({
           )
         )
     ),
-    hint && React.createElement("p", { id: hintId, className: "location-pin-hint" }, hint),
+    showHint && React.createElement("p", { id: hintId, className: "location-pin-hint" }, hint),
     showMap &&
       React.createElement(
         "div",

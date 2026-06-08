@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useCallback } from "react";
 import { CARD } from "./tokens.js";
 import { LocationPinField } from "./LocationPinField.js";
 import { ShldIco } from "./icons.js";
@@ -51,12 +51,24 @@ function DeliveryModePicker({ opts, onChange, compact }) {
   );
 }
 
+function setQuoteLocationFocus(on) {
+  const root = document.documentElement;
+  if (on) root.dataset.quoteLocationFocus = "1";
+  else delete root.dataset.quoteLocationFocus;
+}
+
 /** Minimal quote-page flow — Harare install as benefit, optional area, simple zone toggle. */
 function QuoteDeliverySimple({ opts, onChange, productTotal, onLocationResolved }) {
   const quote = getDeliveryQuote({ ...opts, enabled: true });
   const withinFreeRadius = quote.km > 0 && quote.billableKm === 0;
   const isOutside = quote.zone === "outside";
   const grand = quoteGrandTotal(productTotal || 0, quote);
+
+  useEffect(() => () => setQuoteLocationFocus(false), []);
+
+  const onLocationFocus = useCallback((focused) => {
+    setQuoteLocationFocus(focused);
+  }, []);
 
   function setLocationLabel(text) {
     onChange({ ...opts, enabled: true, locationLabel: text });
@@ -152,8 +164,10 @@ function QuoteDeliverySimple({ opts, onChange, productTotal, onLocationResolved 
       value: opts.locationLabel || "",
       onChange: (e) => setLocationLabel(e.target.value),
       onLocated: resolveLocation,
+      onFocusChange: onLocationFocus,
       smart: true,
       showMap: false,
+      fixedSuggestions: true,
       placeholder: isOutside ? "e.g. Ruwa, Bulawayo, Mutare" : "e.g. Borrowdale (optional)",
       inputClassName: "quote-zone-input quote-zone-input--with-pin",
       wrapClassName: "location-pin-wrap",

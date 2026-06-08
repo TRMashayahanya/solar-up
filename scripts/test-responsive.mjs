@@ -9,7 +9,7 @@ import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "..");
-const BASE = process.env.SOLARAPP_URL || "http://localhost:5173/?v=66";
+const BASE = process.env.SOLARAPP_URL || "http://localhost:5173/?v=71";
 
 const VIEWPORTS = [
   { name: "iPhone SE", width: 375, height: 667 },
@@ -71,6 +71,9 @@ function staticAudit() {
     "quote-page__scroll",
     "--vvh",
     "data-keyboard-open",
+    "data-quote-location-focus",
+    "location-pin-wrap--fixed-suggest",
+    "data-loc-suggest-open",
   ];
   for (const token of required) {
     const hay = ui.includes(token) || theme.includes(token);
@@ -177,6 +180,7 @@ async function playwrightChecks() {
           await page.locator("#quote-delivery-location").focus();
           await page.evaluate(() => {
             document.documentElement.dataset.keyboardOpen = "1";
+            document.documentElement.dataset.quoteLocationFocus = "1";
             document.documentElement.style.setProperty("--vvh", Math.round(window.innerHeight * 0.52) + "px");
           });
           await page.waitForTimeout(200);
@@ -184,23 +188,38 @@ async function playwrightChecks() {
             const input = document.querySelector("#quote-delivery-location");
             const footer = document.querySelector(".quote-page-footer");
             const nav = document.querySelector(".bottom-nav");
+            const pkg = document.querySelector(".quote-package-card");
+            const benefit = document.querySelector(".quote-install-benefit");
+            const fixedSuggest = document.querySelector(".location-pin-wrap--fixed-suggest");
             const ir = input?.getBoundingClientRect();
             const vvh = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--vvh"), 10);
             const footerHidden =
               !footer || footer.offsetParent === null || getComputedStyle(footer).display === "none";
             const navHidden = nav && getComputedStyle(nav).opacity === "0";
+            const pkgHidden = !pkg || getComputedStyle(pkg).display === "none";
+            const benefitHidden = !benefit || getComputedStyle(benefit).display === "none";
             return {
               inputVisible: ir ? ir.top >= 0 && ir.bottom <= (vvh || window.innerHeight) + 2 : false,
               footerHidden,
               navHidden,
+              pkgHidden,
+              benefitHidden,
+              hasFixedSuggest: !!fixedSuggest,
             };
           });
           if (!kb.inputVisible) fail(`${vp.name} quote keyboard: delivery input not in visible area`);
           else ok(`${vp.name} quote keyboard input visible`);
           if (!kb.footerHidden) fail(`${vp.name} quote keyboard: footer should hide`);
           else ok(`${vp.name} quote keyboard footer hidden`);
+          if (!kb.pkgHidden) fail(`${vp.name} quote keyboard: package card should hide`);
+          else ok(`${vp.name} quote keyboard package hidden`);
+          if (!kb.benefitHidden) fail(`${vp.name} quote keyboard: benefit strip should hide`);
+          else ok(`${vp.name} quote keyboard benefit hidden`);
+          if (!kb.hasFixedSuggest) fail(`${vp.name} quote: fixed suggestion dropdown missing`);
+          else ok(`${vp.name} quote fixed suggestions`);
           await page.evaluate(() => {
             delete document.documentElement.dataset.keyboardOpen;
+            delete document.documentElement.dataset.quoteLocationFocus;
             document.documentElement.style.removeProperty("--vvh");
           });
         }
