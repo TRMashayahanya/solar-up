@@ -32,7 +32,8 @@ export function detectInstallPlatform(
   const isSafari =
     isIos && /Safari/i.test(ua) && !isIosBrowser && !inApp;
   const isChromium =
-    /Chrome|Chromium|Edg\//i.test(ua) && !/OPR\//i.test(ua) && !isIos;
+    (/Chrome|Chromium|Edg\//i.test(ua) && !/OPR\//i.test(ua) && !isIos) ||
+    /SamsungBrowser/i.test(ua);
   return { isIos, isAndroid, inApp, isChromium, isSafari, isIosBrowser, ua };
 }
 

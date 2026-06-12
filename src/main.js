@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 
 import { BUILD } from "./build.js";
 import { registerServiceWorker } from "./pwa.js";
+import { prewarmInstall } from "./install-flow.js";
 
 function showBootError(message, detail) {
   const root = document.getElementById("root");
@@ -39,13 +40,14 @@ async function boot() {
   }
 
   try {
+    registerServiceWorker();
+    prewarmInstall();
     import("./runtime-config.js").then((m) => m.getRuntimeConfig()).catch(() => {});
     import("./google-maps.js").then((m) => m.initGoogleMaps()).catch(() => {});
     const { default: App } = await import("./App.js?v=" + BUILD);
     const rootEl = document.getElementById("root");
     if (!rootEl) throw new Error("Missing #root element");
     createRoot(rootEl).render(React.createElement(App));
-    registerServiceWorker();
   } catch (err) {
     console.error(err);
     const msg = err.message || String(err);
