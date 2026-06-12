@@ -383,18 +383,18 @@ export default function App() {
     main = React.createElement(ProductsScreen, {
       selectedId: selectedPackageId,
       onSelectPackage: setSelectedPackageId,
-      deliveryOpts,
-      onDeliveryChange: setDeliveryOpts,
-      onLocationResolved: (address, meta) => {
-        setDeliveryOpts((o) => ({ ...o, ...applyAddressToDeliveryOpts(address, o, meta || {}) }));
-      },
       productTotal: productsProductTotal,
-      grandTotal: productsGrandTotal,
       onContinueToQuote: goPackageQuote,
       onStartSizing: () => {
         setNav(propType ? "size" : "home");
         scrollToTop();
       },
+      themeToggle: React.createElement(ThemeToggle, {
+        theme,
+        onToggle: () => setTheme((t) => toggleTheme(t)),
+        compact: true,
+        inline: true,
+      }),
     });
   } else if (nav === "size") {
     main = propType
@@ -439,8 +439,6 @@ export default function App() {
       grandTotal,
       setShowModal,
       reset,
-      marketingOptIn,
-      onMarketingOptInChange: setMarketingOptIn,
       themeToggle: React.createElement(ThemeToggle, {
         theme,
         onToggle: () => setTheme((t) => toggleTheme(t)),
@@ -480,7 +478,7 @@ export default function App() {
           width: "100%",
           maxWidth: "min(560px, 100%)",
           zIndex: 1,
-          overflow: nav === "size" || nav === "quote" ? "hidden" : "visible",
+          overflow: nav === "size" || nav === "quote" || nav === "products" ? "hidden" : "visible",
         },
       },
       nav !== "home" &&
@@ -491,10 +489,11 @@ export default function App() {
           className:
             (nav === "home" ? "home-main-inner" : "") +
             (nav === "size" ? " main-inner--sizer" : "") +
-            (nav === "quote" ? " main-inner--quote" : ""),
+            (nav === "quote" ? " main-inner--quote" : "") +
+            (nav === "products" ? " main-inner--products" : ""),
           style: {
             padding:
-              nav === "home" || nav === "size" || nav === "quote"
+              nav === "home" || nav === "size" || nav === "quote" || nav === "products"
                 ? undefined
                 : "clamp(20px, 5vw, 28px)",
           },
@@ -513,27 +512,6 @@ export default function App() {
             "div",
             { className: "sizer-page-header" },
             React.createElement(BrandSunMark, { size: 24, showLabel: true, centered: true }),
-            React.createElement(ThemeToggle, {
-              theme,
-              onToggle: () => setTheme((t) => toggleTheme(t)),
-              compact: true,
-              inline: true,
-            })
-          ),
-        nav === "products" &&
-          React.createElement(
-            "div",
-            { className: "products-page-header" },
-            React.createElement(
-              "div",
-              { className: "products-page-title-block" },
-              React.createElement("h1", { className: "products-page-title" }, "Packages"),
-              React.createElement(
-                "p",
-                { className: "products-page-sub" },
-                "Choose a package, set delivery, and open your quote"
-              )
-            ),
             React.createElement(ThemeToggle, {
               theme,
               onToggle: () => setTheme((t) => toggleTheme(t)),
@@ -583,10 +561,9 @@ export default function App() {
         onDeliveryChange: setDeliveryOpts,
         productTotal: sizing ? (isCustomQuote ? 0 : sizing.tot) : 0,
         customQuote: isCustomQuote,
-        initialAddress: deliveryOpts.locationLabel || "",
-        onAddressBlur: (address, meta) => {
-          setDeliveryOpts((o) => ({ ...o, ...applyAddressToDeliveryOpts(address, o, meta || {}) }));
-        },
+        locationLabel: deliveryOpts.locationLabel || "",
+        marketingOptIn,
+        onMarketingOptInChange: setMarketingOptIn,
       }),
     React.createElement(PdfDownloadBanner, {
       job: pdfJob,

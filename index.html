@@ -39,25 +39,25 @@
         gap: 14px;
         padding: 24px;
       }
-      .boot-mark {
-        font-family: Georgia, "Times New Roman", serif;
-        font-size: 1.75rem;
-        font-weight: 700;
-        background: linear-gradient(135deg, #c9a227, #e8c547);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-      }
-      .boot-sub { font-size: 12px; color: rgba(255, 255, 255, 0.45); margin: 0; }
+      .boot-sub { font-size: 12px; color: rgba(255, 255, 255, 0.45); margin: 0; letter-spacing: 0.04em; }
       html[data-theme="light"] .boot-sub { color: rgba(18, 24, 22, 0.52); }
-      .boot-sun {
+      .boot-sun,
+      .home-brand-sun,
+      .brand-header-sun .home-brand-sun {
         display: inline-flex;
         animation: bootSunSpin 20s linear infinite;
         filter: drop-shadow(0 0 16px rgba(232, 197, 71, 0.45));
       }
-      .boot-sun svg { display: block; }
+      .home-brand-sun { filter: drop-shadow(0 0 14px rgba(232, 197, 71, 0.4)); }
+      .boot-sun svg,
+      .home-brand-sun svg { display: block; }
+      .boot-sun svg { width: 72px; height: 72px; }
       @keyframes bootSunSpin { to { transform: rotate(360deg); } }
-      @media (prefers-reduced-motion: reduce) { .boot-sun { animation: none; } }
+      @media (prefers-reduced-motion: reduce) {
+        .boot-sun,
+        .home-brand-sun,
+        .brand-header-sun .home-brand-sun { animation: none; }
+      }
     </style>
     <script>
       if ("serviceWorker" in navigator) {
@@ -76,7 +76,6 @@
   <body>
     <div id="root">
       <div class="boot" role="status" aria-label="Loading SolarApp">
-        <div class="boot-mark">SolarApp</div>
         <span class="boot-sun" aria-hidden="true">
           <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#E8C547" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="12" cy="12" r="4.5"/>
@@ -86,6 +85,6 @@
         <p class="boot-sub">Energi Tech · Zimbabwe</p>
       </div>
     </div>
-    <script type="module" src="./src/main.js?v=71"></script>
+    <script type="module" src="./src/main.js?v=108"></script>
   </body>
 </html>

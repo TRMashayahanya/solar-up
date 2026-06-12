@@ -94,6 +94,12 @@ await case_("index.html PWA meta", async () => {
   assert(html.includes('register("/sw.js"'), "early sw register");
 });
 
+await case_("ios install guide uses rotating sun not static PNG", async () => {
+  const guide = fs.readFileSync(path.join(ROOT, "src", "ios-install-guide.js"), "utf8");
+  assert(!guide.includes("apple-touch-icon.png"), "no static install preview icon");
+  assert(guide.includes("home-brand-sun"), "rotating sun preview");
+});
+
 await case_("sw.js has fetch handler", async () => {
   const sw = fs.readFileSync(path.join(ROOT, "sw.js"), "utf8");
   assert(sw.includes('addEventListener("fetch"'), "fetch handler");

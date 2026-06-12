@@ -1,6 +1,6 @@
 import React from "react";
-
-const ICON = "/icons/apple-touch-icon.png?v=sun4";
+import { G } from "./tokens.js";
+import { SunIco } from "./icons.js";
 
 /** Visual Add to Home Screen guide for iPhone, iPad, and iOS browsers. */
 export function IosInstallGuide({ variant, onOpenSafari }) {
@@ -11,19 +11,15 @@ export function IosInstallGuide({ variant, onOpenSafari }) {
     { className: "ios-install-guide" },
     React.createElement(
       "div",
-      { className: "ios-install-preview" },
-      React.createElement("img", {
-        src: ICON,
-        alt: "",
-        width: 56,
-        height: 56,
-        className: "ios-install-preview-icon",
-      }),
+      { className: "ios-install-preview ios-install-preview--sun" },
       React.createElement(
-        "div",
-        { className: "ios-install-preview-text" },
-        React.createElement("p", { className: "ios-install-preview-name" }, "SolarApp"),
-        React.createElement("p", { className: "ios-install-preview-sub" }, "Gold sun · Energi Tech")
+        "span",
+        { className: "ios-install-preview-icon", "aria-hidden": true },
+        React.createElement(
+          "span",
+          { className: "home-brand-sun" },
+          React.createElement(SunIco, { s: 52, c: G })
+        )
       )
     ),
     needsSafari &&

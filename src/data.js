@@ -230,7 +230,7 @@ export function productWhatsAppMessage(brand, name, price, category, catalogTab)
       name +
       " (" +
       usd(price) +
-      ", Harare install included). Available?"
+      ", Harare installation included). Available?"
     );
   }
   return (
@@ -255,7 +255,7 @@ export function quoteWhatsAppMessage(sizing, propLabel, deliveryQuote) {
     (dq?.feePending ? " (package only)" : " total") +
     ". ";
   if (dq?.zone === "harare" || !dq) {
-    msg += "Harare install included in package. ";
+    msg += "Harare installation included in package. ";
   } else if (dq.feePending) {
     msg +=
       "Outside Harare" +
@@ -340,10 +340,10 @@ export function paymentAssistWhatsAppMessage(client, sizing, propLabel, delivery
           " km billable)"
       );
     } else {
-      lines.push("Within " + OUTSIDE_DELIVERY_FREE_KM + " km — install included.");
+      lines.push("Within " + OUTSIDE_DELIVERY_FREE_KM + " km — installation included.");
     }
   } else if (!customQuote) {
-    lines.push("Harare install included on package.");
+    lines.push("Harare installation included on package.");
   }
 
   if (notes) lines.push("Notes: " + notes);

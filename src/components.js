@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from "react";
 import { W4, ci } from "./tokens.js";
-import { PrtIco, UsrIco, PhIco, LocIco, NoteIco } from "./icons.js";
+import { PrtIco, UsrIco, PhIco, NoteIco } from "./icons.js";
 import { getQuoteValidity } from "./quote.js";
-import { getDeliveryQuote } from "./delivery.js";
-import { LocationPinField } from "./LocationPinField.js";
+import { getDeliveryQuote, OUTSIDE_DELIVERY_FREE_KM, isWithinFreeDeliveryRadius } from "./delivery.js";
+import { BrandHeaderSun } from "./ui.js";
 import { scrollFieldIntoView } from "./scroll.js";
 
 export class ErrorBoundary extends React.Component {
@@ -88,33 +88,38 @@ function validLead(form) {
   return (
     (form.name || "").trim().length >= 2 &&
     (form.phone || "").trim().length >= 8 &&
-    (form.email || "").trim().includes("@") &&
-    (form.address || "").trim().length >= 3
+    (form.email || "").trim().includes("@")
   );
 }
 
-function ModalDeliverySnippet({ deliveryOpts, productTotal }) {
+function ModalDeliverySnippet({ deliveryOpts, productTotal, locationLabel }) {
   const quote = getDeliveryQuote({ ...deliveryOpts, enabled: true });
   const grand = (productTotal || 0) + (quote.feePending ? 0 : quote.fee);
-  const zone =
-    quote.zone === "outside"
-      ? "Outside Harare" + (quote.km ? " · " + quote.km + " km" : "")
-      : "Harare · install included";
-  const total = quote.feePending
-    ? "$" + (productTotal || 0).toLocaleString() + " + delivery (enter km on quote)"
-    : "$" + grand.toLocaleString();
+  const loc = (locationLabel || quote.locationLabel || "").trim();
+  const qualified =
+    !!loc &&
+    quote.fee <= 0 &&
+    (quote.km > 0 ? isWithinFreeDeliveryRadius(quote.km) : quote.zone !== "outside");
+  const zone = loc
+    ? quote.km > 0
+      ? quote.zone === "outside"
+        ? loc + " · delivery $" + (quote.fee || 0).toLocaleString() + " for installation"
+        : loc + " · qualified · free installation included"
+      : loc + " · within " + OUTSIDE_DELIVERY_FREE_KM + " km · free installation"
+    : "Installation area not set — go back and add your suburb on the quote screen";
 
   return React.createElement(
     "div",
-    { className: "client-modal-delivery-snippet", role: "status" },
-    React.createElement("p", { className: "client-modal-delivery-snippet-label" }, "Delivery and total"),
+    {
+      className:
+        "client-modal-delivery-snippet" + (qualified && loc ? " client-modal-delivery-snippet--qualified" : ""),
+      role: "status",
+    },
+    React.createElement("p", { className: "client-modal-delivery-snippet-label" }, "Installation area"),
     React.createElement("p", { className: "client-modal-delivery-snippet-zone" }, zone),
-    React.createElement("p", { className: "client-modal-delivery-snippet-total" }, total),
-    React.createElement(
-      "p",
-      { className: "client-modal-delivery-snippet-hint" },
-      "Change delivery zone on the quote screen before opening this form."
-    )
+    !productTotal
+      ? null
+      : React.createElement("p", { className: "client-modal-delivery-snippet-total" }, "$" + grand.toLocaleString())
   );
 }
 
@@ -126,13 +131,14 @@ export function ClientModal(p) {
   const customQuote = !!p.customQuote;
   const deliveryOpts = p.deliveryOpts || { enabled: false, zone: "harare" };
   const productTotal = p.productTotal || 0;
-  const onAddressBlur = p.onAddressBlur;
+  const locationLabel = String(p.locationLabel || deliveryOpts.locationLabel || "").trim();
+  const marketingOptIn = !!p.marketingOptIn;
+  const onMarketingOptInChange = p.onMarketingOptInChange;
   const validity = getQuoteValidity();
   const [form, setForm] = useState({
     name: "",
     phone: "",
     email: "",
-    address: String(p.initialAddress || "").trim(),
     notes: "",
   });
   const ok = validLead(form);
@@ -143,6 +149,11 @@ export function ClientModal(p) {
 
   function focusScroll(e) {
     scrollFieldIntoView(e.target);
+  }
+
+  function submit() {
+    if (!ok || busy) return;
+    onDone({ ...form, address: locationLabel });
   }
 
   const icon = (Ico, s) =>
@@ -161,11 +172,7 @@ export function ClientModal(p) {
       React.createElement(
         "div",
         { className: "client-modal-brand" },
-        React.createElement(
-          "span",
-          { className: "quote-gold-icon" },
-          React.createElement(PrtIco, { s: 18, c: "currentColor" })
-        ),
+        React.createElement(BrandHeaderSun, { className: "client-modal-brand-sun" }),
         React.createElement(
           "div",
           null,
@@ -173,16 +180,14 @@ export function ClientModal(p) {
           React.createElement(
             "h3",
             { id: "client-modal-title", className: "client-modal-title" },
-            customQuote ? "Get your custom quote" : "Secure your package"
+            customQuote ? "Get your custom quote" : "Get your PDF quote"
           )
         )
       ),
       React.createElement(
         "p",
         { className: "client-modal-sub" },
-        customQuote
-          ? "PDF downloads in the background — you can return home right away."
-          : "PDF downloads in the background. WhatsApp for payment. Valid " + validity.days + " days."
+        "Your details for the official PDF. Valid " + validity.days + " days."
       ),
       React.createElement("div", { className: "client-modal-label" }, icon(UsrIco), "Name *"),
       React.createElement("input", {
@@ -209,18 +214,13 @@ export function ClientModal(p) {
         onFocus: focusScroll,
         required: true,
       }),
-      React.createElement("div", { className: "client-modal-label" }, icon(LocIco), "Area or address *"),
-      React.createElement(LocationPinField, {
-        id: "client-modal-address",
-        value: form.address,
-        onChange: upd("address"),
-        onLocated: (address, meta) => onAddressBlur && onAddressBlur(address, meta),
-        smart: true,
-        required: true,
-        inputClassName: "client-modal-input client-modal-input--with-pin",
-        wrapClassName: "location-pin-wrap client-modal-address-wrap",
-      }),
-      React.createElement("div", { className: "client-modal-label" }, icon(NoteIco), "Notes"),
+      !customQuote &&
+        React.createElement(ModalDeliverySnippet, {
+          deliveryOpts,
+          productTotal,
+          locationLabel,
+        }),
+      React.createElement("div", { className: "client-modal-label" }, icon(NoteIco), "Notes (optional)"),
       React.createElement("textarea", {
         className: "client-modal-input",
         value: form.notes,
@@ -229,12 +229,21 @@ export function ClientModal(p) {
         rows: 2,
         style: { resize: "vertical", marginBottom: 12 },
       }),
-      !customQuote &&
-        React.createElement(ModalDeliverySnippet, {
-          deliveryOpts,
-          productTotal,
-        }),
       err && React.createElement("p", { className: "client-modal-error" }, err),
+      React.createElement(
+        "label",
+        { className: "quote-marketing-opt-in client-modal-marketing" },
+        React.createElement("input", {
+          type: "checkbox",
+          checked: marketingOptIn,
+          onChange: (e) => onMarketingOptInChange && onMarketingOptInChange(e.target.checked),
+        }),
+        React.createElement(
+          "span",
+          { className: "quote-marketing-opt-in-label" },
+          "Email me offers and updates"
+        )
+      ),
       React.createElement(
         "div",
         { className: "client-modal-actions" },
@@ -249,7 +258,7 @@ export function ClientModal(p) {
             type: "button",
             className:
               "client-modal-btn-primary " + (ok && !busy ? "client-modal-btn-primary--ready" : "client-modal-btn-primary--idle"),
-            onClick: () => ok && onDone(form),
+            onClick: submit,
             disabled: !ok || busy,
           },
           React.createElement(

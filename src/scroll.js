@@ -3,7 +3,7 @@ export function scrollToTop() {
   window.scrollTo({ top: 0, behavior: "smooth" });
   const main = document.querySelector("main");
   if (main) main.scrollTop = 0;
-  const quoteScroll = document.querySelector(".quote-page__scroll");
+  const quoteScroll = document.querySelector(".quote-page__stage") || document.querySelector(".quote-page__scroll");
   if (quoteScroll) quoteScroll.scrollTop = 0;
 }
 
@@ -24,6 +24,7 @@ export function scrollFieldIntoView(el, { padding = 12, reserveBelow = 0 } = {})
   if (!el || typeof el.getBoundingClientRect !== "function") return;
 
   const scrollRoot =
+    el.closest(".quote-page__stage") ||
     el.closest(".quote-page__scroll") ||
     el.closest(".main-card--products") ||
     el.closest(".client-modal-panel") ||

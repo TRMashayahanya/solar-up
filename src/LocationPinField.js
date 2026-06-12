@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
-import { MapPinIco } from "./icons.js";
+import { MapPinIco, SearchIco } from "./icons.js";
 import { locateAddress, searchPlaces, reverseGeocode, geocodePlace, isWithinZimbabwe } from "./geo.js";
-import { localPlaceSuggestions, formatLocationDistanceHint, formatSuggestionKmLabel } from "./delivery.js";
+import { localPlaceSuggestions, formatLocationDistanceHint, formatSuggestionKmLabel, isWithinFreeDeliveryRadius } from "./delivery.js";
 import { ZIMBABWE_MAP_CENTER, roadKmFromHarare } from "./geo-distance.js";
 import {
   initGoogleMaps,
@@ -65,14 +65,32 @@ function useMapPreview(coords, useGoogle, enabled, onPinDrop) {
 function locationHint(item, extra) {
   if (extra) return extra;
   if (item?.precision === "locality") {
-    return (
-      "Area found (~" +
-      (item.distanceKm || 0) +
-      " km from Harare). Exact street may not be on the map — drag the pin on the map to refine."
-    );
+    return "Area selected — tap GPS or refine if needed.";
   }
   if (item?.distanceKm > 0) return formatLocationDistanceHint(item.distanceKm);
-  return "Address set";
+  return "Location confirmed";
+}
+
+function suggestInstallMeta(item) {
+  const km = Number(item?.distanceKm) || 0;
+  if (km <= 0) return { text: "Zimbabwe", tone: "neutral" };
+  if (isWithinFreeDeliveryRadius(km)) return { text: "Free installation included", tone: "included" };
+  return { text: "Delivery fee applies", tone: "delivery" };
+}
+
+function splitSuggestLabel(label) {
+  const parts = String(label || "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  if (parts.length <= 1) return { primary: label || "", secondary: null };
+  return { primary: parts[0], secondary: parts.slice(1).join(", ") };
+}
+
+function isSameLocation(a, b) {
+  const x = String(a || "").trim().toLowerCase();
+  const y = String(b || "").trim().toLowerCase();
+  return x.length > 2 && y.length > 2 && (x === y || x.startsWith(y) || y.startsWith(x));
 }
 
 /** Address + GPS pin + search + map (Zimbabwe). */
@@ -87,7 +105,14 @@ export function LocationPinField({
   smart = true,
   showMap = false,
   fixedSuggestions = false,
+  premiumSuggestions = false,
+  minimalSuggestions = false,
+  initialSuggestions = null,
+  suggestListTitle = "Suggested areas",
+  suggestInitialTitle = "Popular installation areas",
   onFocusChange,
+  onSuggestOpenChange,
+  ariaLabel,
   inputClassName = "location-pin-input",
   wrapClassName = "location-pin-wrap",
 }) {
@@ -97,6 +122,8 @@ export function LocationPinField({
   const [suggestions, setSuggestions] = useState([]);
   const [searching, setSearching] = useState(false);
   const [activeIdx, setActiveIdx] = useState(-1);
+  const [pickedFlash, setPickedFlash] = useState(false);
+  const [showingInitial, setShowingInitial] = useState(false);
   const [coords, setCoords] = useState(null);
   const [googleReady, setGoogleReady] = useState(false);
   const inputRef = useRef(null);
@@ -110,7 +137,10 @@ export function LocationPinField({
     const root = document.documentElement;
     const vv = window.visualViewport;
     const visBottom = vv ? vv.offsetTop + vv.height : window.innerHeight;
-    const totalBar = document.querySelector(".quote-install-section .quote-total-bar");
+    const totalBar =
+      document.querySelector(".quote-checkout-dock") ||
+      document.querySelector(".quote-checkout-bar") ||
+      document.querySelector(".quote-install-section .quote-total-bar");
     let ceiling = visBottom - 12;
     if (totalBar) {
       const tr = totalBar.getBoundingClientRect();
@@ -119,12 +149,13 @@ export function LocationPinField({
         ceiling = Math.min(ceiling, tr.top - 6);
       }
     }
-    const maxH = Math.max(56, Math.min(168, ceiling - rect.bottom - 4));
+    const cap = minimalSuggestions ? 200 : premiumSuggestions ? 280 : 168;
+    const maxH = Math.max(56, Math.min(cap, ceiling - rect.bottom - 2));
     root.style.setProperty("--loc-suggest-top", Math.round(rect.bottom) + "px");
     root.style.setProperty("--loc-suggest-left", Math.round(rect.left) + "px");
     root.style.setProperty("--loc-suggest-width", Math.round(rect.width) + "px");
     root.style.setProperty("--loc-suggest-max-h", Math.round(maxH) + "px");
-  }, [fixedSuggestions]);
+  }, [fixedSuggestions, premiumSuggestions, minimalSuggestions]);
 
   useEffect(() => {
     if (!fixedSuggestions) return;
@@ -195,6 +226,7 @@ export function LocationPinField({
       if (!item) return;
       setOpen(false);
       setSuggestions([]);
+      setShowingInitial(false);
       if (item.lat != null && item.lon != null) {
         setCoords({ lat: item.lat, lon: item.lon });
       }
@@ -208,6 +240,8 @@ export function LocationPinField({
         });
       }
       setHint(locationHint(item, hintExtra));
+      setPickedFlash(true);
+      window.setTimeout(() => setPickedFlash(false), 520);
     },
     [onChange, onLocated]
   );
@@ -215,27 +249,55 @@ export function LocationPinField({
   const runSearch = useCallback(
     async (q) => {
       if (!smart || q.trim().length < 2) {
+        if (
+          !minimalSuggestions &&
+          premiumSuggestions &&
+          initialSuggestions?.length &&
+          q.trim().length === 0
+        ) {
+          setSuggestions(initialSuggestions);
+          setShowingInitial(true);
+          setSearching(false);
+          setOpen(true);
+          setActiveIdx(-1);
+          requestAnimationFrame(syncSuggestDropdown);
+          return;
+        }
         setSuggestions([]);
+        setShowingInitial(false);
         setSearching(false);
         setOpen(false);
         return;
       }
-      setSearching(true);
-      const local = localPlaceSuggestions(q, { limit: 4 });
+      setShowingInitial(false);
+      if (!minimalSuggestions) setSearching(true);
+      const limit = minimalSuggestions ? 5 : 10;
+      const local = localPlaceSuggestions(q, { limit: minimalSuggestions ? 5 : 4 });
       let remote = [];
       try {
-        remote = await searchPlaces(q, { limit: 10, localFirst: local });
+        remote = await searchPlaces(q, { limit, localFirst: local });
       } catch {
         remote = local;
       }
-      setSuggestions(remote);
+      const trimmed = minimalSuggestions ? remote.slice(0, 5) : remote;
+      setSuggestions(trimmed);
       setSearching(false);
-      setOpen(remote.length > 0);
+      setOpen(trimmed.length > 0);
       setActiveIdx(-1);
-      if (remote.length > 0) requestAnimationFrame(syncSuggestDropdown);
+      if (trimmed.length > 0) requestAnimationFrame(syncSuggestDropdown);
     },
-    [smart, syncSuggestDropdown]
+    [smart, syncSuggestDropdown, premiumSuggestions, minimalSuggestions, initialSuggestions]
   );
+
+  const openInitialSuggestions = useCallback(() => {
+    if (!initialSuggestions?.length) return;
+    setSuggestions(initialSuggestions);
+    setShowingInitial(true);
+    setSearching(false);
+    setOpen(true);
+    setActiveIdx(-1);
+    requestAnimationFrame(syncSuggestDropdown);
+  }, [initialSuggestions, syncSuggestDropdown]);
 
   useEffect(() => {
     return () => {
@@ -255,10 +317,24 @@ export function LocationPinField({
   function handleFocus() {
     onFocusChange?.(true);
     syncSuggestDropdown();
-    scrollFieldIntoView(inputRef.current, { padding: 10, reserveBelow: fixedSuggestions ? 112 : 48 });
+    if (!minimalSuggestions) {
+      scrollFieldIntoView(inputRef.current, { padding: 10, reserveBelow: fixedSuggestions ? 112 : 48 });
+    }
     if (!smart) return;
+    const q = (value || "").trim();
+    if (minimalSuggestions) {
+      if (q.length >= 2) {
+        if (suggestions.length > 0) setOpen(true);
+        else runSearch(value);
+      }
+      return;
+    }
+    if (q.length < 2 && initialSuggestions?.length) {
+      openInitialSuggestions();
+      return;
+    }
     if (suggestions.length > 0) setOpen(true);
-    else if ((value || "").trim().length >= 2) runSearch(value);
+    else if (q.length >= 2) runSearch(value);
   }
 
   async function resolveTypedAddress(address) {
@@ -288,6 +364,7 @@ export function LocationPinField({
       onFocusChange?.(false);
     }, 200);
     if (onBlur) onBlur(e);
+    if (minimalSuggestions) return;
     await resolveTypedAddress(e.target.value);
   }
 
@@ -336,27 +413,59 @@ export function LocationPinField({
   }
 
   const showList = smart && open && suggestions.length > 0;
-  const showHint = hint && !(showList || searching);
+  const showHint = hint && !(showList || (searching && !minimalSuggestions));
+  const suggestOpen = smart && showList;
+  const showBackdrop = premiumSuggestions && fixedSuggestions && suggestOpen && !minimalSuggestions;
+
+  useEffect(() => {
+    onSuggestOpenChange?.(suggestOpen);
+  }, [suggestOpen, onSuggestOpenChange]);
 
   useEffect(() => {
     if (!showList && !searching) return;
     syncSuggestDropdown();
-    requestAnimationFrame(() =>
-      scrollFieldIntoView(inputRef.current, { padding: 10, reserveBelow: fixedSuggestions ? 112 : 48 })
-    );
-  }, [showList, searching, fixedSuggestions, syncSuggestDropdown]);
+    if (!minimalSuggestions) {
+      requestAnimationFrame(() =>
+        scrollFieldIntoView(inputRef.current, { padding: 10, reserveBelow: fixedSuggestions ? 112 : 48 })
+      );
+    }
+  }, [showList, searching, fixedSuggestions, minimalSuggestions, syncSuggestDropdown]);
 
   return React.createElement(
     "div",
-    { className: "location-field-stack" },
+    {
+      className:
+        "location-field-stack" +
+        (premiumSuggestions || minimalSuggestions ? " location-field-stack--premium" : ""),
+    },
+    showBackdrop &&
+      React.createElement("div", {
+        className: "location-suggest-backdrop location-suggest-backdrop--interactive",
+        "aria-hidden": true,
+        onClick: () => {
+          setOpen(false);
+          setShowingInitial(false);
+          inputRef.current?.blur();
+        },
+      }),
     React.createElement(
       "div",
       {
         className:
           wrapClassName +
           (smart ? " location-pin-wrap--smart" : "") +
-          (fixedSuggestions ? " location-pin-wrap--fixed-suggest" : ""),
+          (fixedSuggestions ? " location-pin-wrap--fixed-suggest" : "") +
+          (premiumSuggestions ? " location-pin-wrap--premium" : "") +
+          (minimalSuggestions ? " location-pin-wrap--minimal" : "") +
+          (suggestOpen && !minimalSuggestions ? " location-pin-wrap--open" : "") +
+          (pickedFlash ? " location-pin-wrap--picked" : ""),
       },
+      (premiumSuggestions || minimalSuggestions) &&
+        React.createElement(
+          "span",
+          { className: "location-search-icon", "aria-hidden": true },
+          React.createElement(SearchIco, { s: 15, c: "currentColor" })
+        ),
       React.createElement("input", {
         ref: inputRef,
         id,
@@ -369,6 +478,7 @@ export function LocationPinField({
         required,
         placeholder,
         autoComplete: "street-address",
+        "aria-label": ariaLabel || placeholder,
         role: smart ? "combobox" : undefined,
         "aria-expanded": showList,
         "aria-controls": showList ? listId : undefined,
@@ -381,51 +491,144 @@ export function LocationPinField({
           className: "location-map-pin" + (busy ? " is-busy" : ""),
           onClick: useMapPin,
           disabled: busy,
-          title: "Use my GPS location",
-          "aria-label": "Use my GPS location in Zimbabwe",
+          title: "Use GPS for installation area",
+          "aria-label": "Use GPS for installation area in Zimbabwe",
         },
         busy
           ? React.createElement("span", { className: "location-map-pin-spinner", "aria-hidden": true })
-          : React.createElement(MapPinIco, { s: 18, c: "currentColor" })
+          : premiumSuggestions || minimalSuggestions
+            ? React.createElement(
+                React.Fragment,
+                null,
+                React.createElement(MapPinIco, { s: 16, c: "currentColor" }),
+                React.createElement("span", { className: "location-map-pin-label" }, "GPS")
+              )
+            : React.createElement(MapPinIco, { s: 18, c: "currentColor" })
       ),
       searching &&
+        !minimalSuggestions &&
         React.createElement(
           "ul",
-          { className: "location-suggest-list location-suggest-list--busy", role: "status" },
-          React.createElement("li", { className: "location-suggest-item location-suggest-item--muted" }, "Searching Zimbabwe…")
+          {
+            className:
+              "location-suggest-list location-suggest-list--busy" +
+              (premiumSuggestions ? " location-suggest-list--premium" : ""),
+            role: "status",
+          },
+          React.createElement(
+            "li",
+            { className: "location-suggest-item location-suggest-item--muted location-suggest-item--loading" },
+            React.createElement("span", { className: "location-suggest-loading-dot", "aria-hidden": true }),
+            "Searching areas…"
+          )
         ),
       showList &&
         React.createElement(
           "ul",
-          { id: listId, className: "location-suggest-list", role: "listbox" },
-          suggestions.map((item, i) =>
+          {
+            id: listId,
+            className:
+              "location-suggest-list" +
+              (minimalSuggestions ? " location-suggest-list--minimal" : "") +
+              (premiumSuggestions ? " location-suggest-list--premium" : ""),
+            role: "listbox",
+          },
+          !minimalSuggestions &&
+            premiumSuggestions &&
             React.createElement(
               "li",
-              { key: (item.placeId || item.label) + "-" + i, role: "presentation" },
+              { className: "location-suggest-list-head", "aria-hidden": true },
+              showingInitial ? suggestInitialTitle : suggestListTitle
+            ),
+          suggestions.map((item, i) => {
+            const meta = suggestInstallMeta(item);
+            const parts = splitSuggestLabel(item.label);
+            const picked = isSameLocation(value, item.label);
+            const nameLabel = minimalSuggestions ? parts.primary : item.label;
+            return React.createElement(
+              "li",
+              {
+                key: (item.placeId || item.label) + "-" + i,
+                role: "presentation",
+                className: premiumSuggestions && !minimalSuggestions ? "location-suggest-row" : undefined,
+                style:
+                  premiumSuggestions && !minimalSuggestions ? { animationDelay: i * 0.04 + "s" } : undefined,
+              },
               React.createElement(
                 "button",
                 {
                   type: "button",
                   role: "option",
+                  "aria-selected": i === activeIdx || picked,
                   className:
-                    "location-suggest-item" + (i === activeIdx ? " location-suggest-item--active" : ""),
+                    "location-suggest-item" +
+                    (i === activeIdx ? " location-suggest-item--active" : "") +
+                    (picked ? " location-suggest-item--picked" : "") +
+                    (minimalSuggestions ? " location-suggest-item--minimal" : "") +
+                    (premiumSuggestions && !minimalSuggestions ? " location-suggest-item--premium" : ""),
                   onMouseDown: (ev) => {
                     ev.preventDefault();
                     applyPick(item);
                   },
                 },
-                React.createElement("span", { className: "location-suggest-label" }, item.label),
-                item.distanceKm > 0 &&
-                  React.createElement(
-                    "span",
-                    { className: "location-suggest-km" },
-                    formatSuggestionKmLabel(item.distanceKm)
-                  ),
-                item.precision === "locality" &&
-                  React.createElement("span", { className: "location-suggest-tag" }, "area")
+                minimalSuggestions
+                  ? React.createElement("span", { className: "location-suggest-label" }, nameLabel)
+                  : React.createElement(
+                      React.Fragment,
+                      null,
+                      premiumSuggestions &&
+                        React.createElement(
+                          "span",
+                          { className: "location-suggest-pin", "aria-hidden": true },
+                          picked
+                            ? React.createElement("span", { className: "location-suggest-check" }, "✓")
+                            : React.createElement(MapPinIco, { s: 14, c: "currentColor" })
+                        ),
+                      React.createElement(
+                        "span",
+                        { className: premiumSuggestions ? "location-suggest-body" : undefined },
+                        premiumSuggestions
+                          ? React.createElement(
+                              React.Fragment,
+                              null,
+                              React.createElement("span", { className: "location-suggest-label" }, parts.primary),
+                              parts.secondary &&
+                                React.createElement(
+                                  "span",
+                                  { className: "location-suggest-secondary" },
+                                  parts.secondary
+                                )
+                            )
+                          : React.createElement("span", { className: "location-suggest-label" }, item.label),
+                        premiumSuggestions &&
+                          React.createElement(
+                            "span",
+                            { className: "location-suggest-meta location-suggest-meta--" + meta.tone },
+                            meta.text
+                          )
+                      ),
+                      !minimalSuggestions &&
+                        item.distanceKm > 0 &&
+                        React.createElement(
+                          "span",
+                          {
+                            className:
+                              "location-suggest-km" +
+                              (premiumSuggestions && meta.tone === "included"
+                                ? " location-suggest-km--included"
+                                : premiumSuggestions && meta.tone === "delivery"
+                                  ? " location-suggest-km--delivery"
+                                  : ""),
+                          },
+                          formatSuggestionKmLabel(item.distanceKm)
+                        ),
+                      !premiumSuggestions &&
+                        item.precision === "locality" &&
+                        React.createElement("span", { className: "location-suggest-tag" }, "area")
+                    )
               )
-            )
-          )
+            );
+          })
         )
     ),
     showHint && React.createElement("p", { id: hintId, className: "location-pin-hint" }, hint),

@@ -9,7 +9,7 @@ import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "..");
-const BASE = process.env.SOLARAPP_URL || "http://localhost:5173/?v=71";
+const BASE = process.env.SOLARAPP_URL || "http://localhost:5173/?v=108";
 
 const VIEWPORTS = [
   { name: "iPhone SE", width: 375, height: 667 },
@@ -59,6 +59,10 @@ function staticAudit() {
     fail("index.html missing viewport-fit=cover for notched phones");
   } else ok("viewport-fit=cover present");
 
+  if (!html.includes(".home-brand-sun") || !html.includes("bootSunSpin")) {
+    fail("index.html missing critical sun animation CSS");
+  } else ok("boot critical sun animation present");
+
   const required = [
     "overflow-x:hidden",
     "@media (max-width:380px)",
@@ -69,11 +73,25 @@ function staticAudit() {
     "100dvh",
     "safe-area-inset",
     "quote-page__scroll",
+    "quote-flow-steps",
+    "quote-checkout-dock",
+    "quoteReadyCtaIn",
+    "quoteReadyDockCenter",
     "--vvh",
     "data-keyboard-open",
     "data-quote-location-focus",
     "location-pin-wrap--fixed-suggest",
+    "location-pin-wrap--minimal",
+    "location-suggest-list--minimal",
+    "quote-loc-input-slot",
     "data-loc-suggest-open",
+    "quote-page__mast",
+    "quote-install-benefit",
+    "quote-package-card--strip",
+    "quote-page--ready",
+    "color:var(--text-primary)",
+    "caret-color:var(--text-primary)",
+    "line-height:1.25",
   ];
   for (const token of required) {
     const hay = ui.includes(token) || theme.includes(token);
@@ -108,7 +126,7 @@ async function playwrightChecks() {
       await products.click();
       await page.waitForTimeout(400);
     }
-    const viewQuote = page.getByRole("button", { name: /View quote/i });
+    const viewQuote = page.getByRole("button", { name: /Continue to quote/i });
     if (await viewQuote.isVisible().catch(() => false)) {
       await viewQuote.click();
       await page.waitForTimeout(500);
@@ -160,14 +178,16 @@ async function playwrightChecks() {
           const doc = document.documentElement;
           const scroll = document.querySelector(".quote-page__scroll");
           const input = document.querySelector("#quote-delivery-location");
-          const footer = document.querySelector(".quote-page-footer");
+          const dock = document.querySelector(".quote-checkout-dock");
           const nav = document.querySelector(".bottom-nav");
-          const delivery = document.querySelector(".quote-delivery-card--compact");
+          const delivery = document.querySelector(".quote-install-section");
+          const scrollOverflow = scroll ? getComputedStyle(scroll).overflowY : "";
           return {
             overflowX: doc.scrollWidth > doc.clientWidth + 2,
             hasScroll: !!scroll,
+            scrollOverflow,
             hasInput: !!input,
-            hasFooter: !!footer,
+            hasDock: !!dock,
             hasDelivery: !!delivery,
             navBottom: nav ? nav.getBoundingClientRect().bottom : 0,
             vh: window.innerHeight,
@@ -175,8 +195,64 @@ async function playwrightChecks() {
         });
         if (quote.overflowX) fail(`${vp.name} quote: horizontal overflow`);
         else ok(`${vp.name} quote layout (scroll:${quote.hasScroll}, delivery:${quote.hasDelivery})`);
+        if (!quote.hasScroll) fail(`${vp.name} quote: missing scroll container`);
+        else ok(`${vp.name} quote scroll area present (${quote.scrollOverflow})`);
 
         if (quote.hasInput) {
+          const slotBefore = await page.evaluate(() => {
+            const slot = document.querySelector(".quote-loc-input-slot");
+            return slot ? Math.round(slot.getBoundingClientRect().height) : 0;
+          });
+          if (slotBefore !== 48) fail(`${vp.name} quote: input slot should be 48px, got ${slotBefore}`);
+          else ok(`${vp.name} quote input slot fixed 48px`);
+
+          await page.locator("#quote-delivery-location").click();
+          await page.locator("#quote-delivery-location").fill("bor");
+          await page.waitForTimeout(400);
+
+          const typing = await page.evaluate(() => {
+            const slot = document.querySelector(".quote-loc-input-slot");
+            const input = document.querySelector("#quote-delivery-location");
+            const cta = document.querySelector(".quote-checkout-dock-cta");
+            const suggest = document.querySelector(".location-suggest-list--minimal");
+            const section = document.querySelector(".quote-install-section");
+            const slotH = slot ? Math.round(slot.getBoundingClientRect().height) : 0;
+            const sectionH = section ? Math.round(section.getBoundingClientRect().height) : 0;
+            const suggestFixed =
+              suggest && getComputedStyle(suggest).position === "fixed";
+            const ctaDisabled = cta ? cta.disabled : true;
+            const inputStyle = input ? getComputedStyle(input) : null;
+            const textColor = inputStyle?.color || "";
+            const lineHeight = inputStyle?.lineHeight || "";
+            const textVisible =
+              textColor &&
+              textColor !== "rgba(0, 0, 0, 0)" &&
+              textColor !== "transparent" &&
+              parseFloat(lineHeight) <= 24;
+            return {
+              slotH,
+              sectionH,
+              suggestFixed,
+              hasSuggest: !!suggest,
+              ctaDisabled,
+              inputVal: input?.value || "",
+              textVisible,
+              textColor,
+              lineHeight,
+            };
+          });
+          if (typing.slotH !== 48) fail(`${vp.name} quote typing: input slot expanded to ${typing.slotH}px`);
+          else ok(`${vp.name} quote typing input slot stable`);
+          if (!typing.textVisible) fail(`${vp.name} quote typing: input text not visible (${typing.textColor}, lh ${typing.lineHeight})`);
+          else ok(`${vp.name} quote input text visible while typing`);
+          if (!typing.ctaDisabled) fail(`${vp.name} quote typing: CTA should stay disabled until pick`);
+          else ok(`${vp.name} quote CTA disabled while drafting`);
+          if (typing.hasSuggest && !typing.suggestFixed) {
+            fail(`${vp.name} quote typing: suggestions should be position fixed`);
+          } else if (typing.hasSuggest) {
+            ok(`${vp.name} quote minimal suggestions (fixed)`);
+          }
+
           await page.locator("#quote-delivery-location").focus();
           await page.evaluate(() => {
             document.documentElement.dataset.keyboardOpen = "1";
@@ -186,35 +262,37 @@ async function playwrightChecks() {
           await page.waitForTimeout(200);
           const kb = await page.evaluate(() => {
             const input = document.querySelector("#quote-delivery-location");
-            const footer = document.querySelector(".quote-page-footer");
+            const footer = document.querySelector(".quote-checkout-cta");
             const nav = document.querySelector(".bottom-nav");
             const pkg = document.querySelector(".quote-package-card");
-            const benefit = document.querySelector(".quote-install-benefit");
+            const installTitle = document.querySelector(".quote-install-title");
             const fixedSuggest = document.querySelector(".location-pin-wrap--fixed-suggest");
             const ir = input?.getBoundingClientRect();
             const vvh = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--vvh"), 10);
-            const footerHidden =
-              !footer || footer.offsetParent === null || getComputedStyle(footer).display === "none";
+            const footerHidden = !footer || getComputedStyle(footer).display === "none";
             const navHidden = nav && getComputedStyle(nav).opacity === "0";
             const pkgHidden = !pkg || getComputedStyle(pkg).display === "none";
-            const benefitHidden = !benefit || getComputedStyle(benefit).display === "none";
+            const installContextVisible =
+              installTitle &&
+              getComputedStyle(installTitle).display !== "none" &&
+              /system installation/i.test(installTitle.textContent || "");
             return {
               inputVisible: ir ? ir.top >= 0 && ir.bottom <= (vvh || window.innerHeight) + 2 : false,
               footerHidden,
               navHidden,
               pkgHidden,
-              benefitHidden,
+              installContextVisible,
               hasFixedSuggest: !!fixedSuggest,
             };
           });
           if (!kb.inputVisible) fail(`${vp.name} quote keyboard: delivery input not in visible area`);
           else ok(`${vp.name} quote keyboard input visible`);
-          if (!kb.footerHidden) fail(`${vp.name} quote keyboard: footer should hide`);
-          else ok(`${vp.name} quote keyboard footer hidden`);
+          if (!kb.footerHidden) fail(`${vp.name} quote keyboard: checkout actions should hide`);
+          else ok(`${vp.name} quote keyboard checkout collapsed`);
           if (!kb.pkgHidden) fail(`${vp.name} quote keyboard: package card should hide`);
           else ok(`${vp.name} quote keyboard package hidden`);
-          if (!kb.benefitHidden) fail(`${vp.name} quote keyboard: benefit strip should hide`);
-          else ok(`${vp.name} quote keyboard benefit hidden`);
+          if (!kb.installContextVisible) fail(`${vp.name} quote keyboard: system installation context should stay visible`);
+          else ok(`${vp.name} quote keyboard install context visible`);
           if (!kb.hasFixedSuggest) fail(`${vp.name} quote: fixed suggestion dropdown missing`);
           else ok(`${vp.name} quote fixed suggestions`);
           await page.evaluate(() => {

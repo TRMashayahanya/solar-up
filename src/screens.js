@@ -1,10 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { G, W4, W6, W8, W10, FONT_DISPLAY, CARD, G_DIM, ci } from "./tokens.js";
-import {
-  PROPS,
-  productWhatsAppMessage,
-} from "./data.js";
-import { PACKAGES, PACKAGE_PRICE_NOTE } from "./packages.js";
+import { PROPS } from "./data.js";
+import { PACKAGES, OUTSIDE_DELIVERY_FREE_KM } from "./packages.js";
 import { getGroupedItemsForProperty } from "./items.js";
 import { getOtherAccessoriesCopy } from "./copy.js";
 import {
@@ -13,7 +10,6 @@ import {
   ApplianceRow,
   BtnPrimary,
   EmptyHint,
-  ProductCard,
   HomeBrand,
   SizerAreaAccordion,
   SIZER_CUSTOM_AREA_ID,
@@ -22,9 +18,17 @@ import { countActiveCustom } from "./custom-items.js";
 import { ZapIco, PrtIco, RetIco, ArrRIco } from "./icons.js";
 import { CustomAccessoriesPanel } from "./custom-accessories-panel.js";
 import { DeliveryInstallOption } from "./DeliveryInstallOption.js";
+import { installationRadiusBadge, isWithinFreeDeliveryRadius } from "./delivery.js";
 import { HomeInstallCta } from "./home-install-cta.js";
+import { ProductsCheckoutBar, PackageRow, ProductsPageHeader } from "./products-page.js";
 import { SUPPORT_PHONE } from "./strings.js";
-import { QuotePageHeader, QuotePackageCard, useQuotePreviewRef } from "./quote-page.js";
+import {
+  QuotePageHeader,
+  QuoteFlowSteps,
+  QuotePackageCard,
+  QuoteCheckoutBar,
+  quoteDeliveryNote,
+} from "./quote-page.js";
 
 export function HomeScreen({ onPickProp, onViewProducts }) {
   return React.createElement(
@@ -92,103 +96,46 @@ export function HomeScreen({ onPickProp, onViewProducts }) {
 export function ProductsScreen({
   selectedId,
   onSelectPackage,
-  deliveryOpts,
-  onDeliveryChange,
-  onLocationResolved,
   productTotal,
-  grandTotal,
   onContinueToQuote,
   onStartSizing,
+  themeToggle,
 }) {
-  const selected = PACKAGES.find((p) => p.id === selectedId) || PACKAGES[0] || null;
+  const selected = PACKAGES.find((p) => p.id === selectedId) || null;
 
   return React.createElement(
     "div",
-    { className: "animate-rise products-screen" },
-    React.createElement(
-      "div",
-      { className: "products-hero-strip" },
-      React.createElement("span", { className: "products-hero-pill" }, "USD pricing"),
-      React.createElement("span", { className: "products-hero-pill products-hero-pill--gold" }, "5–7 yr warranty"),
-      React.createElement("span", { className: "products-hero-pill" }, "Harare install")
-    ),
+    { className: "products-screen animate-rise" },
+    React.createElement(ProductsPageHeader, { themeToggle }),
     React.createElement(
       "p",
-      { className: "products-intro" },
-      "Choose a package, set delivery if you like, then open your quote for a PDF."
+      { className: "products-list-eyebrow" },
+      "Tap to select · ",
+      React.createElement("em", null, installationRadiusBadge())
     ),
     React.createElement(
       "div",
-      { className: "products-list" },
-      PACKAGES.map((pkg) =>
-        React.createElement(ProductCard, {
-          key: pkg.id,
-          brand: "Energi Tech",
-          name: pkg.name,
-          spec: pkg.kva + " kVA · " + pkg.panelCount + "×" + pkg.panelW + "W",
-          price: pkg.price,
-          tag: "5–7 year warranty",
-          Ico: ZapIco,
-          powers: pkg.powers,
-          selected: selectedId === pkg.id,
-          onSelect: () => onSelectPackage && onSelectPackage(pkg.id),
-          waMessage: productWhatsAppMessage("Energi Tech", pkg.name, pkg.price, "package", "packages"),
-        })
+      { className: "products-list-scroll" },
+      React.createElement(
+        "div",
+        { className: "products-list", role: "list" },
+        PACKAGES.map((pkg, i) =>
+          React.createElement(PackageRow, {
+            key: pkg.id,
+            pkg,
+            index: i,
+            selected: selectedId === pkg.id,
+            onSelect: () => onSelectPackage && onSelectPackage(pkg.id),
+          })
+        )
       )
     ),
-    selected &&
-      React.createElement(
-        "section",
-        { className: "products-selected-panel" },
-        React.createElement("p", { className: "products-selected-eyebrow" }, "Selected package"),
-        React.createElement("h2", { className: "products-selected-name" }, selected.name),
-        React.createElement(
-          "p",
-          { className: "products-selected-spec" },
-          selected.kva + " kVA · " + selected.panelCount + " panels · $" + selected.price.toLocaleString()
-        ),
-        selected.powers?.length > 0 &&
-          React.createElement(
-            "ul",
-            { className: "products-powers-list" },
-            selected.powers.slice(0, 6).map((power) =>
-              React.createElement("li", { key: power, className: "products-powers-item" }, power)
-            )
-          )
-      ),
-    React.createElement(DeliveryInstallOption, {
-      variant: "products",
-      opts: deliveryOpts || { enabled: true, zone: "harare" },
-      onChange: onDeliveryChange,
-      onLocationResolved,
-      productTotal: productTotal || selected?.price || 0,
-    }),
-    React.createElement(
-      "p",
-      { className: "products-footnote" },
-      PACKAGE_PRICE_NOTE.split(".")[0] + "."
-    ),
-    React.createElement(
-      "div",
-      { className: "products-cta" },
-      onContinueToQuote &&
-        React.createElement(BtnPrimary, {
-          onClick: onContinueToQuote,
-          full: true,
-          icon: React.createElement(PrtIco, { s: 16, c: "#0a0800" }),
-          children:
-            grandTotal != null && deliveryOpts?.enabled
-              ? "View quote · $" + grandTotal.toLocaleString()
-              : "View quote · $" + (productTotal || selected?.price || 0).toLocaleString(),
-        }),
-      onStartSizing &&
-        React.createElement(
-          "button",
-          { type: "button", className: "products-secondary-link", onClick: onStartSizing },
-          React.createElement(ZapIco, { s: 12, c: "currentColor" }),
-          "Not sure? Size my system first"
-        )
-    )
+    React.createElement(ProductsCheckoutBar, {
+      selected,
+      total: productTotal || selected?.price || 0,
+      onContinue: onContinueToQuote,
+      onStartSizing,
+    })
   );
 }
 
@@ -347,14 +294,11 @@ export function ResultScreen({
   deliveryQuote,
   grandTotal,
   setShowModal,
-  marketingOptIn,
-  onMarketingOptInChange,
   reset,
   themeToggle,
 }) {
   const custom = !!isCustomQuote;
   const pkg = sizing?.pkg;
-  const previewRef = useQuotePreviewRef();
   const heroTitle = custom ? "Custom quote" : pkg?.name || sizing.kva + " kVA";
   const includesLine = custom
     ? "Sized to your load"
@@ -362,72 +306,65 @@ export function ResultScreen({
       ? sizing.kva + " kVA · " + sizing.pc + " panels"
       : null;
   const displayTotal = grandTotal != null ? grandTotal : sizing.tot;
-  const priceLabel = custom ? "On request" : "$" + displayTotal.toLocaleString();
-  const priceSub =
-    !custom && deliveryQuote?.enabled && deliveryQuote.zone === "outside" && !deliveryQuote.feePending
-      ? "includes delivery"
-      : null;
+  const deliveryNote = !custom ? quoteDeliveryNote(deliveryQuote) : null;
+  const hasLocation = !!(deliveryQuote?.locationLabel || deliveryQuote?.km > 0);
+  const installationQualified =
+    !custom &&
+    hasLocation &&
+    (deliveryQuote?.fee || 0) <= 0 &&
+    (deliveryQuote?.km > 0
+      ? isWithinFreeDeliveryRadius(deliveryQuote.km)
+      : deliveryQuote?.zone !== "outside");
+  const quoteStep = custom ? 2 : hasLocation ? 3 : 2;
+
+  const needsInstall = !custom && !hasLocation;
+  const priceLabel = custom ? null : "$" + (displayTotal || 0).toLocaleString();
 
   return React.createElement(
     "div",
-    { className: "animate-rise quote-page quote-page--compact", style: { flex: 1, minHeight: 0, width: "100%" } },
-    React.createElement(
-      "div",
-      { className: "quote-page__content" },
-      React.createElement(QuotePageHeader, { previewRef, custom, themeToggle }),
+    {
+      className:
+        "animate-rise quote-page quote-page--compact" +
+        (needsInstall ? " quote-page--needs-install" : " quote-page--ready"),
+      style: { flex: 1, minHeight: 0, width: "100%" },
+    },
       React.createElement(
         "div",
-        { className: "quote-page__scroll" },
-        React.createElement(QuotePackageCard, {
-          custom,
-          title: heroTitle,
-          includesLine,
-          peakW: sizing.pW,
-          dailyWh: sizing.dWh,
-          priceLabel,
-          priceSub,
-          dWh: sizing.dWh,
-          dailyGenWh: sizing.dailyGenWh,
-        }),
-        !custom &&
-          React.createElement(DeliveryInstallOption, {
-            variant: "quote",
-            opts: deliveryOpts || { enabled: true, zone: "harare" },
-            onChange: onDeliveryChange,
-            onLocationResolved,
-            productTotal: productTotal || sizing.tot,
-          })
-      ),
-      React.createElement(
-        "footer",
-        { className: "quote-page-footer" },
+        { className: "quote-page__content" },
         React.createElement(
-          "label",
-          { className: "quote-marketing-opt-in" },
-          React.createElement("input", {
-            type: "checkbox",
-            checked: !!marketingOptIn,
-            onChange: (e) => onMarketingOptInChange && onMarketingOptInChange(e.target.checked),
-          }),
-          React.createElement(
-            "span",
-            { className: "quote-marketing-opt-in-label" },
-            "Keep me updated with offers, promotions, and announcements"
-          )
+          "header",
+          { className: "quote-page__mast" },
+          React.createElement(QuotePageHeader, { custom, themeToggle }),
+          !custom && React.createElement(QuoteFlowSteps, { activeStep: quoteStep })
         ),
-        React.createElement(BtnPrimary, {
-          onClick: () => setShowModal(true),
-          full: true,
-          icon: React.createElement(PrtIco, { s: 16, c: "#0a0800" }),
-          children: custom ? "Request PDF quote" : "Get PDF quote",
-        }),
         React.createElement(
-          "button",
-          { type: "button", className: "quote-page-reset", onClick: reset },
-          React.createElement(RetIco, { s: 12, c: "currentColor" }),
-          "Start over"
-        )
+          "div",
+          { className: "quote-page__scroll" },
+          React.createElement(QuotePackageCard, {
+            custom,
+            title: heroTitle,
+            includesLine,
+            variant: needsInstall ? "strip" : "slim",
+            priceLabel: needsInstall ? priceLabel : null,
+          }),
+          !custom &&
+            React.createElement(DeliveryInstallOption, {
+              variant: "quote",
+              opts: deliveryOpts || { enabled: true, zone: "harare" },
+              onChange: onDeliveryChange,
+              onLocationResolved,
+              productTotal: productTotal || sizing.tot,
+            })
+        ),
+        React.createElement(QuoteCheckoutBar, {
+          grandTotal: displayTotal,
+          deliveryNote,
+          custom,
+          locationReady: custom || hasLocation,
+          installationQualified,
+          onSubmit: () => setShowModal(true),
+          onReset: reset,
+        })
       )
-    )
   );
 }

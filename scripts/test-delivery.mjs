@@ -5,6 +5,8 @@ import {
   deliveryFeeFromDistanceKm,
   formatLocationDistanceHint,
   formatSuggestionKmLabel,
+  installationCheckoutNote,
+  installationQualificationMessage,
   OUTSIDE_DELIVERY_FREE_KM,
 } from "../src/delivery.js";
 
@@ -52,6 +54,12 @@ assert(ruwaOpts.zone === "harare", "applyAddress Ruwa → harare zone");
 
 assert(formatSuggestionKmLabel(25).includes("free"), "Ruwa suggestion shows free");
 assert(formatSuggestionKmLabel(45).includes("+$8"), "Norton suggestion shows +$8");
+assert(installationCheckoutNote({ enabled: true, km: 25, fee: 0 }).includes("Qualified"), "Ruwa checkout note shows qualification");
+assert(
+  installationQualificationMessage({ km: 0, fee: 0, zone: "harare", locationLabel: "Borrowdale" }).includes("Qualified"),
+  "Borrowdale qualification message without km"
+);
+assert(installationQualificationMessage({ km: 25, fee: 0, zone: "harare" }).includes("Qualified"), "Ruwa qualification message");
 assert(formatLocationDistanceHint(25).includes("30"), "Ruwa hint mentions 30 km free");
 assert(formatLocationDistanceHint(45).includes("$8"), "Norton hint shows $8 fee");
 

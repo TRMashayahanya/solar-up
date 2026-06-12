@@ -27,7 +27,9 @@ export function deliveryPricingLabel(totalKm) {
   const km = Math.round(Number(totalKm) || 0);
   const billable = billableDeliveryKm(km);
   if (billable <= 0) {
-    return km > 0 ? "Within " + OUTSIDE_DELIVERY_FREE_KM + " km — no delivery charge" : "Install included in price";
+    return km > 0
+      ? "Within " + OUTSIDE_DELIVERY_FREE_KM + " km — no delivery charge"
+      : "Installation included in price";
   }
   return (
     billable +
@@ -49,7 +51,7 @@ export function formatLocationDistanceHint(totalKm) {
       km +
       " km from Harare — within " +
       OUTSIDE_DELIVERY_FREE_KM +
-      " km (install included, no delivery charge)"
+      " km (installation included, no delivery charge)"
     );
   }
   const billable = billableDeliveryKm(km);
@@ -82,7 +84,68 @@ export function formatSuggestionKmLabel(totalKm) {
 export const DELIVERY_INSTALL_HARARE_USD = 0;
 
 export const HARARE_INSTALL_INCLUDED_NOTE =
-  "Full installation in Harare is included in your package price.";
+  "Full installation is included within " + OUTSIDE_DELIVERY_FREE_KM + " km of Harare.";
+
+export const INSTALL_RADIUS_NOTE =
+  "Free installation within " + OUTSIDE_DELIVERY_FREE_KM + " km of Harare — distance is set from your area.";
+
+/** Short badge for products / quote headers. */
+export function installationRadiusBadge() {
+  return OUTSIDE_DELIVERY_FREE_KM + " km · free installation";
+}
+
+/** Badge when the user's area qualifies for free installation. */
+export function installationQualifiedBadge() {
+  return "Qualified · free installation included";
+}
+
+/** Status line after the user confirms their area. */
+export function installationQualificationMessage(quote) {
+  const km = Math.round(Number(quote?.km) || 0);
+  const hasLocation = !!(quote?.locationLabel || "").trim();
+  if (quote?.fee > 0) {
+    return "Delivery +" + quote.fee.toLocaleString() + " for installation · ~" + km + " km from Harare";
+  }
+  if (hasLocation && quote?.zone !== "outside" && (km <= 0 || isWithinFreeDeliveryRadius(km))) {
+    if (km > 0) {
+      return "Qualified — free installation included · ~" + km + " km from Harare";
+    }
+    return "Qualified — free installation within " + OUTSIDE_DELIVERY_FREE_KM + " km of Harare";
+  }
+  if (km > 0 && isWithinFreeDeliveryRadius(km)) {
+    return "Qualified — free installation included · ~" + km + " km from Harare";
+  }
+  if (km > 0) {
+    return "Free installation within " + OUTSIDE_DELIVERY_FREE_KM + " km · ~" + km + " km from Harare";
+  }
+  return "Free installation within " + OUTSIDE_DELIVERY_FREE_KM + " km of Harare";
+}
+
+/** One-line note for checkout bars and quote summaries. */
+export function installationCheckoutNote(deliveryQuote) {
+  if (!deliveryQuote?.enabled) {
+    return "Free installation within " + OUTSIDE_DELIVERY_FREE_KM + " km of Harare";
+  }
+  if (deliveryQuote.fee > 0) {
+    return "+" + deliveryQuote.fee.toLocaleString() + " delivery for installation";
+  }
+  if (deliveryQuote.km > 0 && isWithinFreeDeliveryRadius(deliveryQuote.km)) {
+    return "Qualified · free installation included";
+  }
+  if (deliveryQuote.locationLabel && deliveryQuote.zone !== "outside" && deliveryQuote.fee <= 0) {
+    return "Qualified · free installation included";
+  }
+  return "Free installation within " + OUTSIDE_DELIVERY_FREE_KM + " km of Harare";
+}
+
+/** One-tap install areas on the quote page (label + approximate km from Harare). */
+export const INSTALL_QUICK_PICKS = [
+  { label: "Borrowdale, Harare", distanceKm: 14 },
+  { label: "Mount Pleasant, Harare", distanceKm: 10 },
+  { label: "Westgate, Harare", distanceKm: 12 },
+  { label: "Ruwa, Zimbabwe", distanceKm: 25 },
+  { label: "Norton, Zimbabwe", distanceKm: 45 },
+];
 
 export const OUTSIDE_DEALER_ADVISORY =
   "Beyond " +
@@ -228,79 +291,45 @@ export function getDeliveryQuote(opts) {
 
   if (!opts?.enabled) return { ...empty };
 
-  const zone = opts.zone === "outside" ? "outside" : "harare";
   const locationLabel = String(opts.locationLabel || "").trim();
-
-  if (zone === "harare") {
-    return {
-      enabled: true,
-      zone: "harare",
-      fee: 0,
-      feePending: false,
-      installIncluded: true,
-      perKm: OUTSIDE_DELIVERY_PER_KM_USD,
-      freeKm: OUTSIDE_DELIVERY_FREE_KM,
-      km: 0,
-      billableKm: 0,
-      locationLabel: "",
-      label: "Installation (Harare)",
-      summary: HARARE_INSTALL_INCLUDED_NOTE,
-      dealerAdvisory: "",
-      locationDisplay: "Harare",
-    };
-  }
-
   const geoKm = Number(opts.distanceKm) > 0 ? Math.round(Number(opts.distanceKm)) : 0;
   const estimatedKm = estimateKmFromAddress(locationLabel);
   const km = geoKm > 0 ? geoKm : estimatedKm || 0;
 
+  const base = {
+    enabled: true,
+    installIncluded: true,
+    perKm: OUTSIDE_DELIVERY_PER_KM_USD,
+    freeKm: OUTSIDE_DELIVERY_FREE_KM,
+    locationLabel,
+  };
+
   if (!km || km <= 0) {
-    const place = locationLabel || "your area";
     return {
-      enabled: true,
-      zone: "outside",
+      ...base,
+      zone: "harare",
       fee: 0,
-      feePending: true,
-      installIncluded: true,
-      perKm: OUTSIDE_DELIVERY_PER_KM_USD,
-      freeKm: OUTSIDE_DELIVERY_FREE_KM,
+      feePending: false,
       km: 0,
       billableKm: 0,
-      locationLabel,
-      label: "Delivery (outside Harare)",
-      summary:
-        "Outside Harare · " +
-        place +
-        ". Enter your area for a delivery estimate ($" +
-        OUTSIDE_DELIVERY_PER_KM_USD +
-        "/km after " +
-        OUTSIDE_DELIVERY_FREE_KM +
-        " km free).",
-      dealerAdvisory: OUTSIDE_DEALER_ADVISORY,
-      locationDisplay: place,
+      label: "Installation (within " + OUTSIDE_DELIVERY_FREE_KM + " km)",
+      summary: HARARE_INSTALL_INCLUDED_NOTE,
+      dealerAdvisory: "",
+      locationDisplay: locationLabel || "Within " + OUTSIDE_DELIVERY_FREE_KM + " km of Harare",
     };
   }
 
   const billableKm = billableDeliveryKm(km);
   if (billableKm <= 0) {
     return {
-      enabled: true,
+      ...base,
       zone: "harare",
       fee: 0,
       feePending: false,
-      installIncluded: true,
-      perKm: OUTSIDE_DELIVERY_PER_KM_USD,
-      freeKm: OUTSIDE_DELIVERY_FREE_KM,
       km,
       billableKm: 0,
-      locationLabel,
       label: "Installation (within " + OUTSIDE_DELIVERY_FREE_KM + " km)",
-      summary:
-        "Within " +
-        OUTSIDE_DELIVERY_FREE_KM +
-        " km of Harare (~" +
-        km +
-        " km) — full install included, no delivery charge.",
+      summary: "~" + km + " km from Harare — you qualify for free installation.",
       dealerAdvisory: "",
       locationDisplay: locationLabel || km + " km from Harare",
     };
@@ -308,24 +337,17 @@ export function getDeliveryQuote(opts) {
 
   const fee = deliveryFeeFromDistanceKm(km);
   return {
-    enabled: true,
+    ...base,
     zone: "outside",
     fee,
     feePending: false,
-    installIncluded: true,
-    perKm: OUTSIDE_DELIVERY_PER_KM_USD,
-    freeKm: OUTSIDE_DELIVERY_FREE_KM,
     km,
     billableKm,
-    locationLabel,
-    label:
-      "Delivery (" +
-      billableKm +
-      " km × $" +
-      OUTSIDE_DELIVERY_PER_KM_USD +
-      "/km)",
+    label: "Delivery (" + billableKm + " km × $" + OUTSIDE_DELIVERY_PER_KM_USD + "/km)",
     summary:
-      "$" +
+      "~" +
+      km +
+      " km from Harare — $" +
       fee +
       " delivery (" +
       billableKm +
@@ -333,7 +355,7 @@ export function getDeliveryQuote(opts) {
       OUTSIDE_DELIVERY_PER_KM_USD +
       "/km after " +
       OUTSIDE_DELIVERY_FREE_KM +
-      " km free). Package install covers Harare metro.",
+      " km free).",
     dealerAdvisory: OUTSIDE_DEALER_ADVISORY,
     locationDisplay: locationLabel || km + " km from Harare",
   };
@@ -375,12 +397,13 @@ export function localPlaceSuggestions(query, { limit = 6 } = {}) {
   return out.slice(0, limit);
 }
 
-/** Apply typed, GPS, or picked place to delivery opts (zone + auto km). */
+/** Apply typed, GPS, or picked place to delivery opts (distance from Harare sets install vs delivery). */
 export function applyAddressToDeliveryOpts(address, opts = {}, meta = {}) {
   const addr = String(address || "").trim();
-  if (!addr) return { enabled: true };
+  if (!addr) {
+    return { enabled: true, locationLabel: "", distanceKm: 0, zone: "harare" };
+  }
 
-  const detected = isHarareAddress(addr);
   const cityLabel = getOutsideLocationLabel(addr);
   const geoKm = Number(meta.distanceKm) > 0 ? Math.round(Number(meta.distanceKm)) : 0;
   const metaLat = Number(meta.lat);
@@ -390,37 +413,14 @@ export function applyAddressToDeliveryOpts(address, opts = {}, meta = {}) {
     km = roadKmFromHarare(metaLat, metaLon);
   }
 
-  if (km > 0 && isWithinFreeDeliveryRadius(km)) {
-    return {
-      enabled: true,
-      zone: "harare",
-      locationLabel: addr,
-      distanceKm: km,
-    };
-  }
-
-  if (detected === true) {
-    return {
-      enabled: true,
-      zone: "harare",
-      locationLabel: addr,
-      distanceKm: 0,
-    };
-  }
-  if (detected === false) {
-    return {
-      enabled: true,
-      zone: "outside",
-      locationLabel: cityLabel || addr,
-      distanceKm: km,
-    };
-  }
-  const patch = { enabled: true, locationLabel: cityLabel || addr };
-  if (cityLabel || km > 0) {
-    patch.zone = "outside";
-    if (km > 0) patch.distanceKm = km;
-  }
-  return patch;
+  const label = cityLabel || addr;
+  const withinRadius = km > 0 && isWithinFreeDeliveryRadius(km);
+  return {
+    enabled: true,
+    locationLabel: label,
+    distanceKm: km || 0,
+    zone: km > 0 && !withinRadius ? "outside" : "harare",
+  };
 }
 
 export function quoteGrandTotal(productTotal, deliveryQuote) {
