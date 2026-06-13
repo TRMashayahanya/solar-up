@@ -63,6 +63,11 @@ assert(installationQualificationMessage({ km: 25, fee: 0, zone: "harare" }).incl
 assert(formatLocationDistanceHint(25).includes("30"), "Ruwa hint mentions 30 km free");
 assert(formatLocationDistanceHint(45).includes("$8"), "Norton hint shows $8 fee");
 
+const chihota = applyAddressToDeliveryOpts("Chihota", {}, { lat: -18.203, lon: 31.283 });
+assert(chihota.zone === "outside", "Chihota outside zone");
+assert(chihota.distanceKm > 30, "Chihota > 30 km");
+assert(getDeliveryQuote(chihota).fee > 0, "Chihota delivery fee");
+
 console.log("Free radius:", OUTSIDE_DELIVERY_FREE_KM, "km");
 if (failed) {
   console.error("\n" + failed + " test(s) failed");

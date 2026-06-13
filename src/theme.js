@@ -315,7 +315,11 @@ export const themeCss =
   ".quote-install-status-check{flex-shrink:0;font-size:11px;font-weight:800;color:var(--green-accent);line-height:1}" +
   ".quote-install-status--qualified .quote-install-status-dot{box-shadow:0 0 0 4px rgba(61,214,140,.18)}" +
   "[data-theme=\"light\"] .quote-install-confirmed{background:linear-gradient(135deg,rgba(45,160,100,.08) 0%,rgba(252,250,245,.95) 100%);border-color:rgba(26,122,74,.18)}" +
-  ".quote-loc-field{display:flex;flex-direction:column;gap:6px;flex-shrink:0}" +
+  ".quote-loc-field{display:flex;flex-direction:column;gap:8px;flex-shrink:0}" +
+  ".quote-loc-field .location-field-stack{height:auto;min-height:0;max-height:none;gap:8px}" +
+  ".quote-loc-field .location-pin-wrap--minimal{position:relative;inset:auto;height:48px;flex-shrink:0}" +
+  ".quote-loc-field .location-map-panel{flex-shrink:0;margin-top:0}" +
+  ".quote-loc-field .location-map-canvas,.quote-loc-field .location-map-iframe{min-height:clamp(100px,18vh,160px);max-height:28vh}" +
   ".quote-loc-input-slot{position:relative;height:48px;flex-shrink:0;overflow:visible}" +
   ".quote-loc-input-slot .location-field-stack{height:48px;min-height:48px;max-height:48px;overflow:visible}" +
   ".quote-loc-input-slot .location-pin-wrap--minimal{position:absolute;inset:0;height:48px}" +
@@ -441,6 +445,8 @@ export const themeCss =
   ".location-map-canvas{width:100%;flex:1;min-height:clamp(72px,14vh,120px);max-height:22vh;background:var(--surface)}" +
   ".location-map-canvas--idle{min-height:clamp(64px,12vh,100px)}" +
   ".location-map-iframe{width:100%;flex:1;min-height:clamp(72px,14vh,120px);max-height:22vh;border:0;display:block}" +
+  ".location-map-panel--preview{margin-top:8px}" +
+  ".location-map-panel--preview .location-map-canvas,.location-map-panel--preview .location-map-iframe{min-height:clamp(88px,16vh,140px);max-height:24vh}" +
   ".location-map-caption{flex-shrink:0;margin:0;padding:5px 8px;font-size:9px;color:var(--text-faint);text-align:center;line-height:1.3}" +
   ".quote-delivery-card--compact .location-field-stack{flex:1;min-height:0}" +
   ".quote-checkout-dock{position:relative;z-index:2;flex-shrink:0;margin-top:auto;padding:6px 4px calc(48px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:5px;border-top:1px solid var(--border);background:linear-gradient(180deg,transparent 0%,var(--card-bg) 16%);backdrop-filter:blur(14px) saturate(1.12);-webkit-backdrop-filter:blur(14px) saturate(1.12);box-shadow:0 -6px 22px rgba(0,0,0,.04);width:100%;box-sizing:border-box;transition:padding .55s cubic-bezier(.22,1,.36,1),background .55s ease,border-color .55s ease,box-shadow .55s ease}" +
@@ -656,7 +662,7 @@ export const themeCss =
   "html[data-keyboard-open=\"1\"] .quote-install-section .quote-install-area-label{flex-shrink:0}" +
   "html[data-keyboard-open=\"1\"] .quote-checkout-bar,html[data-keyboard-open=\"1\"] .quote-checkout-dock{position:sticky;bottom:0;z-index:14;border-top:1px solid var(--border);box-shadow:0 -6px 20px rgba(0,0,0,.08)}" +
   "html[data-quote-location-focus=\"1\"] .quote-loc-input-slot{height:48px!important;min-height:48px!important;max-height:48px!important}" +
-  "html[data-keyboard-open=\"1\"] .quote-delivery-card--compact .location-map-panel{display:none}" +
+  "html[data-keyboard-open=\"1\"] .quote-loc-field .location-map-panel{display:none}" +
   "html[data-keyboard-open=\"1\"] .client-modal-overlay{align-items:flex-start;padding-top:max(8px,env(safe-area-inset-top))}" +
   "html[data-keyboard-open=\"1\"] .client-modal-panel{max-height:calc(var(--vvh,100dvh) - max(16px,env(safe-area-inset-top)) - 8px)}" +
   "html[data-keyboard-open=\"1\"] .pdf-download-banner{display:none}" +

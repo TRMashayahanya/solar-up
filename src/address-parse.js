@@ -1,25 +1,36 @@
-/** Parse Zimbabwe street addresses for precise geocoding fallbacks. */
+/** Parse Zimbabwe street addresses + locality anchors for geocoding. */
 
-const LOCALITY_ALIASES = [
-  { keys: ["ruwa"], label: "Ruwa", km: 25 },
-  { keys: ["norton"], label: "Norton", km: 45 },
-  { keys: ["chitungwiza"], label: "Chitungwiza", km: 30 },
-  { keys: ["epworth"], label: "Epworth", km: 20 },
-  { keys: ["borrowdale"], label: "Borrowdale, Harare", km: 0, harare: true },
-  { keys: ["avondale"], label: "Avondale, Harare", km: 0, harare: true },
-  { keys: ["greendale"], label: "Greendale, Harare", km: 0, harare: true },
-  { keys: ["mount pleasant", "mt pleasant"], label: "Mount Pleasant, Harare", km: 0, harare: true },
-  { keys: ["highlands"], label: "Highlands, Harare", km: 0, harare: true },
-  { keys: ["westgate"], label: "Westgate, Harare", km: 0, harare: true },
-  { keys: ["hatfield"], label: "Hatfield, Harare", km: 0, harare: true },
-  { keys: ["waterfalls"], label: "Waterfalls, Harare", km: 0, harare: true },
-  { keys: ["msasa"], label: "Msasa, Harare", km: 0, harare: true },
-  { keys: ["bulawayo"], label: "Bulawayo", km: 440 },
-  { keys: ["mutare"], label: "Mutare", km: 270 },
-  { keys: ["gweru"], label: "Gweru", km: 280 },
-  { keys: ["marondera"], label: "Marondera", km: 80 },
-  { keys: ["kadoma"], label: "Kadoma", km: 140 },
-  { keys: ["chinhoyi"], label: "Chinhoyi", km: 120 },
+export const LOCALITY_ALIASES = [
+  { keys: ["ruwa"], label: "Ruwa", km: 25, lat: -17.889, lon: 31.244 },
+  { keys: ["norton"], label: "Norton", km: 45, lat: -17.883, lon: 30.707 },
+  { keys: ["chitungwiza"], label: "Chitungwiza", km: 30, lat: -18.012, lon: 31.075 },
+  { keys: ["epworth"], label: "Epworth", km: 20, lat: -17.890, lon: 31.147 },
+  { keys: ["chihota", "chihota growth point"], label: "Chihota", km: 80, lat: -18.203, lon: 31.283 },
+  { keys: ["domboshava"], label: "Domboshava", km: 28, lat: -17.648, lon: 31.133 },
+  { keys: ["juru"], label: "Juru", km: 35, lat: -17.850, lon: 31.200 },
+  { keys: ["beatrice"], label: "Beatrice", km: 55, lat: -18.258, lon: 31.013 },
+  { keys: ["mahusekwa"], label: "Mahusekwa", km: 65, lat: -18.183, lon: 31.017 },
+  { keys: ["murewa"], label: "Murewa", km: 85, lat: -17.643, lon: 31.784 },
+  { keys: ["mutoko"], label: "Mutoko", km: 140, lat: -17.397, lon: 32.226 },
+  { keys: ["mudzi"], label: "Mudzi", km: 120, lat: -17.520, lon: 32.050 },
+  { keys: ["shamva"], label: "Shamva", km: 95, lat: -17.312, lon: 31.574 },
+  { keys: ["wedza"], label: "Wedza", km: 95, lat: -18.629, lon: 31.567 },
+  { keys: ["goromonzi"], label: "Goromonzi", km: 45, lat: -17.783, lon: 31.133 },
+  { keys: ["marondera"], label: "Marondera", km: 80, lat: -18.185, lon: 31.551 },
+  { keys: ["borrowdale"], label: "Borrowdale, Harare", km: 0, harare: true, lat: -17.765, lon: 31.088 },
+  { keys: ["avondale"], label: "Avondale, Harare", km: 0, harare: true, lat: -17.801, lon: 31.041 },
+  { keys: ["greendale"], label: "Greendale, Harare", km: 0, harare: true, lat: -17.820, lon: 31.108 },
+  { keys: ["mount pleasant", "mt pleasant"], label: "Mount Pleasant, Harare", km: 0, harare: true, lat: -17.782, lon: 31.052 },
+  { keys: ["highlands"], label: "Highlands, Harare", km: 0, harare: true, lat: -17.793, lon: 31.075 },
+  { keys: ["westgate"], label: "Westgate, Harare", km: 0, harare: true, lat: -17.789, lon: 30.996 },
+  { keys: ["hatfield"], label: "Hatfield, Harare", km: 0, harare: true, lat: -17.887, lon: 31.053 },
+  { keys: ["waterfalls"], label: "Waterfalls, Harare", km: 0, harare: true, lat: -17.882, lon: 31.031 },
+  { keys: ["msasa"], label: "Msasa, Harare", km: 0, harare: true, lat: -17.842, lon: 31.095 },
+  { keys: ["bulawayo"], label: "Bulawayo", km: 440, lat: -20.153, lon: 28.583 },
+  { keys: ["mutare"], label: "Mutare", km: 270, lat: -18.970, lon: 32.671 },
+  { keys: ["gweru"], label: "Gweru", km: 280, lat: -19.450, lon: 29.817 },
+  { keys: ["kadoma"], label: "Kadoma", km: 140, lat: -18.333, lon: 29.915 },
+  { keys: ["chinhoyi"], label: "Chinhoyi", km: 120, lat: -17.354, lon: 30.195 },
 ];
 
 function norm(s) {
@@ -38,7 +49,7 @@ export function matchLocality(text) {
   for (const loc of LOCALITY_ALIASES) {
     for (const key of loc.keys) {
       const kn = norm(key);
-      if (t === kn || t.endsWith(" " + kn) || t.includes(" " + kn + " ")) {
+      if (t === kn || t.endsWith(" " + kn) || t.includes(" " + kn + " ") || t.startsWith(kn + " ")) {
         if (!best || kn.length > best.key.length) {
           best = { ...loc, key: kn, matched: key };
         }
@@ -119,5 +130,20 @@ export function buildGeocodeVariants(query) {
     out.add(parsed.localityLabel + ", Zimbabwe");
   }
 
+  const loc = matchLocality(q);
+  if (loc?.matched) {
+    out.add(loc.label + ", Zimbabwe");
+    if (loc.matched === "chihota" || loc.matched === "murewa" || loc.matched === "mutoko") {
+      out.add(loc.matched + ", Marondera, Zimbabwe");
+    }
+  }
+
   return [...out].filter(Boolean);
+}
+
+/** Anchor coords for a known locality when geocoders miss rural addresses. */
+export function localityAnchor(text) {
+  const loc = matchLocality(text);
+  if (!loc || !Number.isFinite(loc.lat) || !Number.isFinite(loc.lon)) return null;
+  return { lat: loc.lat, lon: loc.lon, label: loc.label, locality: loc };
 }

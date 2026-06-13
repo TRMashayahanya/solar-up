@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { MapPinIco, SearchIco } from "./icons.js";
 import { locateAddress, searchPlaces, reverseGeocode, geocodePlace, isWithinZimbabwe } from "./geo.js";
-import { localPlaceSuggestions, formatLocationDistanceHint, formatSuggestionKmLabel, isWithinFreeDeliveryRadius } from "./delivery.js";
+import { localPlaceSuggestions, formatLocationDistanceHint, formatSuggestionKmLabel, isWithinFreeDeliveryRadius, OUTSIDE_DELIVERY_FREE_KM } from "./delivery.js";
 import { ZIMBABWE_MAP_CENTER, roadKmFromHarare } from "./geo-distance.js";
+import { localityAnchor } from "./address-parse.js";
 import {
   initGoogleMaps,
   createGoogleMap,
   osmEmbedUrl,
+  attachPlaceAutocomplete,
 } from "./google-maps.js";
 import { scrollFieldIntoView } from "./scroll.js";
 
@@ -113,6 +115,8 @@ export function LocationPinField({
   onFocusChange,
   onSuggestOpenChange,
   ariaLabel,
+  initialLat,
+  initialLon,
   inputClassName = "location-pin-input",
   wrapClassName = "location-pin-wrap",
 }) {
@@ -216,35 +220,62 @@ export function LocationPinField({
     handlePinDrop
   );
 
-  useEffect(() => {
-    if (!smart) return;
-    initGoogleMaps().then((ok) => setGoogleReady(ok));
-  }, [smart]);
-
   const applyPick = useCallback(
     (item, hintExtra) => {
       if (!item) return;
       setOpen(false);
       setSuggestions([]);
       setShowingInitial(false);
-      if (item.lat != null && item.lon != null) {
-        setCoords({ lat: item.lat, lon: item.lon });
+      const lat = item.lat != null ? Number(item.lat) : null;
+      const lon = item.lon != null ? Number(item.lon) : null;
+      if (Number.isFinite(lat) && Number.isFinite(lon)) {
+        setCoords({ lat, lon });
       }
       const label = item.label || "";
+      const distanceKm =
+        Number.isFinite(lat) && Number.isFinite(lon)
+          ? roadKmFromHarare(lat, lon)
+          : Number(item.distanceKm) || 0;
       onChange({ target: { value: label } });
       if (onLocated) {
         onLocated(label, {
-          distanceKm: item.distanceKm || 0,
-          lat: item.lat,
-          lon: item.lon,
+          distanceKm,
+          lat: Number.isFinite(lat) ? lat : undefined,
+          lon: Number.isFinite(lon) ? lon : undefined,
+          precision: item.precision,
         });
       }
-      setHint(locationHint(item, hintExtra));
+      setHint(locationHint({ ...item, distanceKm }, hintExtra));
       setPickedFlash(true);
       window.setTimeout(() => setPickedFlash(false), 520);
     },
     [onChange, onLocated]
   );
+
+  useEffect(() => {
+    if (!smart) return;
+    initGoogleMaps().then((ok) => setGoogleReady(ok));
+  }, [smart]);
+
+  useEffect(() => {
+    if (!smart || !googleReady || !inputRef.current) return;
+    return attachPlaceAutocomplete(inputRef.current, (item) => applyPick(item));
+  }, [smart, googleReady, applyPick]);
+
+  useEffect(() => {
+    if (!showMap) return;
+    const q = String(value || "").trim();
+    if (coords?.lat && coords?.lon) return;
+    const la = Number(initialLat);
+    const lo = Number(initialLon);
+    if (Number.isFinite(la) && Number.isFinite(lo)) {
+      setCoords({ lat: la, lon: lo });
+      return;
+    }
+    if (q.length < 3) return;
+    const anchor = localityAnchor(q);
+    if (anchor) setCoords({ lat: anchor.lat, lon: anchor.lon });
+  }, [value, showMap, coords, initialLat, initialLon]);
 
   const runSearch = useCallback(
     async (q) => {
@@ -364,8 +395,8 @@ export function LocationPinField({
       onFocusChange?.(false);
     }, 200);
     if (onBlur) onBlur(e);
-    if (minimalSuggestions) return;
-    await resolveTypedAddress(e.target.value);
+    const addr = (e.target.value || value || "").trim();
+    if (addr.length >= 3) await resolveTypedAddress(addr);
   }
 
   function handleKeyDown(e) {
@@ -635,22 +666,68 @@ export function LocationPinField({
     showMap &&
       React.createElement(
         "div",
-        { className: "location-map-panel", "aria-label": "Map" },
+        { className: "location-map-panel" + (hasPin ? "" : " location-map-panel--idle") },
         mapMode === "google"
-          ? React.createElement("div", { ref: mapElRef, className: "location-map-canvas" })
+          ? React.createElement("div", {
+              ref: mapElRef,
+              className: "location-map-canvas" + (hasPin ? "" : " location-map-canvas--idle"),
+            })
           : React.createElement("iframe", {
               className: "location-map-iframe",
-              title: "Map",
-              src: osmEmbedUrl(mapLat, mapLon),
+              title: "Installation area map — Zimbabwe",
+              src: osmEmbedUrl(mapLat, mapLon, { zoom: hasPin ? 12 : 6 }),
               loading: "lazy",
             }),
         React.createElement(
           "p",
           { className: "location-map-caption" },
-          googleReady
-            ? "Tap the map to move the pin, or search for an exact address above."
-            : "Search for an address above. Add a Google API key for the live map."
+          hasPin
+            ? formatLocationDistanceHint(roadKmFromHarare(mapLat, mapLon)) +
+                " · " +
+                OUTSIDE_DELIVERY_FREE_KM +
+                " km free install zone from Harare"
+            : googleReady
+              ? "Tap the map to drop your pin anywhere in Zimbabwe, or search your suburb above."
+              : "Map shows Zimbabwe — your pin appears when a location is found."
         )
       )
+  );
+}
+
+/** Read-only map preview for confirmed installation locations. */
+export function LocationMapPreview({ lat, lon, distanceKm, className = "" }) {
+  const [googleReady, setGoogleReady] = useState(false);
+  const coords = Number.isFinite(lat) && Number.isFinite(lon) ? { lat, lon } : null;
+  const { mapElRef, mapMode, lat: mapLat, lon: mapLon, hasPin } = useMapPreview(
+    coords,
+    googleReady,
+    true,
+    null
+  );
+
+  useEffect(() => {
+    initGoogleMaps().then((ok) => setGoogleReady(ok));
+  }, []);
+
+  if (!hasPin) return null;
+
+  const km = distanceKm > 0 ? distanceKm : roadKmFromHarare(mapLat, mapLon);
+
+  return React.createElement(
+    "div",
+    { className: "location-map-panel location-map-panel--preview" + (className ? " " + className : "") },
+    mapMode === "google"
+      ? React.createElement("div", { ref: mapElRef, className: "location-map-canvas" })
+      : React.createElement("iframe", {
+          className: "location-map-iframe",
+          title: "Confirmed installation map",
+          src: osmEmbedUrl(mapLat, mapLon),
+          loading: "lazy",
+        }),
+    React.createElement(
+      "p",
+      { className: "location-map-caption" },
+      formatLocationDistanceHint(km)
+    )
   );
 }

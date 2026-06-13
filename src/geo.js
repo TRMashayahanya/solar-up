@@ -12,7 +12,8 @@ import {
   roadKmFromHarare,
   isWithinZimbabwe,
 } from "./geo-distance.js";
-import { buildGeocodeVariants, matchLocality, parseZimbabweAddress } from "./address-parse.js";
+import { buildGeocodeVariants, matchLocality, parseZimbabweAddress, localityAnchor } from "./address-parse.js";
+import { OUTSIDE_DELIVERY_FREE_KM } from "./packages.js";
 
 export { HARARE_COORDS, roadKmFromHarare, isWithinZimbabwe };
 
@@ -177,6 +178,44 @@ function nominatimToSuggestions(data, seen, out, preferLabel) {
   }
 }
 
+/** Prefer catalog anchor when geocoders return a homonym closer to Harare than expected. */
+export function reconcileLocalityHit(query, hit) {
+  if (!hit?.lat || !hit?.lon) return hit;
+  const loc = matchLocality(query) || matchLocality(hit.label);
+  if (!loc || !Number.isFinite(loc.lat) || !Number.isFinite(loc.lon)) return hit;
+
+  const anchorKm = roadKmFromHarare(loc.lat, loc.lon);
+  const hitKm = roadKmFromHarare(hit.lat, hit.lon);
+  const catalogKm = loc.km > 0 ? loc.km : anchorKm;
+
+  // Known remote area geocoded inside free radius — never qualify by mistake.
+  if (catalogKm > OUTSIDE_DELIVERY_FREE_KM && hitKm <= OUTSIDE_DELIVERY_FREE_KM) {
+    const parsed = parseZimbabweAddress(query);
+    return {
+      label: parsed.formatted || loc.label + (loc.harare ? "" : ", Zimbabwe"),
+      lat: loc.lat,
+      lon: loc.lon,
+      distanceKm: anchorKm,
+      source: "anchor",
+      precision: "locality",
+    };
+  }
+
+  if (catalogKm >= 35 && hitKm + 20 < catalogKm) {
+    const parsed = parseZimbabweAddress(query);
+    return {
+      label: parsed.formatted || loc.label + (loc.harare ? "" : ", Zimbabwe"),
+      lat: loc.lat,
+      lon: loc.lon,
+      distanceKm: anchorKm,
+      source: "anchor",
+      precision: "locality",
+    };
+  }
+
+  return { ...hit, distanceKm: hitKm };
+}
+
 /** Nominatim search — Zimbabwe only, tries multiple query variants. */
 async function searchPlacesNominatim(query, { limit = 8 } = {}) {
   const q = String(query || "").trim();
@@ -201,7 +240,7 @@ async function geocodeLocalityFallback(query) {
   const loc = matchLocality(query) || (parsed.locality ? matchLocality(parsed.locality) : null);
   if (!loc) return null;
 
-  const variants = [loc.label + ", Zimbabwe", loc.matched + ", Zimbabwe"];
+  const variants = [loc.label + ", Zimbabwe", loc.matched + ", Zimbabwe", loc.matched + ", Mashonaland East, Zimbabwe"];
   for (const v of variants) {
     const data = await nominatimSearchOnce(v, 3);
     for (const item of data) {
@@ -209,16 +248,27 @@ async function geocodeLocalityFallback(query) {
       const lon = parseFloat(item.lon);
       if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
       if (!isWithinZimbabwe(lat, lon)) continue;
-      const km = loc.km > 0 ? loc.km : roadKmFromHarare(lat, lon);
       return {
         label: parsed.formatted || query,
         lat,
         lon,
-        distanceKm: km,
+        distanceKm: roadKmFromHarare(lat, lon),
         source: "parsed",
         precision: "locality",
       };
     }
+  }
+
+  const anchor = localityAnchor(query);
+  if (anchor) {
+    return {
+      label: parsed.formatted || query,
+      lat: anchor.lat,
+      lon: anchor.lon,
+      distanceKm: roadKmFromHarare(anchor.lat, anchor.lon),
+      source: "anchor",
+      precision: "locality",
+    };
   }
 
   return null;
@@ -250,13 +300,13 @@ export async function searchPlaces(query, { limit = 8, localFirst = [] } = {}) {
     google = [];
   }
   for (const item of google) {
-    add(item);
+    add(reconcileLocalityHit(q, item));
     if (out.length >= limit) return out.slice(0, limit);
   }
 
   const nom = await searchPlacesNominatim(q, { limit });
   for (const item of nom) {
-    add(item);
+    add(reconcileLocalityHit(q, item));
     if (out.length >= limit) break;
   }
 
@@ -275,8 +325,11 @@ export async function geocodePlace(query) {
       for (const v of variants) {
         const g = await geocodeAddressGoogle(v);
         if (g?.lat != null && g?.lon != null) {
-          if (g.label === v || !parseZimbabweAddress(q).street) return g;
-          return { ...g, label: parseZimbabweAddress(q).formatted || q, precision: g.precision || "full" };
+          const merged =
+            g.label === v || !parseZimbabweAddress(q).street
+              ? g
+              : { ...g, label: parseZimbabweAddress(q).formatted || q, precision: g.precision || "full" };
+          return reconcileLocalityHit(q, merged);
         }
       }
     }
@@ -290,24 +343,26 @@ export async function geocodePlace(query) {
     const hits = [];
     nominatimToSuggestions(data, seen, hits, null);
     if (hits[0]?.lat != null) {
-      const hit = hits[0];
-      if (hit.label.toLowerCase() !== q.toLowerCase()) {
-        return { ...hit, label: parseZimbabweAddress(q).formatted || q };
-      }
-      return hit;
+      const hit =
+        hits[0].label.toLowerCase() !== q.toLowerCase()
+          ? { ...hits[0], label: parseZimbabweAddress(q).formatted || q }
+          : hits[0];
+      return reconcileLocalityHit(q, hit);
     }
   }
 
   const list = await searchPlaces(q, { limit: 3 });
   const exact = list.find((x) => x.lat != null);
   if (exact) {
-    if (exact.label.toLowerCase() !== q.toLowerCase()) {
-      return { ...exact, label: parseZimbabweAddress(q).formatted || q };
-    }
-    return exact;
+    const hit =
+      exact.label.toLowerCase() !== q.toLowerCase()
+        ? { ...exact, label: parseZimbabweAddress(q).formatted || q }
+        : exact;
+    return reconcileLocalityHit(q, hit);
   }
 
-  return geocodeLocalityFallback(q);
+  const fallback = await geocodeLocalityFallback(q);
+  return fallback ? reconcileLocalityHit(q, fallback) : null;
 }
 
 /** GPS in Zimbabwe → street-level address + km from Harare. */

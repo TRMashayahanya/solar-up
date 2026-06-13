@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { CARD } from "./tokens.js";
-import { LocationPinField } from "./LocationPinField.js";
+import { LocationPinField, LocationMapPreview } from "./LocationPinField.js";
 import { MapPinIco } from "./icons.js";
 import {
   OUTSIDE_DELIVERY_FREE_KM,
@@ -51,7 +51,7 @@ function InstallStatusChip({ quote, alwaysShow = false }) {
   );
 }
 
-function InstallLocationConfirmed({ label, quote, onChange }) {
+function InstallLocationConfirmed({ label, quote, onChange, lat, lon }) {
   const primary = locationPrimary(label);
   const secondary = String(label || "").includes(",")
     ? String(label).split(",").slice(1).join(",").trim()
@@ -64,27 +64,32 @@ function InstallLocationConfirmed({ label, quote, onChange }) {
       : null;
 
   return React.createElement(
-    "div",
-    { className: "quote-install-confirmed" + (within ? " quote-install-confirmed--qualified" : "") },
-    React.createElement(
-      "span",
-      { className: "quote-install-confirmed-pin", "aria-hidden": true },
-      React.createElement(MapPinIco, { s: 16, c: "currentColor" })
-    ),
+    React.Fragment,
+    null,
     React.createElement(
       "div",
-      { className: "quote-install-confirmed-copy" },
-      React.createElement("span", { className: "quote-install-confirmed-eyebrow" }, "Installation location"),
-      React.createElement("span", { className: "quote-install-confirmed-name" }, primary),
-      qualifyLine &&
-        React.createElement("span", { className: "quote-install-confirmed-qualify" }, qualifyLine),
-      secondary && React.createElement("span", { className: "quote-install-confirmed-sub" }, secondary)
+      { className: "quote-install-confirmed" + (within ? " quote-install-confirmed--qualified" : "") },
+      React.createElement(
+        "span",
+        { className: "quote-install-confirmed-pin", "aria-hidden": true },
+        React.createElement(MapPinIco, { s: 16, c: "currentColor" })
+      ),
+      React.createElement(
+        "div",
+        { className: "quote-install-confirmed-copy" },
+        React.createElement("span", { className: "quote-install-confirmed-eyebrow" }, "Installation location"),
+        React.createElement("span", { className: "quote-install-confirmed-name" }, primary),
+        qualifyLine &&
+          React.createElement("span", { className: "quote-install-confirmed-qualify" }, qualifyLine),
+        secondary && React.createElement("span", { className: "quote-install-confirmed-sub" }, secondary)
+      ),
+      React.createElement(
+        "button",
+        { type: "button", className: "quote-install-confirmed-change", onClick: onChange },
+        "Change"
+      )
     ),
-    React.createElement(
-      "button",
-      { type: "button", className: "quote-install-confirmed-change", onClick: onChange },
-      "Change"
-    )
+    React.createElement(LocationMapPreview, { lat, lon, distanceKm: quote?.km || 0 })
   );
 }
 
@@ -114,7 +119,8 @@ function QuoteDeliverySimple({ opts, onChange, onLocationResolved }) {
   function resolveLocation(address, meta) {
     const label = String(address || "").trim();
     if (!label) return;
-    onChange({ ...opts, enabled: true, locationLabel: label });
+    const next = applyAddressToDeliveryOpts(label, { ...opts, enabled: true }, meta || {});
+    onChange(next);
     if (onLocationResolved) onLocationResolved(label, meta);
     setDraft(label);
     setEditing(false);
@@ -180,6 +186,8 @@ function QuoteDeliverySimple({ opts, onChange, onLocationResolved }) {
         React.createElement(InstallLocationConfirmed, {
           label: quote.locationLabel,
           quote,
+          lat: opts.lat,
+          lon: opts.lon,
           onChange: startEditing,
         }),
       showField &&
@@ -191,26 +199,24 @@ function QuoteDeliverySimple({ opts, onChange, onLocationResolved }) {
             { className: "quote-loc-field-label", htmlFor: "quote-delivery-location" },
             "Installation location"
           ),
-          React.createElement(
-            "div",
-            { className: "quote-loc-input-slot" },
-            React.createElement(LocationPinField, {
+          React.createElement(LocationPinField, {
             id: "quote-delivery-location",
             value: draft,
             onChange: (e) => setDraft(e.target.value),
             onLocated: resolveLocation,
             onFocusChange: onLocationFocus,
             onSuggestOpenChange: setSearchOpen,
+            initialLat: opts.lat,
+            initialLon: opts.lon,
             smart: true,
-            showMap: false,
+            showMap: true,
             fixedSuggestions: true,
             minimalSuggestions: true,
             placeholder: "Type suburb or town…",
             inputClassName: "quote-zone-input quote-zone-input--with-pin quote-zone-input--loc quote-zone-input--search",
             wrapClassName: "location-pin-wrap",
             ariaLabel: "Search installation location in Zimbabwe",
-          })
-          ),
+          }),
           React.createElement(
             "p",
             { className: "quote-loc-field-hint" },

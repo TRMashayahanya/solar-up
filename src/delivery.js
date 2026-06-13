@@ -2,7 +2,7 @@
 
 import { OUTSIDE_DELIVERY_PER_KM_USD, PACKAGE_PRICE_NOTE, OUTSIDE_DELIVERY_FREE_KM } from "./packages.js";
 import { roadKmFromHarare } from "./geo-distance.js";
-import { matchLocality, parseZimbabweAddress } from "./address-parse.js";
+import { matchLocality, parseZimbabweAddress, LOCALITY_ALIASES } from "./address-parse.js";
 
 export { OUTSIDE_DELIVERY_PER_KM_USD, PACKAGE_PRICE_NOTE, OUTSIDE_DELIVERY_FREE_KM };
 
@@ -235,15 +235,18 @@ function norm(s) {
 }
 
 export function estimateKmFromAddress(text) {
-  const t = norm(text);
-  if (!t) return null;
-  for (const c of OUTSIDE_CITIES) {
-    if (t.includes(c.key)) return c.km;
+  const loc = matchLocality(text);
+  if (!loc) return null;
+  if (Number.isFinite(loc.lat) && Number.isFinite(loc.lon)) {
+    return roadKmFromHarare(loc.lat, loc.lon);
   }
+  if (loc.km > 0) return loc.km;
   return null;
 }
 
 export function getOutsideLocationLabel(text) {
+  const loc = matchLocality(text);
+  if (loc) return loc.label.replace(/, Harare$/i, "");
   const t = norm(text);
   if (!t) return "";
   for (const c of OUTSIDE_CITIES) {
@@ -369,13 +372,27 @@ export function localPlaceSuggestions(query, { limit = 6 } = {}) {
   const seen = new Set();
   const out = [];
 
-  function push(label, km) {
+  function push(label, km, lat, lon) {
     const key = label.toLowerCase();
     if (seen.has(key)) return;
     seen.add(key);
-    out.push({ label, distanceKm: km, source: "local" });
+    const item = { label, distanceKm: km, source: "local" };
+    if (Number.isFinite(lat) && Number.isFinite(lon)) {
+      item.lat = lat;
+      item.lon = lon;
+      item.distanceKm = roadKmFromHarare(lat, lon);
+    }
+    out.push(item);
   }
 
+  for (const loc of LOCALITY_ALIASES) {
+    for (const key of loc.keys) {
+      const kn = norm(key);
+      if (kn.includes(t) || t.includes(kn)) {
+        push(loc.label + (loc.harare ? "" : ", Zimbabwe"), loc.km || 0, loc.lat, loc.lon);
+      }
+    }
+  }
   for (const c of OUTSIDE_CITIES) {
     if (c.key.includes(t) || c.label.toLowerCase().includes(t)) {
       push(c.label + ", Zimbabwe", c.km);
@@ -390,8 +407,8 @@ export function localPlaceSuggestions(query, { limit = 6 } = {}) {
 
   const parsed = parseZimbabweAddress(query);
   const loc = matchLocality(query) || (parsed.locality ? matchLocality(parsed.locality) : null);
-  if (loc && (parsed.street || parsed.streetNumber || t.includes(loc.key))) {
-    push(parsed.formatted || loc.label + ", Zimbabwe", loc.km || 0);
+  if (loc && (parsed.street || parsed.streetNumber || t.includes(loc.key) || t === loc.key)) {
+    push(parsed.formatted || loc.label + (loc.harare ? "" : ", Zimbabwe"), loc.km || 0, loc.lat, loc.lon);
   }
 
   return out.slice(0, limit);
@@ -408,9 +425,13 @@ export function applyAddressToDeliveryOpts(address, opts = {}, meta = {}) {
   const geoKm = Number(meta.distanceKm) > 0 ? Math.round(Number(meta.distanceKm)) : 0;
   const metaLat = Number(meta.lat);
   const metaLon = Number(meta.lon);
-  let km = geoKm > 0 ? geoKm : estimateKmFromAddress(addr) || 0;
-  if (!km && Number.isFinite(metaLat) && Number.isFinite(metaLon)) {
+  let km = 0;
+  if (Number.isFinite(metaLat) && Number.isFinite(metaLon)) {
     km = roadKmFromHarare(metaLat, metaLon);
+  } else if (geoKm > 0) {
+    km = geoKm;
+  } else {
+    km = estimateKmFromAddress(addr) || 0;
   }
 
   const label = cityLabel || addr;
@@ -420,6 +441,8 @@ export function applyAddressToDeliveryOpts(address, opts = {}, meta = {}) {
     locationLabel: label,
     distanceKm: km || 0,
     zone: km > 0 && !withinRadius ? "outside" : "harare",
+    lat: Number.isFinite(metaLat) ? metaLat : undefined,
+    lon: Number.isFinite(metaLon) ? metaLon : undefined,
   };
 }
 

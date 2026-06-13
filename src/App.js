@@ -26,6 +26,7 @@ import { BUILD } from "./build.js";
 import { SUPPORT_PHONE } from "./strings.js";
 import { PACKAGES } from "./packages.js";
 import { isRestrictedCustomLabel } from "./restricted-appliances.js";
+import { initStageSounds, playStageSound } from "./stage-sounds.js";
 
 export default function App() {
   const [nav, setNav] = useState("home");
@@ -53,6 +54,18 @@ export default function App() {
 
   useMobileKeyboard();
 
+  useEffect(() => {
+    function unlock() {
+      initStageSounds();
+    }
+    window.addEventListener("pointerdown", unlock, { once: true, passive: true });
+    window.addEventListener("keydown", unlock, { once: true });
+    return () => {
+      window.removeEventListener("pointerdown", unlock);
+      window.removeEventListener("keydown", unlock);
+    };
+  }, []);
+
   const propInfo = PROPS.find((p) => p.value === propType) || null;
 
   function pickProp(v) {
@@ -63,6 +76,7 @@ export default function App() {
     setCustomItems([]);
     setSizing(null);
     setNav("size");
+    playStageSound("property");
     requestAnimationFrame(() => scrollToTop());
   }
 
@@ -182,6 +196,7 @@ export default function App() {
     if (sz2.pkg?.id) setSelectedPackageId(sz2.pkg.id);
     setSizing(sz2);
     setNav("quote");
+    playStageSound("sized");
     requestAnimationFrame(() => scrollToTop());
   }
 
@@ -205,7 +220,13 @@ export default function App() {
     if (!sz) return;
     setSizing(sz);
     setNav("quote");
+    playStageSound("package");
     requestAnimationFrame(() => scrollToTop());
+  }
+
+  function openQuoteModal() {
+    playStageSound("checkout");
+    setShowModal(true);
   }
 
   function dismissPdfJob() {
@@ -316,6 +337,7 @@ export default function App() {
         else msg += " Allow pop-ups to open WhatsApp, or message " + SUPPORT_PHONE + ".";
 
         setPdfJob({ phase: "done", message: msg });
+        playStageSound("complete");
         setTimeout(() => {
           setPdfJob((j) => (j?.phase === "done" ? null : j));
         }, 14000);
@@ -433,11 +455,18 @@ export default function App() {
       deliveryOpts,
       onDeliveryChange: setDeliveryOpts,
       onLocationResolved: (address, meta) => {
-        setDeliveryOpts((o) => ({ ...o, ...applyAddressToDeliveryOpts(address, o, meta || {}) }));
+        setDeliveryOpts((o) => {
+          const had = (o.locationLabel || "").trim().length >= 3;
+          const next = { ...o, ...applyAddressToDeliveryOpts(address, o, meta || {}) };
+          if (!had && (next.locationLabel || "").trim().length >= 3) {
+            playStageSound("install");
+          }
+          return next;
+        });
       },
       deliveryQuote,
       grandTotal,
-      setShowModal,
+      setShowModal: openQuoteModal,
       reset,
       themeToggle: React.createElement(ThemeToggle, {
         theme,

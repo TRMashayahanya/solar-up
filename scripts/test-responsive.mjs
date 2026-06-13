@@ -9,7 +9,7 @@ import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "..");
-const BASE = process.env.SOLARAPP_URL || "http://localhost:5173/?v=109";
+const BASE = process.env.SOLARAPP_URL || "http://localhost:5173/?v=110";
 
 const VIEWPORTS = [
   { name: "iPhone SE", width: 375, height: 667 },
@@ -84,6 +84,8 @@ function staticAudit() {
     "location-pin-wrap--minimal",
     "location-suggest-list--minimal",
     "quote-loc-input-slot",
+    "quote-loc-field",
+    "location-map-panel",
     "data-loc-suggest-open",
     "quote-page__mast",
     "quote-install-benefit",

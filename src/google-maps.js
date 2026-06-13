@@ -7,6 +7,7 @@ import {
   isWithinZimbabwe,
   roadKmFromHarare,
 } from "./geo-distance.js";
+import { OUTSIDE_DELIVERY_FREE_KM } from "./packages.js";
 
 let loadPromise = null;
 let placesServiceDiv = null;
@@ -344,16 +345,17 @@ export async function reverseGeocodeGoogle(lat, lon) {
   });
 }
 
-export async function createGoogleMap(el, { lat, lon, zoom = 13, onPinDrop } = {}) {
+export async function createGoogleMap(el, { lat, lon, zoom = 13, onPinDrop, showFreeRadius = true } = {}) {
   const ok = await initGoogleMaps();
   if (!ok || !el) return null;
 
+  const g = window.google.maps;
   const center = {
     lat: Number.isFinite(lat) ? lat : ZIMBABWE_MAP_CENTER.lat,
     lng: Number.isFinite(lon) ? lon : ZIMBABWE_MAP_CENTER.lon,
   };
 
-  const map = new window.google.maps.Map(el, {
+  const map = new g.Map(el, {
     center,
     zoom,
     disableDefaultUI: true,
@@ -365,9 +367,25 @@ export async function createGoogleMap(el, { lat, lon, zoom = 13, onPinDrop } = {
     restriction: { latLngBounds: zimbabweLatLngBounds(), strictBounds: false },
   });
 
-  const marker = new window.google.maps.Marker({
+  let freeCircle = null;
+  if (showFreeRadius) {
+    freeCircle = new g.Circle({
+      map,
+      center: HARARE_COORDS,
+      radius: OUTSIDE_DELIVERY_FREE_KM * 1000,
+      fillColor: "#3DD68C",
+      fillOpacity: 0.07,
+      strokeColor: "#3DD68C",
+      strokeOpacity: 0.35,
+      strokeWeight: 1.5,
+      clickable: false,
+    });
+  }
+
+  const marker = new g.Marker({
     map,
-    position: center,
+    position: Number.isFinite(lat) && Number.isFinite(lon) ? center : null,
+    visible: Number.isFinite(lat) && Number.isFinite(lon),
     draggable: !!onPinDrop,
   });
 
@@ -382,6 +400,7 @@ export async function createGoogleMap(el, { lat, lon, zoom = 13, onPinDrop } = {
       const lo = e.latLng.lng();
       if (!isWithinZimbabwe(la, lo)) return;
       marker.setPosition(e.latLng);
+      marker.setVisible(true);
       onPinDrop(la, lo);
     });
   }
@@ -389,20 +408,22 @@ export async function createGoogleMap(el, { lat, lon, zoom = 13, onPinDrop } = {
   return {
     map,
     marker,
+    freeCircle,
     setPosition(lat2, lon2) {
       if (!isWithinZimbabwe(lat2, lon2)) return;
       const pos = { lat: lat2, lng: lon2 };
       marker.setPosition(pos);
+      marker.setVisible(true);
       map.panTo(pos);
-      if (map.getZoom() < 14) map.setZoom(15);
+      if (map.getZoom() < 11) map.setZoom(12);
     },
   };
 }
 
-export function osmEmbedUrl(lat, lon) {
+export function osmEmbedUrl(lat, lon, { zoom = 12 } = {}) {
   const la = Number.isFinite(lat) ? lat : HARARE_COORDS.lat;
   const lo = Number.isFinite(lon) ? lon : HARARE_COORDS.lon;
-  const d = 0.06;
+  const d = Number.isFinite(lat) && Number.isFinite(lon) ? 0.08 : 2.5;
   return (
     "https://www.openstreetmap.org/export/embed.html?bbox=" +
     encodeURIComponent([lo - d, la - d, lo + d, la + d].join(",")) +
