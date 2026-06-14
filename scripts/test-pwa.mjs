@@ -92,6 +92,8 @@ await case_("index.html PWA meta", async () => {
   assert(html.includes("apple-mobile-web-app-capable"), "apple capable");
   assert(html.includes("apple-touch-icon"), "apple touch icon");
   assert(html.includes('register("/sw.js"'), "early sw register");
+  assert(html.includes('rel="modulepreload"'), "modulepreload");
+  assert(html.includes("fonts.googleapis.com"), "font link not css import");
 });
 
 await case_("ios install guide uses rotating sun not static PNG", async () => {

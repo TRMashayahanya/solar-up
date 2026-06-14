@@ -36,7 +36,6 @@ export { computePowerQuestState } from "./power-quest.js";
 
 export const globalStyles =
   themeCss +
-  "@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,600;0,700;1,600&family=Outfit:wght@300;400;500;600;700&display=swap');" +
   "*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;margin:0}" +
   "html{-webkit-text-size-adjust:100%}html,body{background:var(--bg);background-image:var(--bg-hero);font-family:" +
   FONT_UI +

@@ -1,22 +1,20 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { G } from "./tokens.js";
-import {
-  detectInstallPlatform,
-  isStandaloneApp,
-  registerServiceWorker,
-} from "./pwa.js";
+import { detectInstallPlatform, isStandaloneApp, registerServiceWorker } from "./pwa.js";
 import {
   prewarmInstall,
+  prewarmInstallFast,
   setDeferredInstallPrompt,
   takeDeferredInstallPrompt,
-  getDeferredInstallPrompt,
   promptInstallNow,
   installViaIosShare,
   installPath,
   openInChrome,
   openInSafari,
   canAttemptInstall,
-  supportsNativeInstallPrompt,
+  reloadForInstallControl,
+  clearInstallResumeAfterSuccess,
+  consumeInstallResume,
 } from "./install-flow.js";
 
 function DwnIco({ s = 16, c = G }) {
@@ -43,24 +41,31 @@ export function isAppInstalled() {
   return isStandaloneApp();
 }
 
-/** One-tap install — native Chrome/Android dialog; iOS opens system share sheet. */
+/** Single-tap download / install — always enabled; fires native dialog when ready. */
 export function HomeInstallCta() {
   const [installed, setInstalled] = useState(() => isAppInstalled());
   const [busy, setBusy] = useState(false);
-  const [nativeReady, setNativeReady] = useState(() => !!getDeferredInstallPrompt());
   const platform = detectInstallPlatform();
-  const needsNativePrompt = supportsNativeInstallPrompt(platform) && !platform.inApp;
+  const path = installPath(platform);
+
+  const installQueued = useRef(false);
+  const lastClickAt = useRef(0);
   const waitTimerRef = useRef(null);
 
   const finishInstalled = useCallback(() => {
     setBusy(false);
     setInstalled(true);
+    installQueued.current = false;
+    clearInstallResumeAfterSuccess();
     if (waitTimerRef.current) clearTimeout(waitTimerRef.current);
   }, []);
 
   const runNativePrompt = useCallback(
     (promptEvent) => {
+      if (!promptEvent?.prompt) return false;
       setBusy(true);
+      installQueued.current = false;
+      if (waitTimerRef.current) clearTimeout(waitTimerRef.current);
       promptInstallNow(promptEvent).then((choice) => {
         if (choice?.outcome === "accepted") {
           finishInstalled();
@@ -68,6 +73,7 @@ export function HomeInstallCta() {
         }
         setBusy(false);
       });
+      return true;
     },
     [finishInstalled]
   );
@@ -76,12 +82,15 @@ export function HomeInstallCta() {
     if (installed) return;
     registerServiceWorker();
     prewarmInstall();
-
-    if (getDeferredInstallPrompt()) setNativeReady(true);
+    consumeInstallResume();
 
     function onBeforeInstall(e) {
       setDeferredInstallPrompt(e);
-      setNativeReady(true);
+      if (!installQueued.current) return;
+      const withinGesture = Date.now() - lastClickAt.current < 1500;
+      if (withinGesture && runNativePrompt(e)) return;
+      installQueued.current = false;
+      setBusy(false);
     }
 
     function onAppInstalled() {
@@ -95,18 +104,16 @@ export function HomeInstallCta() {
       window.removeEventListener("appinstalled", onAppInstalled);
       if (waitTimerRef.current) clearTimeout(waitTimerRef.current);
     };
-  }, [installed, finishInstalled]);
+  }, [installed, finishInstalled, runNativePrompt]);
 
   if (installed) return null;
   if (!canAttemptInstall(platform)) return null;
 
-  const path = installPath(platform);
-  const preparing = needsNativePrompt && !nativeReady;
-  const canTap = !busy && !preparing;
-
   function onInstall(e) {
     e.preventDefault();
-    if (!canTap) return;
+    if (busy) return;
+
+    lastClickAt.current = Date.now();
 
     if (path === "open-chrome") {
       openInChrome();
@@ -117,7 +124,6 @@ export function HomeInstallCta() {
       return;
     }
 
-    // Android / Chrome — prompt() must start synchronously in this click handler.
     const captured = takeDeferredInstallPrompt();
     if (captured) {
       runNativePrompt(captured);
@@ -127,10 +133,33 @@ export function HomeInstallCta() {
     if (path === "ios-share") {
       setBusy(true);
       installViaIosShare().finally(() => setBusy(false));
+      return;
+    }
+
+    if (path === "native-prompt") {
+      installQueued.current = true;
+      prewarmInstallFast();
+
+      if (
+        typeof navigator !== "undefined" &&
+        "serviceWorker" in navigator &&
+        !navigator.serviceWorker.controller
+      ) {
+        reloadForInstallControl();
+        return;
+      }
+
+      setBusy(true);
+      if (waitTimerRef.current) clearTimeout(waitTimerRef.current);
+      waitTimerRef.current = setTimeout(() => {
+        if (!installQueued.current) return;
+        installQueued.current = false;
+        setBusy(false);
+      }, 5000);
     }
   }
 
-  const label = busy ? "Installing…" : preparing ? "Preparing…" : "Install SolarApp";
+  const label = busy ? "Installing…" : "Download SolarApp";
 
   return React.createElement(
     "div",
@@ -139,15 +168,13 @@ export function HomeInstallCta() {
       "button",
       {
         type: "button",
-        className:
-          "home-install-cta" +
-          (busy || preparing ? " home-install-cta--busy" : ""),
+        className: "home-install-cta" + (busy ? " home-install-cta--busy" : ""),
         onClick: onInstall,
-        disabled: !canTap,
-        "aria-busy": busy || preparing,
+        disabled: busy,
+        "aria-busy": busy,
         "aria-label": label,
       },
-      busy || preparing
+      busy
         ? React.createElement("span", { className: "home-install-spinner", "aria-hidden": true })
         : React.createElement(DwnIco, { key: "i" }),
       React.createElement("span", { key: "t" }, label)

@@ -81,14 +81,24 @@ case_("home-install-cta has no step labels or ios guide", () => {
   assert(!src.includes("Step 1 of"), "no step labels");
   assert(!src.includes("home-install-status"), "no status panel");
   assert(src.includes("takeDeferredInstallPrompt"), "sync prompt path");
-  assert(src.includes("Install SolarApp"), "install label");
+  assert(src.includes("Download SolarApp"), "download label");
+  assert(src.includes("installQueued"), "queued tap pattern");
+  assert(!src.includes("Preparing"), "no preparing gate");
 });
 
 case_("install-flow prewarms on load pattern", () => {
   const src = fs.readFileSync(path.join(ROOT, "src", "install-flow.js"), "utf8");
   assert(src.includes("prewarmInstall"), "prewarm export");
+  assert(src.includes("prewarmInstallFast"), "fast prewarm export");
   assert(src.includes("promptInstallNow"), "prompt export");
   assert(src.includes("SKIP_WAITING"), "skip waiting without reload");
+  assert(src.includes("reloadForInstallControl"), "reload fallback");
+});
+
+case_("main.js defers maps until location", () => {
+  const src = fs.readFileSync(path.join(ROOT, "src", "main.js"), "utf8");
+  assert(!src.includes("initGoogleMaps"), "no maps on boot");
+  assert(!src.includes("getRuntimeConfig"), "no config fetch on boot");
 });
 
 case_("canAttemptInstall allows in-app for redirect", () => {

@@ -1,6 +1,5 @@
 /**
- * One-tap PWA install — prewarm on load, native prompt on tap (Android/Chrome).
- * iOS Safari has no install API; we open the system share sheet as the only native one-tap UI.
+ * One-tap PWA install — fast SW prep on load, native prompt on tap (Android/Chrome).
  */
 import {
   detectInstallPlatform,
@@ -10,11 +9,15 @@ import {
   ensureServiceWorkerControl,
   verifyInstallAssets,
   warmInstallShell,
+  markInstallResume,
+  consumeInstallResume,
+  markInstallRetried,
+  hasInstallRetried,
+  clearInstallRetryFlags,
 } from "./pwa.js";
 
 let deferredPrompt = null;
 let prewarmPromise = null;
-let prewarmReady = false;
 
 export function getDeferredInstallPrompt() {
   return deferredPrompt;
@@ -36,32 +39,42 @@ export function takeDeferredInstallPrompt() {
   return e;
 }
 
-export function isPrewarmReady() {
-  return prewarmReady;
+/** Register SW immediately — does not block on asset warming. */
+export async function prewarmInstallFast() {
+  if (!isSecureForInstall()) {
+    const local =
+      typeof location !== "undefined" &&
+      (location.hostname === "localhost" || location.hostname === "127.0.0.1");
+    if (!local) return false;
+  }
+  await registerServiceWorker();
+  const reg = await navigator.serviceWorker?.ready?.catch(() => null);
+  if (reg?.waiting) reg.waiting.postMessage({ type: "SKIP_WAITING" });
+  return true;
 }
 
-/** Silent background prep — SW control + manifest/icons + shell cache. */
+function scheduleFullPrewarm() {
+  const run = () => {
+    ensureServiceWorkerControl(6000)
+      .then((ok) => {
+        if (!ok) return;
+        return verifyInstallAssets().then((assetsOk) => {
+          if (assetsOk) return warmInstallShell();
+        });
+      })
+      .catch(() => {});
+  };
+  if (typeof requestIdleCallback === "function") requestIdleCallback(run, { timeout: 4000 });
+  else setTimeout(run, 800);
+}
+
+/** Fast boot prewarm + idle asset cache (non-blocking). */
 export function prewarmInstall() {
   if (prewarmPromise) return prewarmPromise;
-  prewarmPromise = (async () => {
-    if (!isSecureForInstall()) {
-      const local =
-        typeof location !== "undefined" &&
-        (location.hostname === "localhost" || location.hostname === "127.0.0.1");
-      if (!local) return false;
-    }
-    await registerServiceWorker();
-    const reg = await navigator.serviceWorker?.ready?.catch(() => null);
-    if (reg?.waiting) {
-      reg.waiting.postMessage({ type: "SKIP_WAITING" });
-    }
-    await ensureServiceWorkerControl(12000);
-    const assetsOk = await verifyInstallAssets();
-    if (!assetsOk) return false;
-    await warmInstallShell();
-    prewarmReady = true;
-    return true;
-  })().catch(() => false);
+  prewarmPromise = prewarmInstallFast().then((ok) => {
+    scheduleFullPrewarm();
+    return ok;
+  });
   return prewarmPromise;
 }
 
@@ -80,7 +93,6 @@ export function canAttemptInstall(platform = detectInstallPlatform()) {
   return true;
 }
 
-/** Open this page in Chrome (Android in-app browsers). */
 export function openInChrome() {
   const url = encodeURIComponent(location.href);
   location.href =
@@ -93,19 +105,18 @@ export function openInChrome() {
     ";end";
 }
 
-/** Open this page in Safari (iOS in-app / non-Safari browsers). */
 export function openInSafari() {
   const url = location.href.replace(/^https?:\/\//, "");
   location.href = "x-safari-https://" + url;
 }
 
 /**
- * Fire native install dialog — MUST be called synchronously from a user click
- * when deferredPrompt is available (do not await before prompt()).
+ * Fire native install dialog — call synchronously from a user click when possible.
  * @returns {Promise<{ outcome: string } | null>}
  */
 export function promptInstallNow(promptEvent) {
-  const e = promptEvent || takeDeferredInstallPrompt();
+  const e = promptEvent || deferredPrompt;
+  deferredPrompt = null;
   if (!e?.prompt) return Promise.resolve(null);
   return e
     .prompt()
@@ -113,25 +124,19 @@ export function promptInstallNow(promptEvent) {
     .catch(() => null);
 }
 
-/** iOS Safari — no install API; open native share sheet (one system UI). */
-export async function installViaIosShare() {
-  await prewarmInstall();
+/** iOS Safari — open native share sheet (Add to Home Screen). */
+export function installViaIosShare() {
+  prewarmInstallFast().catch(() => {});
   if (navigator.share) {
-    try {
-      await navigator.share({
-        title: "SolarApp",
-        text: "Solar sizer for Zimbabwe",
-        url: location.href,
-      });
-      return { outcome: "shared" };
-    } catch {
-      return null;
-    }
+    return navigator.share({
+      title: "SolarApp",
+      text: "Solar sizer for Zimbabwe",
+      url: location.href,
+    }).catch(() => null);
   }
-  return null;
+  return Promise.resolve(null);
 }
 
-/** Resolve install path for platform. */
 export function installPath(platform = detectInstallPlatform()) {
   if (platform.inApp) {
     if (platform.isAndroid) return "open-chrome";
@@ -145,3 +150,18 @@ export function installPath(platform = detectInstallPlatform()) {
   if (supportsNativeInstallPrompt(platform)) return "native-prompt";
   return "unsupported";
 }
+
+/** One-time reload so the service worker controls the page (first visit only). */
+export function reloadForInstallControl() {
+  if (hasInstallRetried()) return false;
+  markInstallRetried();
+  markInstallResume();
+  location.reload();
+  return true;
+}
+
+export function clearInstallResumeAfterSuccess() {
+  clearInstallRetryFlags();
+}
+
+export { consumeInstallResume };
