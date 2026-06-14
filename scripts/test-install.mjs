@@ -84,6 +84,15 @@ case_("home-install-cta has no step labels or ios guide", () => {
   assert(src.includes("Download SolarApp"), "download label");
   assert(src.includes("installQueued"), "queued tap pattern");
   assert(!src.includes("Preparing"), "no preparing gate");
+  assert(src.includes("solarapp-install-ready"), "early install ready event");
+  assert(src.includes("queueInstallTap"), "install tap queue");
+  assert(src.includes("home-install-hint-msg"), "install hint feedback");
+});
+
+case_("index.html captures beforeinstallprompt early", () => {
+  const html = fs.readFileSync(path.join(ROOT, "index.html"), "utf8");
+  assert(html.includes("__solarappInstallPrompt"), "early prompt capture");
+  assert(html.includes("beforeinstallprompt"), "beforeinstallprompt listener");
 });
 
 case_("install-flow prewarms on load pattern", () => {

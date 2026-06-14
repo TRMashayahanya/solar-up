@@ -4,7 +4,7 @@ import { detectInstallPlatform, isStandaloneApp, registerServiceWorker } from ".
 import {
   prewarmInstall,
   prewarmInstallFast,
-  setDeferredInstallPrompt,
+  getDeferredInstallPrompt,
   takeDeferredInstallPrompt,
   promptInstallNow,
   installViaIosShare,
@@ -15,6 +15,9 @@ import {
   reloadForInstallControl,
   clearInstallResumeAfterSuccess,
   consumeInstallResume,
+  queueInstallTap,
+  clearInstallTapQueue,
+  isInstallTapQueued,
 } from "./install-flow.js";
 
 function DwnIco({ s = 16, c = G }) {
@@ -41,21 +44,23 @@ export function isAppInstalled() {
   return isStandaloneApp();
 }
 
-/** Single-tap download / install — always enabled; fires native dialog when ready. */
+/** Single-tap download / install — queues retry when prompt is not ready yet. */
 export function HomeInstallCta() {
   const [installed, setInstalled] = useState(() => isAppInstalled());
   const [busy, setBusy] = useState(false);
+  const [hint, setHint] = useState("");
   const platform = detectInstallPlatform();
   const path = installPath(platform);
 
   const installQueued = useRef(false);
-  const lastClickAt = useRef(0);
   const waitTimerRef = useRef(null);
 
   const finishInstalled = useCallback(() => {
     setBusy(false);
+    setHint("");
     setInstalled(true);
     installQueued.current = false;
+    clearInstallTapQueue();
     clearInstallResumeAfterSuccess();
     if (waitTimerRef.current) clearTimeout(waitTimerRef.current);
   }, []);
@@ -64,6 +69,7 @@ export function HomeInstallCta() {
     (promptEvent) => {
       if (!promptEvent?.prompt) return false;
       setBusy(true);
+      setHint("");
       installQueued.current = false;
       if (waitTimerRef.current) clearTimeout(waitTimerRef.current);
       promptInstallNow(promptEvent).then((choice) => {
@@ -72,48 +78,100 @@ export function HomeInstallCta() {
           return;
         }
         setBusy(false);
+        setHint("Install cancelled — tap to try again.");
       });
       return true;
     },
     [finishInstalled]
   );
 
+  const tryQueuedInstall = useCallback(() => {
+    if (!installQueued.current && !isInstallTapQueued()) return false;
+    const captured = takeDeferredInstallPrompt();
+    if (!captured) return false;
+    return runNativePrompt(captured);
+  }, [runNativePrompt]);
+
   useEffect(() => {
     if (installed) return;
     registerServiceWorker();
     prewarmInstall();
-    consumeInstallResume();
 
-    function onBeforeInstall(e) {
-      setDeferredInstallPrompt(e);
-      if (!installQueued.current) return;
-      const withinGesture = Date.now() - lastClickAt.current < 1500;
-      if (withinGesture && runNativePrompt(e)) return;
-      installQueued.current = false;
-      setBusy(false);
+    if (consumeInstallResume()) {
+      installQueued.current = true;
+      queueInstallTap();
+      setHint("Tap Download to finish installing.");
+    }
+
+    function onInstallReady() {
+      if (tryQueuedInstall()) return;
+      if (getDeferredInstallPrompt()) {
+        setHint("");
+        setBusy(false);
+      }
     }
 
     function onAppInstalled() {
       finishInstalled();
     }
 
-    window.addEventListener("beforeinstallprompt", onBeforeInstall);
+    if (getDeferredInstallPrompt()) {
+      setHint("");
+    }
+
+    window.addEventListener("solarapp-install-ready", onInstallReady);
     window.addEventListener("appinstalled", onAppInstalled);
     return () => {
-      window.removeEventListener("beforeinstallprompt", onBeforeInstall);
+      window.removeEventListener("solarapp-install-ready", onInstallReady);
       window.removeEventListener("appinstalled", onAppInstalled);
       if (waitTimerRef.current) clearTimeout(waitTimerRef.current);
     };
-  }, [installed, finishInstalled, runNativePrompt]);
+  }, [installed, finishInstalled, tryQueuedInstall]);
 
   if (installed) return null;
   if (!canAttemptInstall(platform)) return null;
 
+  function runInstall() {
+    const captured = takeDeferredInstallPrompt();
+    if (captured) {
+      runNativePrompt(captured);
+      return;
+    }
+
+    if (path === "ios-share") {
+      setBusy(true);
+      setHint("");
+      installViaIosShare().finally(() => setBusy(false));
+      return;
+    }
+
+    if (path === "native-prompt") {
+      installQueued.current = true;
+      queueInstallTap();
+      prewarmInstallFast();
+
+      if (
+        typeof navigator !== "undefined" &&
+        "serviceWorker" in navigator &&
+        !navigator.serviceWorker.controller
+      ) {
+        if (reloadForInstallControl()) return;
+      }
+
+      setBusy(true);
+      setHint("Getting install ready — tap again in a moment.");
+      if (waitTimerRef.current) clearTimeout(waitTimerRef.current);
+      waitTimerRef.current = setTimeout(() => {
+        if (!installQueued.current) return;
+        setBusy(false);
+        setHint("Tap Download again to install.");
+      }, 4500);
+    }
+  }
+
   function onInstall(e) {
     e.preventDefault();
-    if (busy) return;
-
-    lastClickAt.current = Date.now();
+    if (busy && !installQueued.current) return;
 
     if (path === "open-chrome") {
       openInChrome();
@@ -124,39 +182,7 @@ export function HomeInstallCta() {
       return;
     }
 
-    const captured = takeDeferredInstallPrompt();
-    if (captured) {
-      runNativePrompt(captured);
-      return;
-    }
-
-    if (path === "ios-share") {
-      setBusy(true);
-      installViaIosShare().finally(() => setBusy(false));
-      return;
-    }
-
-    if (path === "native-prompt") {
-      installQueued.current = true;
-      prewarmInstallFast();
-
-      if (
-        typeof navigator !== "undefined" &&
-        "serviceWorker" in navigator &&
-        !navigator.serviceWorker.controller
-      ) {
-        reloadForInstallControl();
-        return;
-      }
-
-      setBusy(true);
-      if (waitTimerRef.current) clearTimeout(waitTimerRef.current);
-      waitTimerRef.current = setTimeout(() => {
-        if (!installQueued.current) return;
-        installQueued.current = false;
-        setBusy(false);
-      }, 5000);
-    }
+    runInstall();
   }
 
   const label = busy ? "Installing…" : "Download SolarApp";
@@ -170,7 +196,7 @@ export function HomeInstallCta() {
         type: "button",
         className: "home-install-cta" + (busy ? " home-install-cta--busy" : ""),
         onClick: onInstall,
-        disabled: busy,
+        disabled: busy && !installQueued.current,
         "aria-busy": busy,
         "aria-label": label,
       },
@@ -178,6 +204,12 @@ export function HomeInstallCta() {
         ? React.createElement("span", { className: "home-install-spinner", "aria-hidden": true })
         : React.createElement(DwnIco, { key: "i" }),
       React.createElement("span", { key: "t" }, label)
-    )
+    ),
+    hint &&
+      React.createElement(
+        "p",
+        { className: "home-install-hint-msg", role: "status", "aria-live": "polite" },
+        hint
+      )
   );
 }

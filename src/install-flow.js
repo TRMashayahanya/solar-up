@@ -18,25 +18,70 @@ import {
 
 let deferredPrompt = null;
 let prewarmPromise = null;
+let installTapQueued = false;
+
+function hydrateEarlyPrompt() {
+  if (typeof window === "undefined") return;
+  const early = window.__solarappInstallPrompt;
+  if (early && !deferredPrompt) {
+    deferredPrompt = early;
+  }
+}
+
+function notifyInstallReady() {
+  if (typeof window === "undefined") return;
+  try {
+    window.dispatchEvent(new Event("solarapp-install-ready"));
+  } catch (_) {
+    /* ignore */
+  }
+}
+
+if (typeof window !== "undefined") {
+  hydrateEarlyPrompt();
+  window.addEventListener("beforeinstallprompt", (e) => {
+    setDeferredInstallPrompt(e);
+    window.__solarappInstallPrompt = e;
+    notifyInstallReady();
+  });
+  window.addEventListener("solarapp-install-ready", hydrateEarlyPrompt);
+}
 
 export function getDeferredInstallPrompt() {
+  hydrateEarlyPrompt();
   return deferredPrompt;
 }
 
 export function setDeferredInstallPrompt(event) {
   if (!event) {
     deferredPrompt = null;
+    if (typeof window !== "undefined") window.__solarappInstallPrompt = null;
     return;
   }
   event.preventDefault();
   deferredPrompt = event;
+  if (typeof window !== "undefined") window.__solarappInstallPrompt = event;
 }
 
 /** Take and clear the captured install prompt (call prompt() immediately after). */
 export function takeDeferredInstallPrompt() {
+  hydrateEarlyPrompt();
   const e = deferredPrompt;
   deferredPrompt = null;
+  if (typeof window !== "undefined") window.__solarappInstallPrompt = null;
   return e;
+}
+
+export function isInstallTapQueued() {
+  return installTapQueued;
+}
+
+export function queueInstallTap() {
+  installTapQueued = true;
+}
+
+export function clearInstallTapQueue() {
+  installTapQueued = false;
 }
 
 /** Register SW immediately — does not block on asset warming. */
@@ -117,7 +162,9 @@ export function openInSafari() {
 export function promptInstallNow(promptEvent) {
   const e = promptEvent || deferredPrompt;
   deferredPrompt = null;
+  if (typeof window !== "undefined") window.__solarappInstallPrompt = null;
   if (!e?.prompt) return Promise.resolve(null);
+  clearInstallTapQueue();
   return e
     .prompt()
     .then(() => e.userChoice)
@@ -156,12 +203,14 @@ export function reloadForInstallControl() {
   if (hasInstallRetried()) return false;
   markInstallRetried();
   markInstallResume();
+  queueInstallTap();
   location.reload();
   return true;
 }
 
 export function clearInstallResumeAfterSuccess() {
   clearInstallRetryFlags();
+  clearInstallTapQueue();
 }
 
 export { consumeInstallResume };

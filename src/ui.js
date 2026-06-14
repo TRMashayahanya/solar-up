@@ -156,6 +156,7 @@ export const globalStyles =
   ".home-install-hint-title{margin:0 0 4px;font-size:12px;font-weight:700;color:var(--text-primary)}" +
   ".home-install-hint-body{margin:0;font-size:11px;line-height:1.45;color:var(--text-body)}" +
   ".home-install-hint-copy{margin-top:10px;padding:8px 12px;border-radius:10px;border:1px solid rgba(232,197,71,.35);background:rgba(232,197,71,.1);color:var(--quote-gold,#E8C547);font-size:11px;font-weight:600;font-family:inherit;cursor:pointer;width:100%}" +
+  ".home-install-hint-msg{margin:8px 0 0;padding:0 4px;font-size:10px;line-height:1.4;color:var(--text-muted);text-align:center}" +
   ".ios-install-guide{margin-top:10px;padding:14px;border-radius:16px;background:var(--surface);border:1px solid var(--border)}" +
   ".ios-install-preview{display:flex;align-items:center;justify-content:center;margin-bottom:14px;padding:16px 12px;border-radius:14px;background:var(--surface-inset);border:1px solid var(--border)}" +
   ".ios-install-preview--sun{background:transparent;border:none;padding:8px 0 12px}" +
