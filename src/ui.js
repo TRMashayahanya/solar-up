@@ -33,6 +33,7 @@ import { productWhatsAppMessage, whatsAppChatUrl } from "./data.js";
 import { environmentalImpact } from "./environment.js";
 import { computePowerQuestState } from "./power-quest.js";
 export { computePowerQuestState } from "./power-quest.js";
+import { playPackageUnlockSound } from "./stage-sounds.js";
 
 export const globalStyles =
   themeCss +
@@ -674,12 +675,30 @@ export function PowerQuestMeter({ sizingLike, peakW, dailyWh }) {
 
   React.useEffect(() => {
     const prev = prevTier.current;
-    if (prev !== null && prev !== tierKey && prev.indexOf("charge:") === 0 && tierKey.indexOf("package:") === 0) {
+    if (prev === null) {
+      prevTier.current = tierKey;
+      return;
+    }
+    if (prev === tierKey) return;
+
+    const wasCharge = prev.indexOf("charge:") === 0;
+    const isPackage = tierKey.indexOf("package:") === 0;
+    const prevPkgIdx =
+      prev.indexOf("package:") === 0 ? parseInt(prev.split(":")[1], 10) || 0 : -1;
+    const nextPkgIdx =
+      tierKey.indexOf("package:") === 0 ? parseInt(tierKey.split(":")[1], 10) || 0 : -1;
+
+    const firstUnlock = wasCharge && isPackage;
+    const tierUp = isPackage && prevPkgIdx >= 0 && nextPkgIdx > prevPkgIdx;
+
+    if (firstUnlock || tierUp) {
       setUnlockFlash(true);
+      playPackageUnlockSound(nextPkgIdx);
       const t = setTimeout(() => setUnlockFlash(false), 1100);
       prevTier.current = tierKey;
       return () => clearTimeout(t);
     }
+
     prevTier.current = tierKey;
   }, [tierKey]);
 
@@ -702,7 +721,7 @@ export function PowerQuestMeter({ sizingLike, peakW, dailyWh }) {
     const dotClass =
       "pq-dot" +
       (active ? " pq-dot--active" : "") +
-      (unlockFlash && i === 0 ? " pq-dot--pop" : "");
+      (unlockFlash && i === litIndex ? " pq-dot--pop" : "");
     return React.createElement(
       "div",
       { key: p.id, className: "pq-dot-wrap", style: { opacity: unlocked || active ? 1 : 0.3 } },

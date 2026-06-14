@@ -26,9 +26,15 @@ ok("stage-sounds exports playStageSound");
 assert(src.includes("export function playStageSound"), "playStageSound export");
 assert(src.includes("export function initStageSounds"), "initStageSounds export");
 
-for (const id of ["property", "sized", "package", "install", "checkout", "complete"]) {
-  assert(src.includes(id + "("), "profile " + id);
-  assert(app.includes('playStageSound("' + id + '")') || app.includes("playStageSound('" + id + "')"), "App wires " + id);
+for (const id of ["property", "sized", "package", "packageUnlock", "install", "checkout", "complete"]) {
+  assert(src.includes(id + "(") || src.includes(id + "(tierIndex"), "profile " + id);
+  if (id === "packageUnlock") {
+    assert(src.includes("export function playPackageUnlockSound"), "playPackageUnlockSound export");
+    const ui = fs.readFileSync(path.join(ROOT, "src/ui.js"), "utf8");
+    assert(ui.includes("playPackageUnlockSound"), "PowerQuestMeter plays package unlock");
+  } else {
+    assert(app.includes('playStageSound("' + id + '")') || app.includes("playStageSound('" + id + "')"), "App wires " + id);
+  }
 }
 
 assert(src.includes("prefers-reduced-motion"), "respects reduced motion");

@@ -3,7 +3,7 @@
  * One distinct tone per ordering milestone; respects reduced-motion preference.
  */
 
-/** @typedef {'property'|'sized'|'package'|'install'|'checkout'|'complete'} StageSoundId */
+/** @typedef {'property'|'sized'|'package'|'packageUnlock'|'install'|'checkout'|'complete'} StageSoundId */
 
 let ctx = null;
 let unlocked = false;
@@ -88,6 +88,19 @@ const PROFILES = {
       { freq: 739.99, dur: 0.28, harmonic: 1479.98 },
     ]);
   },
+  /** Sizer — new solar package tier unlocked while building load */
+  packageUnlock(tierIndex = 0) {
+    const lift = Math.min(3, Math.max(0, tierIndex)) * 0.06;
+    playNotes(
+      [
+        { freq: 523.25 * (1 + lift), dur: 0.11, type: "triangle" },
+        { freq: 659.25 * (1 + lift), dur: 0.14 },
+        { freq: 830.61 * (1 + lift), dur: 0.17, harmonic: 1661.22 * (1 + lift) },
+        { freq: 1046.5 * (1 + lift), dur: 0.24 },
+      ],
+      { gap: 0.048, dur: 0.2, gain: STAGE_GAIN * 1.12 }
+    );
+  },
   /** Quote — installation location confirmed */
   install() {
     playNotes([
@@ -148,3 +161,34 @@ export function playStageSound(id) {
 }
 
 export const STAGE_SOUND_IDS = Object.keys(PROFILES);
+
+/**
+ * Play when the sizer unlocks a new package tier (first qualify or tier step-up).
+ * @param {number} [tierIndex]
+ */
+export function playPackageUnlockSound(tierIndex = 0) {
+  if (typeof window === "undefined" || prefersQuiet()) return;
+
+  const key = "packageUnlock:" + tierIndex;
+  const now = Date.now();
+  if (lastAt[key] && now - lastAt[key] < 480) return;
+  lastAt[key] = now;
+
+  initStageSounds();
+  const c = getCtx();
+  if (!c) return;
+
+  const run = () => {
+    try {
+      PROFILES.packageUnlock(tierIndex);
+    } catch {
+      /* ignore audio errors */
+    }
+  };
+
+  if (c.state === "suspended") {
+    c.resume().then(run).catch(() => {});
+  } else {
+    run();
+  }
+}
