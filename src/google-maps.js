@@ -1,5 +1,5 @@
 import { getRuntimeConfig } from "./runtime-config.js";
-import { buildGeocodeVariants } from "./address-parse.js";
+import { buildGeocodeVariants, normalizeZimbabweSearchQuery } from "./address-parse.js";
 import {
   HARARE_COORDS,
   ZIMBABWE_BOUNDS,
@@ -174,6 +174,7 @@ export function attachPlaceAutocomplete(inputEl, onPick) {
   const autocomplete = new window.google.maps.places.Autocomplete(inputEl, {
     componentRestrictions: { country: "zw" },
     bounds: zimbabweLatLngBounds(),
+    strictBounds: true,
     fields: ["place_id", "formatted_address", "geometry", "address_components", "name"],
   });
 
@@ -201,7 +202,7 @@ export function attachPlaceAutocomplete(inputEl, onPick) {
 
 function googleTextSearch(query) {
   const g = window.google.maps;
-  const searchQ = /\bzimbabwe\b/i.test(query) ? query : query + ", Zimbabwe";
+  const searchQ = normalizeZimbabweSearchQuery(query);
   return new Promise((resolve) => {
     getPlacesService().textSearch(
       {
@@ -211,21 +212,37 @@ function googleTextSearch(query) {
       },
       (results, status) => {
         if (status !== g.places.PlacesServiceStatus.OK || !results?.length) resolve([]);
-        else resolve(results);
+        else resolve(results.filter((p) => isZimbabwePlace(p)));
       }
     );
   });
 }
 
-/** Fast Zimbabwe search — autocomplete + text search for exact typed addresses. */
+function googlePlacePredictions(variant, limit, types) {
+  const g = window.google.maps;
+  const req = {
+    input: normalizeZimbabweSearchQuery(variant),
+    componentRestrictions: { country: "zw" },
+    bounds: zimbabweLatLngBounds(),
+  };
+  if (types) req.types = types;
+
+  return new Promise((resolve) => {
+    new g.places.AutocompleteService().getPlacePredictions(req, (results, status) => {
+      if (status !== g.places.PlacesServiceStatus.OK || !results?.length) resolve([]);
+      else resolve(results.slice(0, limit));
+    });
+  });
+}
+
+/** Fast Zimbabwe search — autocomplete (addresses + regions) + text search fallback. */
 export async function searchPlacesGoogle(query, { limit = 8 } = {}) {
   const q = String(query || "").trim();
   if (q.length < 2) return [];
   const ok = await initGoogleMaps();
   if (!ok) return [];
 
-  const g = window.google.maps;
-  const variants = buildGeocodeVariants(q).slice(0, 3);
+  const variants = buildGeocodeVariants(q).slice(0, 4);
   const out = [];
   const seen = new Set();
 
@@ -237,46 +254,33 @@ export async function searchPlacesGoogle(query, { limit = 8 } = {}) {
     out.push(item);
   }
 
-  for (const variant of variants) {
-    const predictions = await new Promise((resolve) => {
-      new g.places.AutocompleteService().getPlacePredictions(
-        {
-          input: variant,
-          componentRestrictions: { country: "zw" },
-          bounds: zimbabweLatLngBounds(),
-        },
-        (results, status) => {
-          if (status !== g.places.PlacesServiceStatus.OK || !results?.length) resolve([]);
-          else resolve(results.slice(0, limit));
-        }
-      );
-    });
+  const typePasses = [undefined, "(regions)", "(cities)"];
 
-    const details = await Promise.all(predictions.map((p) => getPlaceDetails(p.place_id)));
-    for (let i = 0; i < predictions.length; i++) {
-      add(
-        details[i] ||
-          (predictions[i].description
-            ? {
-                label: predictions[i].description.replace(/,?\s*Zimbabwe\s*$/i, "").trim(),
-                lat: null,
-                lon: null,
-                distanceKm: 0,
-                source: "google",
-                placeId: predictions[i].place_id,
-              }
-            : null)
-      );
-      if (out.length >= limit) return out;
+  for (const variant of variants) {
+    for (const types of typePasses) {
+      const predictions = await googlePlacePredictions(variant, limit, types);
+      const details = await Promise.all(predictions.map((p) => getPlaceDetails(p.place_id)));
+      for (let i = 0; i < predictions.length; i++) {
+        const hit = details[i];
+        if (hit?.lat != null) {
+          add(hit);
+        } else if (predictions[i].place_id) {
+          const detail = await getPlaceDetails(predictions[i].place_id);
+          if (detail?.lat != null) add(detail);
+        }
+        if (out.length >= limit) return out;
+      }
+      if (out.length >= 2) break;
     }
+    if (out.length >= limit) return out.slice(0, limit);
   }
 
-  if (out.length < 2) {
+  if (out.length < limit) {
     for (const variant of variants) {
       const textHits = await googleTextSearch(variant);
       for (const place of textHits.slice(0, limit)) {
         add(placeResultToSuggestion(place));
-        if (out.length >= limit) return out;
+        if (out.length >= limit) return out.slice(0, limit);
       }
     }
   }
@@ -288,9 +292,10 @@ function geocodeOnce(searchQ) {
   return new Promise((resolve) => {
     new window.google.maps.Geocoder().geocode(
       {
-        address: searchQ,
+        address: normalizeZimbabweSearchQuery(searchQ),
         componentRestrictions: { country: "ZW" },
         region: "ZW",
+        bounds: zimbabweLatLngBounds(),
       },
       (results, status) => {
         if (status !== "OK" || !results?.length) {
@@ -364,7 +369,7 @@ export async function createGoogleMap(el, { lat, lon, zoom = 13, onPinDrop, show
     streetViewControl: false,
     fullscreenControl: false,
     gestureHandling: "cooperative",
-    restriction: { latLngBounds: zimbabweLatLngBounds(), strictBounds: false },
+    restriction: { latLngBounds: zimbabweLatLngBounds(), strictBounds: true },
   });
 
   let freeCircle = null;

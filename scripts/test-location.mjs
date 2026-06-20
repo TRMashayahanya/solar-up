@@ -62,7 +62,32 @@ await case_("build geocode variants for Chihota", async () => {
   assert(v.some((x) => /Zimbabwe/i.test(x)), "includes Zimbabwe");
 });
 
-await case_("build geocode variants", async () => {
+await case_("normalizeZimbabweSearchQuery appends country", async () => {
+  const { normalizeZimbabweSearchQuery } = await import("../src/search-query.js");
+  assert(normalizeZimbabweSearchQuery("Ruwa") === "Ruwa, Zimbabwe", "appends Zimbabwe");
+  assert(normalizeZimbabweSearchQuery("Ruwa, Zimbabwe") === "Ruwa, Zimbabwe", "no duplicate");
+  assert(/Growth Point/i.test(normalizeZimbabweSearchQuery("Chihota GP")), "expands GP");
+});
+
+await case_("Zimbabwe bounds match spec", async () => {
+  const { ZIMBABWE_GEO_BOUNDS, isWithinZimbabweBounds } = await import("../src/search-query.js");
+  assert(ZIMBABWE_GEO_BOUNDS.south === -22.5, "south bound");
+  assert(ZIMBABWE_GEO_BOUNDS.north === -15.5, "north bound");
+  assert(isWithinZimbabweBounds(-17.825, 31.033), "Harare inside");
+  assert(!isWithinZimbabweBounds(-25, 31), "outside south");
+});
+
+await case_("match Glen Norah suburb", async () => {
+  const loc = matchLocality("Glen Norah");
+  assert(loc && /Glen Norah/i.test(loc.label), "Glen Norah match");
+});
+
+await case_("match Murehwa spelling alias", async () => {
+  const loc = matchLocality("Murehwa");
+  assert(loc && loc.label === "Murewa", "Murehwa alias");
+});
+
+await case_("build geocode variants for Chimoyo Crescent Ruwa", async () => {
   const v = buildGeocodeVariants("288 Chimoyo Crescent Ruwa");
   assert(v.length >= 3, "multiple variants");
   assert(v.some((x) => /Ruwa/i.test(x)), "includes Ruwa");

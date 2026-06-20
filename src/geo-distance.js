@@ -1,14 +1,10 @@
 /** Harare reference + Zimbabwe bounds (SolarApp delivery territory). */
+import { ZIMBABWE_GEO_BOUNDS } from "./search-query.js";
 
 export const HARARE_COORDS = { lat: -17.8252, lon: 31.0335 };
 
 /** Approximate Zimbabwe bounding box for map/search/GPS checks. */
-export const ZIMBABWE_BOUNDS = {
-  south: -22.45,
-  west: 25.22,
-  north: -15.58,
-  east: 33.08,
-};
+export const ZIMBABWE_BOUNDS = { ...ZIMBABWE_GEO_BOUNDS };
 
 export function isWithinZimbabwe(lat, lon) {
   const la = Number(lat);

@@ -13,6 +13,11 @@ import {
   isWithinZimbabwe,
 } from "./geo-distance.js";
 import { buildGeocodeVariants, matchLocality, parseZimbabweAddress, localityAnchor } from "./address-parse.js";
+import {
+  normalizeZimbabweSearchQuery,
+  nominatimSearchParams,
+  NOMINATIM_SEARCH_PASSES,
+} from "./search-query.js";
 import { OUTSIDE_DELIVERY_FREE_KM } from "./packages.js";
 
 export { HARARE_COORDS, roadKmFromHarare, isWithinZimbabwe };
@@ -28,8 +33,7 @@ const FETCH_OPTS = {
 export function googleMapsSearchUrl(query) {
   const q = String(query || "").trim();
   if (!q) return "https://www.google.com/maps/search/?api=1&query=Zimbabwe";
-  const withCountry = /\bzimbabwe\b/i.test(q) ? q : q + ", Zimbabwe";
-  return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(withCountry);
+  return "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(normalizeZimbabweSearchQuery(q));
 }
 
 export function googleMapsCoordsUrl(lat, lon) {
@@ -138,22 +142,36 @@ function formatSearchItem(item) {
     .join(", ");
 }
 
-async function nominatimSearchOnce(searchQ, limit) {
+async function nominatimSearchOnce(searchQ, limit, passOpts = {}) {
   const url =
     NOMINATIM +
     "/search?" +
-    new URLSearchParams({
-      q: searchQ,
-      format: "json",
-      addressdetails: "1",
-      countrycodes: "zw",
-      limit: String(limit),
-    });
+    new URLSearchParams(nominatimSearchParams(searchQ, { limit, ...passOpts }));
   const res = await fetch(url, FETCH_OPTS);
   if (!res.ok) return [];
   const data = await res.json();
   if (!Array.isArray(data)) return [];
   return data;
+}
+
+/** Nominatim search — Zimbabwe only, multi-pass (bias → bounded → settlement/city). */
+async function searchPlacesNominatim(query, { limit = 8 } = {}) {
+  const q = String(query || "").trim();
+  if (q.length < 2) return [];
+
+  const variants = buildGeocodeVariants(q);
+  const seen = new Set();
+  const out = [];
+
+  for (const variant of variants) {
+    for (const pass of NOMINATIM_SEARCH_PASSES) {
+      const data = await nominatimSearchOnce(variant, limit, pass);
+      nominatimToSuggestions(data, seen, out);
+      if (out.length >= limit) return out.slice(0, limit);
+    }
+  }
+
+  return out.slice(0, limit);
 }
 
 function nominatimToSuggestions(data, seen, out, preferLabel) {
@@ -216,24 +234,6 @@ export function reconcileLocalityHit(query, hit) {
   return { ...hit, distanceKm: hitKm };
 }
 
-/** Nominatim search — Zimbabwe only, tries multiple query variants. */
-async function searchPlacesNominatim(query, { limit = 8 } = {}) {
-  const q = String(query || "").trim();
-  if (q.length < 2) return [];
-
-  const variants = buildGeocodeVariants(q);
-  const seen = new Set();
-  const out = [];
-
-  for (const variant of variants) {
-    const data = await nominatimSearchOnce(variant, limit);
-    nominatimToSuggestions(data, seen, out);
-    if (out.length >= limit) return out.slice(0, limit);
-  }
-
-  return out.slice(0, limit);
-}
-
 /** Geocode town/suburb when exact street is not in map data. */
 async function geocodeLocalityFallback(query) {
   const parsed = parseZimbabweAddress(query);
@@ -274,7 +274,7 @@ async function geocodeLocalityFallback(query) {
   return null;
 }
 
-/** Zimbabwe places: local list → Google (ZW) → Nominatim (ZW). */
+/** Zimbabwe places: local list → Google (ZW) → Nominatim fallback (OSM detail). */
 export async function searchPlaces(query, { limit = 8, localFirst = [] } = {}) {
   const q = String(query || "").trim();
   if (q.length < 2) return [];
@@ -304,10 +304,30 @@ export async function searchPlaces(query, { limit = 8, localFirst = [] } = {}) {
     if (out.length >= limit) return out.slice(0, limit);
   }
 
-  const nom = await searchPlacesNominatim(q, { limit });
-  for (const item of nom) {
-    add(reconcileLocalityHit(q, item));
-    if (out.length >= limit) break;
+  const needNominatim = out.length < limit && (google.length === 0 || out.length < Math.min(3, limit));
+  if (needNominatim) {
+    const nom = await searchPlacesNominatim(q, { limit });
+    for (const item of nom) {
+      add(reconcileLocalityHit(q, item));
+      if (out.length >= limit) break;
+    }
+  }
+
+  if (out.length === 0) {
+    const anchor = localityAnchor(q);
+    if (anchor) {
+      const parsed = parseZimbabweAddress(q);
+      add(
+        reconcileLocalityHit(q, {
+          label: parsed.formatted || anchor.label + ", Zimbabwe",
+          lat: anchor.lat,
+          lon: anchor.lon,
+          distanceKm: roadKmFromHarare(anchor.lat, anchor.lon),
+          source: "anchor",
+          precision: "locality",
+        })
+      );
+    }
   }
 
   return out.slice(0, limit);
@@ -338,21 +358,23 @@ export async function geocodePlace(query) {
   }
 
   for (const v of variants) {
-    const data = await nominatimSearchOnce(v, 3);
-    const seen = new Set();
-    const hits = [];
-    nominatimToSuggestions(data, seen, hits, null);
-    if (hits[0]?.lat != null) {
-      const hit =
-        hits[0].label.toLowerCase() !== q.toLowerCase()
-          ? { ...hits[0], label: parseZimbabweAddress(q).formatted || q }
-          : hits[0];
-      return reconcileLocalityHit(q, hit);
+    for (const pass of NOMINATIM_SEARCH_PASSES) {
+      const data = await nominatimSearchOnce(v, 3, pass);
+      const seen = new Set();
+      const hits = [];
+      nominatimToSuggestions(data, seen, hits, null);
+      if (hits[0]?.lat != null) {
+        const hit =
+          hits[0].label.toLowerCase() !== q.toLowerCase()
+            ? { ...hits[0], label: parseZimbabweAddress(q).formatted || q }
+            : hits[0];
+        return reconcileLocalityHit(q, hit);
+      }
     }
   }
 
-  const list = await searchPlaces(q, { limit: 3 });
-  const exact = list.find((x) => x.lat != null);
+  const nomList = await searchPlacesNominatim(q, { limit: 3 });
+  const exact = nomList.find((x) => x.lat != null) || (await searchPlaces(q, { limit: 3 })).find((x) => x.lat != null);
   if (exact) {
     const hit =
       exact.label.toLowerCase() !== q.toLowerCase()
