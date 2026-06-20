@@ -9,7 +9,7 @@ import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.join(__dirname, "..");
-const BASE = process.env.SOLARAPP_URL || "http://localhost:5173/?v=113";
+const BASE = process.env.SOLARAPP_URL || "http://localhost:5173/?v=116";
 
 const VIEWPORTS = [
   { name: "iPhone SE", width: 375, height: 667 },
